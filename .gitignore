@@ -10,27 +10,29 @@
 *.rom
 *.dat
 *.chr
-/assets/*.dat
+/assets/
 /bin/assets/
 
 # Librerías externas y dependencias de terceros
 /third_party/
 
-# Tests y arneses de verificación
-/tests/
+# Grabaciones TAS efímeras (los tests C11 en tests/c/ SÍ se versionan)
+/tests/tas/
 
 # Herramientas de análisis, ingeniería inversa y scripts de debug
 /tools/*
-!/tools/extract_assets.py
-!/tools/dual_play_recorder.py
-!/tools/hierarchical_parity_oracle.py
-!/tools/inspect_parity.py
+!/tools/asm_query.py
+!/tools/nes_oracle.py
+!/tools/verify_scenarios.py
 
 # Binarios y directorios de compilación
 /bin/
 build/
 *.obj
 *.exe
+*.dll
+*.so
+*.dylib
 *.pdb
 *.ilk
 
@@ -41,12 +43,10 @@ build/
 *.mp4
 *.pdf
 
-# Configuración de agentes
-/.agents/
-
-# Caché de Python
+# Caché de Python (incluyendo hooks en .agents/)
 __pycache__/
 *.pyc
+.agents/**/__pycache__/
 
 # IDEs y editores
 .vscode/

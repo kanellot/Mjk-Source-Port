@@ -1,0 +1,16 @@
+{
+  "workspace-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python hooks/guard_workspace.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -7,7 +7,7 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
 ## Índice de Decisiones (Iteración 2)
 
 - [ADR-001: Adopción del Marco de Reconstrucción Funcional y Epistemología de Evidencia](#adr-001-adopción-del-marco-de-reconstrucción-funcional-y-epistemología-de-evidencia)
-- [ADR-002: Congelación Total de la Implementación hasta Superación de Auditoría (Fase 4)](#adr-002-congelación-total-de-la-implementación-hasta-superación-de-auditoría-fase-4)
+- [ADR-002: Congelación Total de la Implementación hasta Superación de Auditoría (Fase 4)](#adr-002-congelación-total-de-la-implementación-hasta-superación-de-auditoría-fase-4) `[SUPERADA]`
 - [ADR-003: Organización Limpia del Workspace: Centralización en `project/`, `archive/` y Subcarpetas en `research/`](#adr-003-organización-limpia-del-workspace-centralización-en-project-archive-y-subcarpetas-en-research)
 - [ADR-004: Preservación de la Revisión USA / NTSC (`REV_US`) como Versión Base Canónica](#adr-004-preservación-de-la-revisión-usa--ntsc-rev_us-como-versión-base-canónica)
 - [ADR-005: Enfoque Tool-Assisted para Análisis Estático y Mitigación de Métricas de Vanidad](#adr-005-enfoque-tool-assisted-para-análisis-estático-y-mitigación-de-métricas-de-vanidad)
@@ -15,10 +15,16 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
 - [ADR-007: Fidelidad de Paletas y Sprites Derivada del Ensamblador 6502 y PPU 2C02 (Anti-Heurística Visual)](#adr-007-fidelidad-de-paletas-y-sprites-derivada-del-ensamblador-6502-y-ppu-2c02-anti-heurística-visual)
 - [ADR-008: Prohibición Estricta de Suposiciones en Decisiones y Respaldo Obligatorio en Código y Emulador](#adr-008-prohibición-estricta-de-suposiciones-en-decisiones-y-respaldo-obligatorio-en-código-y-emulador)
 - [ADR-009: Capitalización Persistente del Análisis ASM en `research/` y Decisión Final en Código](#adr-009-capitalización-persistente-del-análisis-asm-en-research-y-decisión-final-en-código)
-- [ADR-010: Prohibición de Interacción Humana en Subagentes y Comunicación Estricta M2M (Ahorro de Tokens)](#adr-010-prohibición-de-interacción-humana-en-subagentes-y-comunicación-estricta-m2m-ahorro-de-tokens)
-- [ADR-011: Eliminación Obligatoria e Inmediata de Subagentes Finalizados (Cero Agentes Ociosos)](#adr-011-eliminación-obligatoria-e-inmediata-de-subagentes-finalizados-cero-agentes-ociosos)
+- [ADR-010: Prohibición de Interacción Humana en Subagentes y Comunicación Estricta M2M (Ahorro de Tokens)](#adr-010-prohibición-de-interacción-humana-en-subagentes-y-comunicación-estricta-m2m-ahorro-de-tokens) `[SUPERADA]`
+- [ADR-011: Eliminación Obligatoria e Inmediata de Subagentes Finalizados (Cero Agentes Ociosos)](#adr-011-eliminación-obligatoria-e-inmediata-de-subagentes-finalizados-cero-agentes-ociosos) `[SUPERADA]`
 - [ADR-012: Arquitectura del Sistema de Puertas, Evaluación de 33 Condiciones y Transición Topológica de Salas](#adr-012-arquitectura-del-sistema-de-puertas-evaluación-de-33-condiciones-y-transición-topológica-de-salas)
-- [ADR-013: Metodología de Replay Diferencial de Golden Master y Empuje de Horizonte (Fase 7)](#adr-013-metodología-de-replay-diferencial-de-golden-master-y-empuje-de-horizonte-fase-7)
+- [ADR-013: Metodología de Replay Diferencial de Golden Master y Empuje de Horizonte (Fase 7)](#adr-013-metodología-de-replay-diferencial-de-golden-master-y-empuje-de-horizonte-fase-7) `[SUPERADA]`
+- [ADR-014: Entorno Agéntico Antigravity 2.0 con Gemini 4 Neon + Hydrogen, Skills Progresivas y Hook de Protección](#adr-014-entorno-agéntico-antigravity-20-con-gemini-4-neon--hydrogen-skills-progresivas-y-hook-de-protección)
+- [ADR-015: Política Clean-Room BYOR v2 (Cero Datos Propietarios Embebidos en C)](#adr-015-política-clean-room-byor-v2-cero-datos-propietarios-embebidos-en-c)
+- [ADR-016: Suite Multi-TAS de 5 Niveles, Consulta ASM Determinista y Build Unificado Windows/Linux](#adr-016-suite-multi-tas-de-5-niveles-consulta-asm-determinista-y-build-unificado-windowslinux) `[SUPERADA]`
+- [ADR-017: Verificación Comportamental en 3 Capas (CTest + Micro-Escenarios Semánticos + Debug Overlay)](#adr-017-verificación-comportamental-en-3-capas-ctest--micro-escenarios-semánticos--debug-overlay)
+- [ADR-018: Reescritura Limpia de `src/core/` con Abstracciones Educativas y Extensibles](#adr-018-reescritura-limpia-de-srccore-con-abstracciones-educativas-y-extensibles)
+- [ADR-019: Extractor BYOR v2 Integrado en C en el Arranque del Port](#adr-019-extractor-byor-v2-integrado-en-c-en-el-arranque-del-port)
 
 ---
 
@@ -42,7 +48,7 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
 ## ADR-002: Congelación Total de la Implementación hasta Superación de Auditoría (Fase 4)
 
 - **Fecha**: 2026-10-24
-- **Estado**: `[ACEPTADA]`
+- **Estado**: `[SUPERADA]` *(Fase 4 completada; código antiguo movido a `archive/` y reemplazado por `src/`. Ver ADR-014.)*
 - **Contexto**:
   Escribir código de implementación antes de tener la especificación completa distorsiona las conclusiones, fomenta la invención de mecánicas no contrastadas y consume ciclos de testing sobre componentes ficticios.
 - **Decisión**:
@@ -171,7 +177,7 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
 ## ADR-010: Prohibición de Interacción Humana en Subagentes y Comunicación Estricta M2M (Ahorro de Tokens)
 
 - **Fecha**: 2026-10-25
-- **Estado**: `[ACEPTADA]`
+- **Estado**: `[SUPERADA]` *(Cadena de 4 niveles de la era Gemini 3.8 reemplazada por flujo nativo Plan/Execute Neon + Hydrogen en ADR-014.)*
 - **Contexto**:
   La generación de saludos, frases de cortesía, explicaciones conversacionales o introducciones amables por parte de subagentes y task runners consume tokens innecesarios de contexto y ralentiza la ejecución automatizada de tareas.
 - **Decisión**:
@@ -186,7 +192,7 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
 ## ADR-011: Eliminación Obligatoria e Inmediata de Subagentes Finalizados (Cero Agentes Ociosos)
 
 - **Fecha**: 2026-10-25
-- **Estado**: `[ACEPTADA]`
+- **Estado**: `[SUPERADA]` *(Reemplazada por Plan/Execute Neon + Hydrogen y paralelismo puntual mediante `swarm`/`run_workflow` en ADR-014.)*
 - **Contexto**:
   Dejar subagentes completados en estado detenido (`idle`) mantiene referencias huérfanas en memoria y workspaces efímeros, desdibujando la visibilidad del estado real de ejecución y arriesgando reutilizaciones accidentales de contexto contaminado.
 - **Decisión**:
@@ -226,7 +232,7 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
 ## ADR-013: Metodología de Replay Diferencial de Golden Master y Empuje de Horizonte (Fase 7)
 
 - **Fecha**: 2026-11-01
-- **Estado**: `[ACEPTADA]`
+- **Estado**: `[SUPERADA]` *(Reemplazada por Verificación Comportamental en 3 Capas en ADR-017; los TAS largos impiden abstracciones limpias y provocan efecto mariposa.)*
 - **Contexto**:
   La fase de refinamiento y paridad exacta 1:1 (Fase 7) requiere detectar discrepancias sutiles en la experiencia de juego, físicas y comportamiento de entidades. La co-simulación síncrona manual desincroniza al jugador ante el primer fallo de 1 píxel. Además, la inspección manual por LLM de miles de fotogramas consume cantidades excesivas de tokens.
 - **Decisión**:
@@ -236,3 +242,85 @@ Este registro documenta todas las decisiones arquitectónicas, metodológicas e 
   4. **Suite de Regresión Persistente**: Cada sesión grabada se almacena en `tests/tas/` como prueba de no-regresión permanente.
 - **Consecuencias**:
   Eliminación de la frustración por bugs del port durante la prueba humana, diagnóstico a coste cero de tokens mediante scripts deterministas, y reducción superior al 80% en el consumo de tokens de los subagentes durante la resolución iterativa de bugs.
+
+---
+
+## ADR-014: Entorno Agéntico Antigravity 2.0 con Gemini 4 Neon + Hydrogen, Skills Progresivas y Hook de Protección
+
+- **Fecha**: 2026-11-23
+- **Estado**: `[ACEPTADA]`
+- **Contexto**:
+  La arquitectura jerárquica anterior de 4 niveles diseñada para Gemini 3.8 Flash introducía sobrecarga artificial de coordinación y dejaba un `AGENTS.md` de > 26 KB (truncado al superar 24 KB).
+- **Decisión**:
+  1. Reducir `AGENTS.md` a < 6 KB con reglas invariantes esenciales.
+  2. Adoptar el flujo nativo **Plan/Execute** con **Gemini 4 Neon** (planificación, diagnóstico y validación contra ASM/emulador) + **Gemini 4 Hydrogen** (ejecución C/tooling y verificación), reservando `swarm` (`gemini-4-hydrogen-medium`) y `run_workflow` únicamente para trabajo paralelizable real.
+  3. Externalizar procedimientos extensos en 3 skills bajo demanda (`.agents/skills/mjk-parity-workflow`, `mjk-asm-ground-truth`, `mjk-educational-c-port`).
+  4. Instalar un hook determinista `PreToolUse` (`.agents/hooks.json` + `.agents/hooks/guard_workspace.py`) que bloquea escrituras en `asm/`, `archive/` y `scratch/*.py`.
+- **Consecuencias**:
+  Menor consumo de tokens por turno, cero truncamiento de reglas y cumplimiento determinista de la inmutabilidad del Ground Truth.
+
+---
+
+## ADR-015: Política Clean-Room BYOR v2 (Cero Datos Propietarios Embebidos en C)
+
+- **Fecha**: 2026-11-23
+- **Estado**: `[ACEPTADA]`
+- **Contexto**:
+  Una auditoría del port reveló que, aunque `CHR-ROM` se carga desde `assets/assets.dat`, los bytecodes musicales/SFX (`src/core/mjk_apu.c`), tablas de 257 salas/paletas/metatiles (`src/core/mjk_room_data.c`) y fuente bitmap (`include/mjk_font.h`) seguían embebidos en C.
+- **Decisión**:
+  Evolucionar a `assets.dat` v2 extraído íntegramente desde la ROM `mbj-us.nes` del usuario (validada por SHA-1) para externalizar gráficos, audio, textos, tablas de salas/paletas y animaciones de sprites, manteniendo el código C11 100% libre de bytes con copyright y limpio para fines educativos y de modificación.
+- **Consecuencias**:
+  El ejecutable compilado requiere `assets.dat` generado por el usuario y cumple íntegramente con los requisitos legales y didácticos del proyecto.
+
+---
+
+## ADR-016: Suite Multi-TAS de 5 Niveles, Consulta ASM Determinista y Build Unificado Windows/Linux
+
+- **Fecha**: 2026-11-23
+- **Estado**: `[SUPERADA]` *(Se conservan `asm_query.py` y el build CMake Windows/Linux; el enfoque multi-TAS largo queda reemplazado por ADR-017.)*
+- **Contexto**:
+  Los scripts previos de verificación tenían lecturas RAM erróneas (`$0316` en lugar de `$00B1` para enemigos vivos), dependencias de PySide6 en modo headless, compuertas Nivel 3/Nivel 5 inactivas y 14 scripts temporales dispersos en `scratch/`. Además, la compilación en Linux estaba rota (`<windows.h>` en `mjk_assets.c` y `Makefile` desactualizado).
+- **Decisión**:
+  1. Consolidar `tools/hierarchical_parity_oracle.py` v2, `tools/inspect_parity.py` v2 (Pillow headless, `--watch-ram`, `--dump-oam`, `--dump-slot`, `--compact`, `--no-guard`), `tools/parity_suite.py` (anti-regresión multi-TAS) y `tools/asm_query.py` (consulta instantánea de `asm_inventory.json` y `data_inventory.csv`).
+  2. Unificar la compilación en Windows y Linux mediante CMake + SDL2 (Hito 1), desacoplando `src/core/` de cualquier API de sistema operativo.
+- **Consecuencias**:
+  Diagnóstico diferencial de bajo coste de tokens, prevención automática de regresiones entre múltiples escenarios TAS y portabilidad nativa Windows/Linux.
+
+---
+
+## ADR-017: Verificación Comportamental en 3 Capas (CTest + Micro-Escenarios Semánticos + Debug Overlay)
+
+- **Fecha**: 2026-11-23
+- **Estado**: `[ACEPTADA]`
+- **Contexto**:
+  El usuario prioriza una experiencia jugable muy fiel con abstracciones limpias y educativas en C11, sin requerir emulación exacta ciclo-a-ciclo. El replay TAS largo sufre efecto mariposa ante cualquier diferencia de 1 frame e induce hacks artificiales y bucles infinitos de relectura ASM.
+- **Decisión**:
+  Adoptar 3 capas desacopladas: (1) `CTest` en C11 sobre contratos puros y las 257 salas, (2) Micro-escenarios cortos (60–240 frames) semánticos contra `cynes` vía `tools/nes_oracle.py` y futuro `verify_scenarios.py`, y (3) Debug Overlay SDL2 (`F1`–`F4`).
+- **Consecuencias**:
+  Eliminación de falsos negativos en cascada y falsos positivos de paleta RGB, validación directa de audio/OAM/reglas y progreso modular.
+
+---
+
+## ADR-018: Reescritura Limpia de `src/core/` con Abstracciones Educativas y Extensibles
+
+- **Fecha**: 2026-11-23
+- **Estado**: `[ACEPTADA]`
+- **Contexto**:
+  El código previo en `src/core/` arrastra monolitos (`mjk_game.c` 1.646 líneas), estructuras duplicadas, errores BCD y deuda de parches de paridad TAS.
+- **Decisión**:
+  Reescribir `src/core/` desde cero en C11 limpio y modular (< 600 líneas por módulo), apoyándose en la especificación `research/` ya completada y reutilizando la base HAL SDL2 (`mjk_platform_sdl.c`). Se preservan fielmente mecánicas, estética PPU y síntesis 2A03, abstrayendo quirks de hardware sin valor jugable (stalls PPU-off, hack `PLA;PLA`, límite de 8 sprites/scanline).
+- **Consecuencias**:
+  Código claro para aprender C y arquitectura NES retro, fácil de ampliar y libre de deuda técnica heredada.
+
+---
+
+## ADR-019: Extractor BYOR v2 Integrado en C en el Arranque del Port
+
+- **Fecha**: 2026-11-23
+- **Estado**: `[ACEPTADA]`
+- **Contexto**:
+  Exigir un script Python independiente dificulta la experiencia de usuario y mantiene una brecha si el núcleo C sigue embebiendo tablas con copyright.
+- **Decisión**:
+  Integrar en el ejecutable C (`mjk_sha1.c` + `mjk_rom_extractor.c`) la detección, validación SHA-1 de `mbj-us.nes` y generación automática de `assets/assets.dat` v2 (CHR, audio, textos, 257 salas/paletas/sprites) al arrancar, eliminando cualquier extractor Python externo.
+- **Consecuencias**:
+  Distribución 100% Clean-Room autocontenida en Windows y Linux sin requerir Python al usuario final.

@@ -106,45 +106,31 @@ typedef struct {
 
 ---
 
-## 5. Especificación de la Herramienta CLI (`tools/extract_assets.py`)
+## 5. Especificación del Extractor Nativo Integrado en C11 (`mjk_rom_extractor.c` + `mjk_sha1.c`)
 
-### 5.1 Modo de Uso
-```powershell
-python tools/extract_assets.py <ruta_hacia_mbj-us.nes>
-```
+El port **no depende de Python ni de scripts externos** para el usuario final: el propio binario `mjk` realiza la validación y extracción en el arranque si aún no existe un paquete válido.
 
-### 5.2 Comportamiento Esperado:
-1. Verifica si el archivo existe y lee su contenido.
-2. Calcula su SHA-1. Si no coincide con `a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`:
-   - Emite un mensaje de error claro:
-     ```
-     [ERROR]: La ROM proporcionada no coincide con la versión USA de Mighty Bomb Jack.
-     SHA-1 obtenido:  <hash>
-     SHA-1 requerido: a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7
-     ```
-3. Extrae la sección CHR-ROM (offset $0x8010$, longitud 32.768 bytes).
-4. Extrae las tablas de audio y texto.
-5. Escribe `assets/assets.dat`.
-6. Genera opcionalmente una vista previa en PNG de las hojas de sprites para inspección del usuario.
+### 5.1 Flujo Automático al Arrancar `mjk`
+1. Comprueba si existe `assets/assets.dat` (cabecera `"MJKASSET"`, versión `0x00020000`, CRC-32 válido).
+   - Si es válido -> lo carga directamente en memoria y continúa al bucle principal.
+2. Si no existe o es obsoleto, busca `mbj-us.nes` en orden:
+   - Argumento CLI `--rom <ruta_a_mbj-us.nes>`.
+   - `./mbj-us.nes` (directorio de trabajo actual).
+   - `<exe_dir>/mbj-us.nes` (junto al ejecutable, resuelto vía `SDL_GetBasePath()`).
+3. Valida tamaño exacto (**65.552 bytes**) y hash **SHA-1** (`a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`) mediante `mjk_sha1.c` puro C11.
+   - Si la ROM no coincide, informa con el SHA-1 esperado y obtenido y aborta limpiamente.
+4. Extrae los bloques desde la ROM verificada, construye `assets/assets.dat` v2 con CRC-32, lo carga en memoria y arranca el juego de forma transparente.
+5. Si no se encuentra ni `assets.dat` ni `mbj-us.nes`, muestra un mensaje claro en consola y un cuadro de diálogo SDL2 (`SDL_ShowSimpleMessageBox`) indicando al usuario que coloque su copia legal de `mbj-us.nes` junto al ejecutable o use `--rom <ruta>`.
 
 ---
 
-## 6. Integración en el Juego (`mjk.exe`)
+## 6. Evolución Clean-Room: BYOR v2 (Cero Copyright en C)
 
-Al arrancar, la función `MjkAssets_Init()` en `src/core/mjk_assets.c`:
-1. Intenta abrir `assets/assets.dat`.
-2. Si el archivo no existe:
-   - En consola y mediante un cuadro de diálogo del sistema operativo (o renderizado de texto mínimo), notifica:
-     ```
-     ======================================================================
-      Mighty Bomb Jack Source Port (PC)
-     ======================================================================
-      No se ha encontrado el archivo de assets empaquetados: assets/assets.dat
-      
-      Por motivos de propiedad intelectual, este juego no incluye los assets
-      de Tecmo. Para generar los assets necesarios, ejecute:
-      
-        python tools/extract_assets.py <su_rom_legal_de_mbj-us.nes>
-     ======================================================================
-     ```
-3. Si el archivo existe, lee la cabecera, verifica su magia `"MJKASSET"` y carga los datos en memoria.
+Para cumplir al 100% la política Clean-Room (cero datos con copyright de Tecmo en el repositorio ni hardcodeados en C):
+1. **`assets.dat` v2 (`0x00020000`)**: Extrae directamente desde `mbj-us.nes` (SHA-1 verificado):
+   - `CHR-ROM` (32 KB completos, 4 bancos de 8 KB).
+   - Tablas y bytecodes de audio (`music-data.asm`: tracks BGM, SFX, envolventes, tabla de frecuencias/duraciones).
+   - Cadenas de texto e índices PPU (`$C244..$C500`) y uso exclusivo de tiles CHR-ROM para HUD/texto (sin fuentes embebidas).
+   - Tablas de geometría y salas (`RoomHalfScreens`, `HalfScreenLayouts`, `LayoutChunks`, `MetatileDefinitions`, `AdjacentRoomsTable`, `RoomDataPointers` + streams `RoomData_01..FF`, `MainPalette`, `BackgroundPaletteSets`, `TileAttributeTable`, tablas de puertas e ítems).
+   - Tablas de animación y spawns (`SpriteAnimationTable`, `EnemySpawnPositionTable`, `DifficultyTable`).
+2. **Carga dinámica en `MjkAssets_Load()`**: Todo puntero o tabla propietaria en `src/core/` apunta al buffer cargado desde `assets.dat` v2, garantizando que sin `mbj-us.nes` el binario compilado no contenga ningún asset de Tecmo.

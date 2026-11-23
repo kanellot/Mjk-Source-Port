@@ -37,14 +37,14 @@ uint8_t BCD_AddByte(uint8_t a, uint8_t b, uint8_t *carry_out) {
 }
 ```
 
-### Marcador de Puntuación de 8 Dígitos (`PlayerScore` en `$0428-$042B`)
-El marcador almacena 4 bytes BCD (8 dígitos decimales) en formato Big-Endian. El renderizado en OAM suprime los ceros a la izquierda (Zero-Suppression) hasta el dígito de las decenas.
+### Marcador de Puntuación de 8 Dígitos (`PlayerScore` en `$00A0-$00A3`)
+El marcador almacena 4 bytes BCD (8 dígitos decimales) en formato **Little-Endian** (`$00A0` = unidades/decenas, `$00A3` = millones/decenas de millón, confirmado en `prg.asm:2466-2486` y `ram.asm:240-244`). El renderizado en OAM suprime los ceros a la izquierda (*Zero-Suppression*) hasta el dígito de las unidades.
 
 ---
 
 ## 2. Temporizador de Fase (Divisor de 256 Frames)
 
-El temporizador visible de 60 segundos (`StageTimer` en `$0440`) se decrementa mediante un divisor de reloj de 256 frames (`TimerFrames` en `$003F`):
+El temporizador visible de 60 segundos (`StageTimer` en `$00A4`, `ram.asm:245`) se decrementa mediante un divisor de reloj de 256 frames (`TimerFrames` en `$00A5`, `ram.asm:248`):
 
 ```c
 void StageTimer_Tick(GameState *game) {
@@ -85,25 +85,25 @@ Cuando el jugador ejecuta saltos innecesarios o codiciosos sobre plataformas de 
 
 ---
 
-## 4. Cálculo del GDV (Game Determination Value) y los 4 Finales
+## 4. Cálculo del GDV (Game Deviation Value) y los 4 Finales
 
-El valor `PlayerGDV` (`$0435`) mide el nivel de habilidad y virtud del jugador a lo largo de la pirámide:
-- **Valor Inicial**: `$47` BCD al comenzar una nueva partida.
-- **Modificadores Positivos**:
-  - Recoger esfinges secretas: $+10$ BCD (`AddAToGDV`).
-  - Completar salas sin activar la sala de tortura: $+5$ BCD.
-  - Recoger bolas de cristal secretas: $+15$ BCD.
-- **Modificadores Negativos**:
-  - Caer en la sala de tortura: $-20$ BCD.
-  - Morir por enemigos: $-10$ BCD.
+El valor `PlayerGDV` (`$009C`) mide el desempeño del jugador al final de la partida (`GameState_A_GameOver`, `prg.asm:1038-1077`), pero **NO selecciona el final**:
+- **Valor Inicial**: `$47` BCD al comenzar partida (`GameState_0_Init`, `prg.asm:358`).
+- **Bonificaciones al calcular GDV**:
+  - Al llegar a cualquier final (`_EndGame`, `prg.asm:7422-7423`): `+3` BCD.
+  - En `GameState_A_GameOver` (`prg.asm:1050-1070`):
+    - `(LastBombRoomCleared & $0F) >> 1`: `+0` a `+7` (1 punto cada 2 rondas superadas).
+    - `ExtraLivesFound >> 1`: `+1` cada 2 vidas extra conseguidas.
+    - Score bonus (`PlayerScore+2`, cap `$A0` si `PlayerScore+3 != 0`, `>> 5`): `+0` a `+5` (1 punto por cada 200.000 pts).
+- Actualiza `HighGDV` (`$009B`) si `PlayerGDV >= HighGDV`.
 
-### Evaluación de los 4 Finales (`EndingDoorChecks` en `prg.asm:7376-7450`)
+### Evaluación de los 4 Finales (`EndingDoorChecks` en `prg.asm:7333-7425`)
 
-Al cruzar la puerta de la sala final de la pirámide, el motor determina el final cinematográfico según el rango de `PlayerGDV` y los items obtenidos:
+Al cruzar una puerta hacia las cámaras finales (`Room $A0..$A3`), `EndingType = RoomID & 3` selecciona la compuerta de validación:
 
-| Tipo de Final | Nombre / Rango GDV | Cinemática Resultante | Requisitos Secretos |
-| :---: | :--- | :--- | :--- |
-| **Ending 0** | **Final Pobre** ($\text{GDV} < 50$) | Jack se encuentra solo ante el trono vacío. La pirámide permanece en pie. | Partida con múltiples caídas en tortura. |
-| **Ending 1** | **Final Bueno** ($50 \le \text{GDV} < 75$) | Rescate de la Reina Pamera. Jack recibe recompensa básica. | Salvar al menos a 1 miembro de la realeza. |
-| **Ending 2** | **Final Excelente** ($75 \le \text{GDV} < 90$) | Rescate del Rey Gram y la Reina Pamera. Desfile en el palacio real. | Sin muertes excesivas y $\ge 2$ esfinges. |
-| **Ending 3** | **Final Supremo (Best)** ($\text{GDV} \ge 90$) | Rescate de la Princesa Felicia y toda la familia real. Secuencia cinemática completa de demolición de la pirámide. Créditos dorados de Tecmo USA. | Todas las bolas de cristal y GDV perfecto. |
+| Tipo de Final | Cámara | Condición de Bloqueo en `EndingDoorChecks` (`prg.asm:7376-7412`) | Resultado |
+| :---: | :---: | :--- | :--- |
+| **Ending 0 (Pobre)** | `$A0` | `_EndCheckCrystalBall1`: si `PlayerCrystalBallsCollected == 0` (`$0391`) -> dispara `_EndGame` con `EndingType = 0`. | Si posee al menos 1 bola, permite seguir hacia `$A1`. |
+| **Ending 1 (Bueno)** | `$A1` | `_EndCheckCrystalBall2`: si `PlayerCrystalBallsCollected != 3` (no tiene ambas bolas) -> dispara `_EndGame` con `EndingType = 1`. | Si posee ambas bolas (Reina + Princesa), permite seguir hacia `$A2`. |
+| **Ending 2 (Excelente)** | `$A2` | `_EndCheck5SecretCoins`: si `PlayerSecretCoins < 5` (`$03E5`) -> dispara `_EndGame` con `EndingType = 2`. | Si tiene `>= 5` Secret Coins, permite avanzar hacia `$A3`. |
+| **Ending 3 (Supremo)** | `$A3` | Sin compuerta de bloqueo: entra directo en `_EndGame` con `EndingType = 3`. | Verdadero final completo de la familia real y créditos USA. |

@@ -1,168 +1,109 @@
 # Índice Maestro de Referencias Cruzadas (Cross-Reference Index)
-## Ensamblador 6502 (NES 1987) <---> Source Port C99 (Windows)
+## Ensamblador 6502 (NES 1987 `REV_US`) <---> Source Port C11 Clean-Slate
 
-**Propósito**: Diccionario canónico bidireccional con números de línea exactos entre las direcciones de memoria RAM, subrutinas y tablas del cartucho original de NES (`asm/src/`) y las estructuras/funciones en C (`include/` y `src/core/`).  
-> **Nota de transición**: La columna derecha (`include/` y `src/core/`) refleja el prototipo previo a la reescritura limpia de `src/core/` (`ADR-018`) y se irá actualizando módulo a módulo durante los Hitos 1–5. La columna ASM (`asm/src/`) está verificada y vigente.
-**Uso Mandatorio**: Consultar primero con `python tools/asm_query.py` o directamente en este índice para saltar al rango de líneas exacto (`StartLine`/`EndLine`) sin búsquedas ciegas.
+**Propósito**: Diccionario canónico bidireccional entre las direcciones RAM, subrutinas y tablas del cartucho original de NES (`asm/src/`) y los módulos C11 puros (`include/` y `src/core/`) de la arquitectura limpia multiplataforma (Windows & Linux, Clean-Room BYOR v2).
 
 ---
 
-## 1. Mapeo Canónico de Memoria RAM ($0000..$07FF) <---> Campos C (`MjkGameState`)
+## 1. Mapeo Canónico de Memoria RAM (`$0000..$07FF`) <---> Campos C11 (`MjkGame`)
 
-| Dirección RAM | Símbolo y Línea en `asm/src/ram.asm` | Descripción / Semántica | Campo en C (`MjkGameState`) | Definición Exacta en `include/` |
+| Dirección RAM | Símbolo y Línea en `asm/src/ram.asm` | Descripción / Semántica | Campo en C11 (`MjkGame`) | Header de Definición |
 | :--- | :--- | :--- | :--- | :--- |
-| **`$0043`** | `InGameFlag` (`ram.asm:104`) | `0` = Menú/Copyright/Intro, `1` = Partida activa | `game->in_game` (`bool`) | `include/mjk_game.h:49` |
-| **`$0044`** | `GameState` (`ram.asm:108`) | Máquina de estados maestra (`0..12`) | `game->current_state` (`GameStateId`) | `include/mjk_game.h:55`, `include/mjk_types.h:65-79` |
-| **`$0045`** | `TitleScreenState` (`ram.asm:110`) | Sub-estado de la secuencia de título (`0..5`) | `game->title_screen_state` | `include/mjk_game.h:50`, `include/mjk_types.h:55-63` |
-| **`$0048`** | `PlayerScreenX` (`ram.asm:117`) | Coordenada X entera de Jack en pantalla (px) | `FIXED_TO_INT(game->jack.pos_x)` | `include/mjk_types.h:108`, `include/mjk_game.h:78` |
-| **`$004A`** | `PlayerScreenY` (`ram.asm:121`) | Coordenada Y entera de Jack en pantalla (px) | `FIXED_TO_INT(game->jack.pos_y)` | `include/mjk_types.h:109`, `include/mjk_game.h:78` |
-| **`$004C..$0053`** | `EnemyScreenY/X` (`ram.asm:126-136`) | Coordenadas en pantalla de los 4 enemigos | `game->enemy_mgr.enemies[i].pos_x/y` | `include/mjk_types.h:170-171`, `include/mjk_enemy.h:26` |
-| **`$0054`** | `byte_54` (`ram.asm:138`) | Racha/combo de transmutación de monedas (`0..6`) | `game->transmute_streak` | `include/mjk_game.h:136`, `include/mjk_enemy.h:28` |
-| **`$006A..$006B`** | `EnemyCoinTimer` (`ram.asm:172`) | Contador de transmutación Power Coin (320f) | `game->enemy_coin_timer` | `include/mjk_game.h:134` |
-| **`$0088`** | `CopyrightTimer` (`ram.asm:207`) | Temporizador de pantalla de inicio y copyright | `game->copyright_timer` | `include/mjk_game.h:51` |
-| **`$00A0..$00A3`** | `PlayerScore` (`ram.asm:240-244`) | Puntuación en BCD little-endian (4 bytes, 8 dígitos) | `game->score_bcd[4]` | `include/mjk_game.h:64` |
-| **`$00A4`** | `StageTimer` (`ram.asm:245-247`) | Temporizador regresivo en sala (BCD, empieza `$60`) | `game->stage_timer_seconds` | `include/mjk_game.h:67` |
-| **`$00A5`** | `TimerFrames` (`ram.asm:248-250`) | Sub-contador de frames del temporizador | *(interno en `mjk_state_machine.c`)* | — |
-| **`$00AE`** | `FireBombsCollected` (`ram.asm:264`) | Bombas encendidas recogidas en bomb room | `game->fire_bombs_collected` | `include/mjk_game.h:89`, `include/mjk_types.h:245` |
-| **`$00AF`** | `FireBombsCollected2` (`ram.asm:266`) | Total de bombas recogidas en bomb room (hasta 23) | `game->fire_bombs_collected_total` | `include/mjk_game.h:99`, `include/mjk_types.h:246` |
-| **`$00B1`** | `AliveEnemyCount` (`ram.asm:268-269`) | Conteo de enemigos vivos en sala (máx 4) | `game->enemy_mgr.alive_enemy_count` | `include/mjk_enemy.h` |
-| **`$00F0`** | `byte_F0` (`ram.asm:365`) | Coordenada `(Y, X)` del cofre/bloque activo | `game->chest_target_coord` | `include/mjk_game.h:128` |
-| **`$00F7`** | `byte_F7` (`ram.asm:379`) | Flag de primera bomba recogida en la sala | `game->room_bomb_picked_flag` | `include/mjk_game.h:96`, `include/mjk_types.h:242` |
-| **`$00F8`** | `MaybeBombThing` (`ram.asm:381`) | Flags: b0=starter, b1=broken, b7=bonus 10k | `game->maybe_bomb_thing` | `include/mjk_game.h:95`, `include/mjk_types.h:241` |
-| **`$0200..$02FF`** | `OAM DMA Buffer` (`ram.asm:657-912`) | Tabla de 64 sprites de hardware de la PPU | `output->oam_sprites[256]` | `include/mjk_platform.h:81` |
-| **`$0210..$0213`** | `OAM Sprite 4` (`ram.asm:673-676`) | Sprite de hardware para la Chispa de Mecha | `game->bomb_fuse.spark_sprite_*` | `include/mjk_types.h:249-254` |
-| **`$0301`** | `WaitTimer1` (`ram.asm:916`) | Contador regresivo de micro-animaciones / espera | `game->state_timer` / `jack.anim_timer` | `include/mjk_game.h:57`, `include/mjk_types.h:121` |
-| **`$0315`** | `_MaybeBlockSpawningObj` (`ram.asm:950`) | Comando de expulsión de ítem de cofre | `game->chest_spawning_cmd` | `include/mjk_game.h:129` |
-| **`$0316..$0325`** | `EnemySlots` (`ram.asm:951-980`) | Ranuras de memoria para los enemigos activos | `game->enemy_mgr.enemies[...]` | `include/mjk_enemy.h:26`, `include/mjk_game.h:83` |
-| **`$0335`** | `byte_335` (`ram.asm:996`) | Impactos restantes en bloque secreto (`1..2`) | `game->secret_block_hits_left` | `include/mjk_game.h:126`, `include/mjk_types.h:276` |
-| **`$0336`** | `byte_336` (`ram.asm:998`) | Coordenada `(Y, X)` del bloque secreto activo | `game->secret_block_active_coord` | `include/mjk_game.h:127` |
-| **`$0337`** | `MaybeDoorReturnTwiceFlag` (`ram.asm:1000`) | Dirección de animación de puerta (`$81`/`$01`) | `game->door_anim_dir` | `include/mjk_game.h:112` |
-| **`$0338`** | `byte_338` (`ram.asm:1002`) | Temporizador de animación de apertura puerta | `game->door_anim_timer` | `include/mjk_game.h:110` |
-| **`$0339`** | `byte_339` (`ram.asm:1004`) | Fase de apertura de puerta (`0, 1, 2`) | `game->door_anim_phase` | `include/mjk_game.h:111` |
-| **`$033B`** | `EntryDoorType` (`ram.asm:1007`) | Tipo de puerta por donde entró Jack (`0..15`) | `game->entry_door_type` | `include/mjk_game.h:109` |
-| **`$0356`** | `MaybeTempCollectableFlag2` (`ram.asm:1044`) | Contador acumulador de bombas hacia Power Coin | `game->power_coin_bomb_counter` | `include/mjk_game.h:97`, `include/mjk_types.h:243` |
-| **`$0357`** | `MaybeTempCollectableFlag` (`ram.asm:1046`) | Flag de disparo de Power Coin en cofre (`0, 1, 3`) | `game->power_coin_trigger_flag` | `include/mjk_game.h:98`, `include/mjk_types.h:244` |
-| **`$0366`** | `GoldCoinsCollected` (`ram.asm:1069`) | Monedas de oro acumuladas (hasta 40) | `game->gold_coins_collected` | `include/mjk_game.h:137` |
-| **`$0376`** | `Collected1UPThisRoundFlag` (`ram.asm:1095`) | Flag de vida extra recogida en la ronda actual | `game->collected_1up_this_round` | `include/mjk_game.h:130` |
-| **`$0391`** | `PlayerCrystalBallsCollected` (`ram.asm:1128-1129`) | Bolas de cristal recogidas | `game->crystal_balls_collected` *(comentario antiguo decía `$03DC`)* | `include/mjk_game.h:72` |
-| **`$0393`** | `DoorIsAnimatingMaybe` (`ram.asm:1133`) | Flag booleano de puerta en mutación gráfica | `game->door_is_animating` | `include/mjk_game.h:113` |
-| **`$0395`** | `DoorCheckFlag_1E_DeathCount` (`ram.asm:1137`) | Contador de muertes para condición puerta `0x1E` | `game->door_check_flag_1e_deaths` | `include/mjk_game.h:117` |
-| **`$0396`** | `GreedJumpTimer` (`ram.asm:1140`) | Contador de penalización y codicia (Tortura) | `game->greed_jump_counter` | `include/mjk_game.h:149` |
-| **`$0397`** | `DoorCheckFlag_19_1A` (`ram.asm:1143`) | Flag de salto en bloque para puerta `0x19`/`0x1A` | `game->door_check_flag_19_1a` | `include/mjk_game.h:119` |
-| **`$0399`** | `DoorCheckFlag_1F` (`ram.asm:1147`) | Flag de paso de tiempo para puerta `0x1F` | `game->door_check_flag_1f` | `include/mjk_game.h:118` |
-| **`$039A`** | `DoorCheckFlag_09` (`ram.asm:1149`) | Flag de recogida para condición de puerta `0x09` | `game->door_check_flag_09` | `include/mjk_game.h:116` |
-| **`$03BF`** | `CurrentRoomID` (`ram.asm:1194`) | Identificador de la sala activa (`0..256`) | `game->current_room` | `include/mjk_game.h:61`, `include/mjk_camera.h:50` |
-| **`$03C0`** | `CheckpointRoomIDMaybe` (`ram.asm:1195-1196`) | Sala checkpoint para retorno de Torture Room | `game->checkpoint_room_id` | `include/mjk_game.h:73` |
-| **`$03C2`** | `byte_3C2` / `ScrollX` (`ram.asm:1200`) | Píxel entero de scroll horizontal de cámara | `game->camera_x` / `scroll_x_fixed` | `include/mjk_game.h:144`, `include/mjk_camera.h:54` |
-| **`$03D8`** | `PlayerWorldX` (`ram.asm:1243`) | Coordenada X mundo de Jack (8 bits enteros) | `FIXED_TO_INT(game->jack.pos_x)` | `include/mjk_types.h:108` |
-| **`$03D9`** | `PlayerWorldY` (`ram.asm:1245`) | Coordenada Y mundo de Jack (8 bits enteros) | `FIXED_TO_INT(game->jack.pos_y)` | `include/mjk_types.h:109` |
-| **`$03DA`** | `PlayerSubX` (`ram.asm:1246`) | Acumulador de subpíxel horizontal de Jack | `(game->jack.pos_x & 0x0F)` | `include/mjk_types.h:108` |
-| **`$03DB`** | `PlayerSubY` (`ram.asm:1247`) | Acumulador de subpíxel vertical de Jack | `(game->jack.pos_y & 0x0F)` | `include/mjk_types.h:109` |
-| **`$03E0`** | `PlayerMightyLevel` (`ram.asm:1255-1256`) | Nivel Mighty actual (`0..3`) | `game->jack.mighty_level` | `include/mjk_types.h` |
-| **`$03E2`** | `PlayerMightyCoins` (`ram.asm:1259-1260`) | Monedas Mighty acumuladas | `game->mighty_coins` | `include/mjk_game.h:65` |
-| **`$03E3`** | `ScoreMultiplier` (`ram.asm:1261-1262`) | Multiplicador de puntuación en Bomb Room (`0..4`) | *(verificar en C; nota: `extra_lives_found` comentaba `$03E3`)* | — |
-| **`$03E4`** | `PlayerLives` (`ram.asm:1264`) | Contador de vidas del jugador (`0..9`) | `game->lives_count` | `include/mjk_game.h:62` |
-| **`$0600..$0682`** | `RoomDataRAM` (`ram.asm:1843-1973`) | Persistencia de objetos de las salas de sección | `game->room_data_ram.slots[8]` | `include/mjk_room_data.h:61`, `include/mjk_game.h:131` |
-| **`$0786..$078D`** | `BombPuffSlots` (`ram.asm:2244-2251`) | Efectos visuales de recogida de bombas (humo) | `game->bomb_puffs[8]` | `include/mjk_game.h:101` |
+| **`$0043`** | `InGameFlag` (`ram.asm:104`) | `0` = Título/Copyright, `1` = Partida activa | `game->top_mode` (`MjkTopMode`) | `include/mjk_game.h:34`, `include/mjk_types.h:157-160` |
+| **`$0044`** | `GameState` (`ram.asm:108`) | Máquina de estados maestra (`0..$C`) | `game->state` (`MjkGameState`) | `include/mjk_game.h:35`, `include/mjk_types.h:163-177` |
+| **`$0045`** | `TitleScreenState` (`ram.asm:110`) | Subestado de Copyright/Título/Caída (`REV_US`) | `game->title.state` (`MjkTitleState`) | `include/mjk_title.h`, `include/mjk_types.h:180-186` |
+| **`$0088`** | `CopyrightTimer` (`ram.asm:207`) | Temporizador Copyright (256f) / Título (512f) | `game->title.timer` (`uint16_t`) | `include/mjk_title.h` |
+| **`$009B`/`$009C`** | `HighGDV` / `PlayerGDV` (`ram.asm:233-235`) | GDV récord y actual en BCD (inicia `$47`) | `game->high_gdv_bcd` / `game->gdv_bcd` | `include/mjk_game.h:60-61` |
+| **`$00A0..$00A3`** | `PlayerScore` (`ram.asm:240-244`) | Puntuación BCD little-endian (4 bytes, 8 dígitos) | `game->score_bcd[4]` | `include/mjk_game.h:62` |
+| **`$00A4`** | `StageTimer` (`ram.asm:245-247`) | Temporizador de fase en BCD (inicia `$60`) | `game->stage_timer_bcd` | `include/mjk_game.h:64` |
+| **`$00A5`** | `TimerFrames` (`ram.asm:248-250`) | Divisor de reloj de 256 frames | `game->timer_frames` (`uint16_t`) | `include/mjk_game.h:65` |
+| **`$00AE`/`$00AF`** | `FireBombsCollected` / `2` (`ram.asm:264-266`) | Bombas encendidas y total en Bomb Room (23) | `game->fire_bombs_collected` / `objects.fire_bombs_total` | `include/mjk_game.h:73`, `include/mjk_objects.h` |
+| **`$00B1`** | `AliveEnemyCount` (`ram.asm:268-269`) | Monstruos vivos simultáneos (máx. 4) | `game->enemies.alive_count` | `include/mjk_enemy.h` |
+| **`$00BC`** | `RoomStatusFlags` (`ram.asm:283`) | Flags `RF_*` (Horizontal, SingleScreen, BombRoom, ScrollEdge) | `game->camera.room_flags` | `include/mjk_camera.h`, `include/mjk_types.h:189-198` |
+| **`$00F7`/`$00F8`** | `byte_F7` / `MaybeBombThing` (`ram.asm:379-381`) | Cadena de bombas y bonus perfecto 10.000 pts | `game->objects.first_bomb_picked` / `maybe_bomb_thing` | `include/mjk_objects.h` |
+| **`$00FA`** | `APressCounter` (`ram.asm:386`) | Contador de pulsaciones `A` para mutación `(A%6)+2` | `game->player.a_press_counter` | `include/mjk_player.h` |
+| **`$006A..$006B`** | `EnemyCoinTimer` (`ram.asm:172`) | Temporizador de transmutación Power Coin (320f) | `game->enemies.transmute_timer` | `include/mjk_enemy.h` |
+| **`$0200..$02FF`** | `SpriteDMAArea` (`ram.asm:656-912`) | Tabla OAM de 64 sprites hardware (4 B/sprite) | `game->ppu.oam[64]` (`MjkOamEntry`) | `include/mjk_ppu.h` |
+| **`$033B`/`$033D`/`$033F`** | `EntryDoorType` + backups (`ram.asm:1006-1014`) | Puerta de entrada activa y respaldos de checkpoint/Torture | `game->entry_door_type` / `entry_door_backup` / `torture_return_door_type` | `include/mjk_game.h:55-57` |
+| **`$0356`/`$0357`** | `MaybeTempCollectableFlag2/1` (`ram.asm:1044-1046`) | Acumulador de 20 bombas y bandera Power Coin armada | `game->objects.power_coin_acc` / `power_coin_armed` | `include/mjk_objects.h` |
+| **`$0366`** | `GoldCoinsCollected` (`ram.asm:1069`) | Monedas de oro acumuladas (40 -> Extra Coin 1UP) | `game->gold_coins` | `include/mjk_game.h:77` |
+| **`$0376`** | `Collected1UPThisRoundFlag` (`ram.asm:1095`) | Flag de 1UP obtenido en la ronda | `game->collected_1up` | `include/mjk_game.h:78` |
+| **`$0391`** | `PlayerCrystalBallsCollected` (`ram.asm:1128`) | Máscara de Bolas de Cristal (bit 0/1 -> Finales 1/2) | `game->crystal_balls_mask` | `include/mjk_game.h:75` |
+| **`$0395`/`$0399`/`$039A`** | `DoorCheckFlag_1E/1F/09` (`ram.asm:1137-1149`) | Flags persistentes de puertas warp (`1E`, `1F`, `09`) | `game->door_1e_deaths` / `door_flag_1f` / `door_flag_09` | `include/mjk_game.h:48-50` |
+| **`$03BF`/`$03C0`/`$033E`** | `CurrentRoomID` / `Checkpoint` (`ram.asm:1194-1196`) | Sala activa (`0x00..0xFF`), checkpoint y retorno Torture | `game->current_room_id` / `checkpoint_room_id` / `torture_return_room_id` | `include/mjk_game.h:52-54` |
+| **`$03C1..$03C4`** | `ScrollX/Y` Q8.8 (`ram.asm:1198-1203`) | Coordenadas de scroll horizontal/vertical de cámara | `game->camera.scroll_x_fixed` / `scroll_y_fixed` | `include/mjk_camera.h` |
+| **`$03CE..$03DF`** | `PlayerStruct` (`ram.asm:1223-1254`) | Posición/velocidad Q8.8, colisiones 9-probe, sprite y dirección | `game->player` (`MjkPlayer`) | `include/mjk_player.h` |
+| **`$03E0..$03E4`** | `MightyLevel/Presses/Coins/Mult/Lives` (`ram.asm:1255-1265`) | Poder Mighty `0..3`, monedas, multiplicador `x2..x5` y vidas | `game->mighty_level`, `mighty_presses_left`, `mighty_coins`, `score_multiplier`, `lives` | `include/mjk_game.h:59, 68-71` |
+| **`$03E5`** | `PlayerSecretCoins` (`ram.asm:1266`) | Secret Coins acumuladas (`>= 5` -> Final 3) | `game->secret_coins` | `include/mjk_game.h:76` |
+| **`$03E6..$03E7`** | `byte_3E6`/`byte_3E7` (`ram.asm:1268-1270`) | Acumulador Q8.8 de la tabla de salto de 64 pasos | `game->player.jump_accum` | `include/mjk_player.h` |
+| **`$0452..$0511`** | `SoundChannelA_Mus0..Sfx3` (`music-engine.asm:793-801`) | 8 canales virtuales de audio (4 BGM + 4 SFX) | `game->apu.channels[8]` (`MjkApuChannel`) | `include/mjk_apu.h:61-80` |
+| **`$05E3..$0602`** | `PaletteBuffer` (`ram.asm:1813-1845`) | 32 bytes de paletas PPU BG + Sprites | `game->ppu.palette_ram[32]` | `include/mjk_ppu.h` |
+| **`$0603..$0692`** | `RoomDataRAM` + `byte_683` (`ram.asm:1846-1990`) | Persistencia de 8 slots de sección + 1 slot scratch | `game->persist` (`MjkRoomPersistRam`) | `include/mjk_room_decoder.h` |
+| **`$0786..$078D`** | `BombPuffSlots` (`ram.asm:2244-2251`) | Animación puff de bomba en 2 fases (32f + 32f) | `game->objects.puff` (`MjkBombPuff`) | `include/mjk_objects.h` |
 
 ---
 
-## 2. Mapeo de Subrutinas 6502 (`asm/src/prg.asm`) <---> Funciones en C (`src/core/`)
+## 2. Mapeo de Subrutinas 6502 (`asm/src/`) <---> Módulos C11 (`src/core/`)
 
-### 2.1. Núcleo, Flujo Principal y Máquina de Estados (CTR-01)
-| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C Equivalente | Archivo y Líneas en `src/core/` |
+### 2.1. Núcleo, Título y Máquina de Estados
+| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C11 Equivalente | Archivo en `src/core/` |
 | :--- | :--- | :--- | :--- |
-| `RESET` | `prg.asm:8-83` | `MjkGame_Init` | `src/core/mjk_game.c:1366-1435` |
-| `NMI` | `prg.asm:91-126` | `MjkGame_SimulateFrame` | `src/core/mjk_game.c:1499-1652` |
-| `HandlePPUUpdates` | `prg.asm:127-240` | `RenderInGameScreen` / `MjkPPU_BlitMetatile` | `src/core/mjk_game.c:751-1364`, `src/core/mjk_ppu.c:90-100` |
-| `MainLogicHandler` | `prg.asm:290-299` | Despacho `in_game` en `MjkGame_SimulateFrame` | `src/core/mjk_game.c:1505-1620` |
-| `GameHandler` | `prg.asm:300-322` | `MjkGame_ExecuteState` | `src/core/mjk_state_machine.c:883-908` |
-| `GameState_0_Init` | `prg.asm:323-364` | `State_0_Init` | `src/core/mjk_state_machine.c:23-36` |
-| `InitPlayerStruct` | `prg.asm:365-378` | `Jack_Init` | `src/core/mjk_player.c:69-101` |
-| `GameState_1_RoundIntro` | `prg.asm:7663-7681` | `State_1_RoundIntro` | `src/core/mjk_state_machine.c:38-52` |
-| `GameState_2_LoadRoom` | `prg.asm:3130-3256` | `State_2_LoadRoom` | `src/core/mjk_state_machine.c:355-436` |
-| `GameState_3_DrawScreen` | `prg.asm:379-444` | `State_3_DrawScreen` | `src/core/mjk_state_machine.c:438-451` |
-| `GameState_4_EnterRoom` | `prg.asm:445-626` | `State_4_EnterRoom` | `src/core/mjk_state_machine.c:453-474` |
-| `GameState_5_Main` | `prg.asm:647-671` | `State_5_MainLoop` | `src/core/mjk_state_machine.c:476-698` |
-| `GameState_6_TimeOver` | `prg.asm:672-697` | `State_6_TimeOver` | `src/core/mjk_state_machine.c:700-712` |
-| `GameState_7_GoToTortureRoom` | `prg.asm:698-775` | `State_7_TortureRoom` | `src/core/mjk_state_machine.c:714-755` |
-| `GameState_8_RoundClear` | `prg.asm:776-1037` | `State_8_RoundClear` | `src/core/mjk_state_machine.c:757-775` |
-| `GameState_9_ExitRoom` | `prg.asm:7294-7375` | `State_9_ExitRoom` | `src/core/mjk_state_machine.c:777-814` |
-| `GameState_A_GameOver` | `prg.asm:1038-1094` | `State_A_GameOver` | `src/core/mjk_state_machine.c:816-835` |
-| `GameState_B_AnimateDoorOpen` | `prg.asm:1122-1134` | `State_B_AnimateDoorOpen` | `src/core/mjk_state_machine.c:837-861` |
-| `GameState_C_Ending` | `prg.asm:7706-7927` | `State_C_Ending` | `src/core/mjk_state_machine.c:863-881` |
-| `TitleScreenHandler` | `prg.asm:7473-7662` | `RenderTitleScreen` / Bloque Título | `src/core/mjk_game.c:502-559`, `src/core/mjk_game.c:1506-1590` |
-| `DrawFullScreen` | `prg.asm:2724-2768` | `MjkRoom_BuildNametable` / Renderizado de sala | `src/core/mjk_room_decoder.c:80-133` |
+| `RESET` / `NMI` | `prg.asm:8-126` | `MjkGame_Init` / `MjkGame_StepFrame` / `MjkGame_Render` | `src/core/mjk_state_machine.c` |
+| `TitleScreenHandler` (`US_0/1`, `0..3`) | `prg.asm:7473-7660` | `MjkTitle_Init` / `MjkTitle_Step` | `src/core/mjk_title.c` |
+| `GameState_0_Init`..`5_Main`, `6`, `7`, `9`, `B` | `prg.asm:323-775, 1122-1163, 7294-7372` | `MjkGame_StepFrame`, `MjkGame_ExitRoom`, `MjkGame_LoseLife`, `MjkGame_TriggerTortureRoom` | `src/core/mjk_state_machine.c` |
+| `GameState_8_RoundClear`, `A_GameOver`, `C_Ending` | `prg.asm:776-1091, 7706-7924` | `MjkState_StepRoundClear`, `MjkState_StepGameOver`, `MjkState_StepEnding` | `src/core/mjk_end_screens.c` |
 
-### 2.2. Cinemática, Física de Jack y Colisiones 9-Probe (CTR-02)
-| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C Equivalente | Archivo y Líneas en `src/core/` |
+### 2.2. PPU 2C02, Metasprites y Decodificador 4-Tier de 256 Salas
+| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C11 Equivalente | Archivo en `src/core/` |
 | :--- | :--- | :--- | :--- |
-| `MainSub_1` | `prg.asm:1304-1639` | `Jack_Update` / `Jack_UpdateMultiRoom` | `src/core/mjk_player.c:513-538` |
-| `SetPlayerVelocityFromX` | `prg.asm:627-646` | `Jack_UpdateHorizontalVelocity` | `src/core/mjk_player.c:103-155` |
-| `ApplyPlayerXAndYVelocity` | `prg.asm:1713-1744` | `Jack_UpdateVerticalPhysics` | `src/core/mjk_player.c:157-246` |
-| `BigBeefySubHandlesBGColliding` | `prg.asm:4615-4859` | `mjk_player_update_collision` / `Jack_ResolveCollisions` | `src/core/mjk_player.c:373-511` |
-| `DrawPlayer` | `prg.asm:1640-1657` | `Jack_DetermineSprite` / `Jack_AssembleMetasprite` | `src/core/mjk_player.c:540-649` |
-| `ClearFourSpritesInY` | `prg.asm:2033-2049` | Ocultar Jack de OAM en salida de sala | `src/core/mjk_game.c:1215-1230` |
-| `UseMightyCoin` | `prg.asm:1745-1773` | `mjk_player_use_mighty_coin` / `mjk_game_use_mighty_coin` | `src/core/mjk_player.c:693-708`, `src/core/mjk_game.c:1654-1667` |
-| `UpdateMightyPalette` | `prg.asm:1774-1782` | `MjkGame_UpdateJackPalette` | `src/core/mjk_game.c:47-64` |
+| `RestoreDefaultPalettes` / `LoadRoomPalette` | `prg.asm:1937-1950, 2389-2432` | `MjkPpu_RestoreDefaultPalettes` / `MjkPpu_LoadRoomPalette` | `src/core/mjk_ppu.c` |
+| `WriteSprite` / `WriteStringToPPU` | `prg.asm:2050-2087, 2267-2374` | `MjkPpu_WriteMetasprite` / `MjkPpu_WriteString` / `MjkPpu_RenderFrame` | `src/core/mjk_ppu.c` |
+| `LoadRoomStuff` / `HandleDrawHalfRow` / `DrawFullScreen` | `prg.asm:2630-2925` | `MjkRoom_DecodeGeometry` / `MjkRoom_BlitToPpu` | `src/core/mjk_room_decoder.c` |
+| `GameState_2_LoadRoom` / `ReadRoomData` / `sub_9592` | `prg.asm:3130-3680` | `MjkRoom_PreloadSection` / `MjkRoom_DecodeObjects` | `src/core/mjk_room_decoder.c` |
 
-### 2.3. Decodificador de Salas, Puertas, Bombas y Cofres (CTR-03)
-| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C Equivalente | Archivo y Líneas en `src/core/` |
+### 2.3. Física de Jack, Colisiones 9-Probe y Cámara
+| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C11 Equivalente | Archivo en `src/core/` |
 | :--- | :--- | :--- | :--- |
-| `LoadRoomStuff` / `HandleDrawHalfRow` | `prg.asm:2630-2723` | `MjkRoom_DecodeGeometry` | `src/core/mjk_room_decoder.c:14-57` |
-| `ReadRoomData` / `LoadRoomData` | `prg.asm:3257-3540` | `MjkRoom_ReadRoomData` / `MjkRoom_LoadWithRAM` | `src/core/mjk_room_decoder.c:683-820`, `src/core/mjk_room_decoder.c:946-1068` |
-| `CheckAndMaybeOpenDoor` | `prg.asm:6741-7009` | `MjkRoom_CheckDoorCondition` | `src/core/mjk_room_decoder.c:280-369` |
-| `HandleOpenDoorMaybe` | `prg.asm:7030-7091` | `MjkRoom_HandleOpenDoorMaybe` | `src/core/mjk_room_decoder.c:240-273` |
-| `OpenBombRoomDoor` | `prg.asm:5352-5368` | `MjkRoom_OpenBombRoomDoor` | `src/core/mjk_room_decoder.c:275-278` |
-| `AnimateDoor` / `AnimateDoorOpen` | `prg.asm:2157-2179`, `7219-7293` | `State_B_AnimateDoorOpen` / `BlitCanonicalRoomDoors` | `src/core/mjk_state_machine.c:837-861`, `src/core/mjk_game.c:561-650` |
-| `JTPickup_Bomb` | `prg.asm:4970-5167` | `MjkRoom_CollectBombCanonical` | `src/core/mjk_room_decoder.c:473-681` |
-| `MaybeOpenHiddenBlock` | `prg.asm:5392-5461` | `MjkGame_OpenChest` | `src/core/mjk_game.c:80-139` |
-| `JTPickup_Chest` / `JTPickup_Chest2` | `prg.asm:5259-5311` | `MjkGame_HitChestFromBelow` / `MjkGame_HitSecretBlock` | `src/core/mjk_game.c:141-188` |
-| `MaybePickupItem` / `HandleCollectedItem` | `prg.asm:3999-4135`, `4860-5258` | `MjkGame_CollectChestItem` | `src/core/mjk_game.c:190-292` |
-| `sub_A270` / `sub_A29C` | `prg.asm:5647-5750` | `MjkGame_SpawnBombPuff` / `MjkGame_UpdateBombPuffs` | `src/core/mjk_room_decoder.c:425-467` |
+| `MainSub_1` / `DoSomethingWithObjYVel` / `sub_8AE8` | `prg.asm:1304-1744` | `MjkPlayer_Init` / `MjkPlayer_Update` | `src/core/mjk_player.c` |
+| `sub_9965` / `sub_9A03` / `sub_9B6A` / `sub_A1B9` / `sub_A1EB` | `prg.asm:4152-4611, 5530-5609` | `is_probe_solid` (sobre `static_metatiles`) en `MjkPlayer_Update` | `src/core/mjk_player.c` |
+| `MainSub_3` / `sub_A843` | `prg.asm:5906-6534` | `MjkCamera_InitForRoom` / `MjkCamera_Update` | `src/core/mjk_camera.c` |
 
-### 2.4. IA de Enemigos, Spawns y Power Coins (CTR-04)
-| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C Equivalente | Archivo y Líneas en `src/core/` |
+### 2.4. Bombas, Cofres, Puertas, Enemigos y HUD
+| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C11 Equivalente | Archivo en `src/core/` |
 | :--- | :--- | :--- | :--- |
-| `HandleEnemySpawnTimer` / `InitEnemy` | `prg.asm:8171-8312` | `MjkEnemy_Init` / `MjkEnemy_TickSpawning` | `src/core/mjk_enemy.c:104-118`, `src/core/mjk_enemy.c:150-192` |
-| `ChooseEnemySpawnPoint` | `prg.asm:8689-8827` | `MjkEnemy_Spawn` | `src/core/mjk_enemy.c:124-148` |
-| `RunEnemyLogic` | `prg.asm:8458-8659` | `MjkEnemy_UpdateAll` | `src/core/mjk_enemy.c:214-484` |
-| `TransformMummy` | `prg.asm:9362-9381` | `MjkEnemy_MutateMummy` | `src/core/mjk_enemy.c:194-206` |
-| `CheckObjectCollision` | `prg.asm:3959-3998` | `MjkEnemy_CheckJackCollisions` | `src/core/mjk_enemy.c:486-540` |
-| `SpawnPowerCoin` / `TurnEnemiesIntoCoins` | `prg.asm:8978-9046` | `MjkEnemy_ActivatePowerCoin` / `mjk_game_activate_power_coin` | `src/core/mjk_enemy.c:208-212`, `src/core/mjk_game.c:1669-1702` |
+| `JTPickup_Bomb` / `sub_A270` / `sub_A29C` | `prg.asm:4970-5165, 5647-5747` | `collect_bomb` / `MjkObjects_Update` / `MjkObjects_RenderOam` | `src/core/mjk_objects.c` |
+| `JTPickup_Chest` / `MaybeOpenHiddenBlock` / `UseMightyCoin` | `prg.asm:1745-1782, 4860-5461` | `open_chest` / `pickup_item` / `MjkObjects_UseMightyCoin` | `src/core/mjk_objects.c` |
+| `MaybeHandleDoorOpening` / `CheckAndMaybeOpenDoor` / `JTPickup_Door` | `prg.asm:5312-5368, 6696-7091` | `MjkDoors_EvaluateCondition` / `MjkDoors_OpenRoomDoor` / `MjkDoors_CheckPlayerEntry` | `src/core/mjk_doors.c` |
+| `HandleEnemySpawnTimer` / `RunEnemyLogic` / `TransformMummy` / `TurnEnemiesIntoCoins` | `prg.asm:8171-9575` | `MjkEnemy_InitForRoom` / `MjkEnemy_UpdateAll` / `MjkEnemy_ActivatePowerCoin` / `MjkEnemy_RenderOam` | `src/core/mjk_enemy.c` |
+| `AddScore` / `HandleStageTimer` / `DrawScoreAndCoinCount` / `sub_8FB1` | `prg.asm:1191-1237, 1783-1933, 2436-2573` | `MjkHud_AddScore` / `MjkHud_TickStageTimer` / `MjkHud_SpawnFloatingScore` / `MjkHud_RenderOam` | `src/core/mjk_hud.c` |
 
-### 2.5. HUD, Aritmética BCD, Codicia y Finales (CTR-05)
-| Subrutina 6502 | Líneas en `asm/src/prg.asm` | Función C Equivalente | Archivo y Líneas en `src/core/` |
+### 2.5. Audio APU 2A03 y Verificación Externa (Capa 2)
+| Subrutina 6502 / Capa | Referencia | Función C11 Equivalente | Archivo en `src/core/` |
 | :--- | :--- | :--- | :--- |
-| `AddAToGDV` | `prg.asm:1095-1105` | `MjkGame_AddAToGDV` / `MjkHUD_UpdateGDV` | `src/core/mjk_game.c:1758-1769`, `src/core/mjk_hud.c:81-94` |
-| `BCDCheckFirstDigit` / `AddScore` | `prg.asm:1106-1121`, `2436-2550` | `MjkBCD_AddByte` / `MjkBCD_AddScore` | `src/core/mjk_hud.c:13-31`, `src/core/mjk_hud.c:49-79` |
-| `BCDSub1FromA` / `HandleStageTimer` | `prg.asm:1191-1237`, `2111-2128` | `MjkBCD_Sub1` | `src/core/mjk_hud.c:33-47` |
-| `EndingDoorChecks` | `prg.asm:7376-7427` | `MjkGame_EvaluateEnding` / `MjkHUD_EvaluateEnding` | `src/core/mjk_game.c:1805-1822`, `src/core/mjk_hud.c:96-111` |
-| `GoToTheTortureRoom` | `prg.asm:4957-4969` | `MjkGame_TriggerTortureRoom` | `src/core/mjk_game.c:1824-1840` |
+| Hardware 2A03 (`$4000-$4015`) | NTSC `1789772.5 Hz` | `MjkApuSynth_Init`, `MjkApuSynth_ClockSweep`, `MjkApuSynth_RenderSamples` | `src/core/mjk_apu_synth.c` |
+| `HandleSound` / `HandleSoundQueue` / `HandleSoundChannel` | `asm/src/music-engine.asm:1-810` | `MjkApu_Init`, `MjkApu_QueueSound`, `MjkApu_StepFrame` | `src/core/mjk_apu.c` |
+| API de Verificación Headless (`ctypes` Capa 2) | `tools/verify_scenarios.py` | `MjkVerify_Create`, `MjkVerify_StepFrame`, `MjkVerify_GetSnapshot` | `src/core/mjk_verify_api.c` |
 
 ---
 
-## 3. Mapeo de Tablas de Datos ROM (`asm/src/data.asm` y `prg.asm`) <---> Tablas en C (`src/core/`)
+## 3. Resolución Clean-Room BYOR v2 de Tablas ROM (`assets.dat` v2)
 
-| Tabla en Ensamblador | Archivo y Líneas ASM | Tabla en C Equivalente | Archivo y Líneas en `src/core/` | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| `SpriteAnimationTable` | `asm/src/data.asm:6-95` | Tablas de sprites de enemigos y Jack | `src/core/mjk_enemy.c:15-75`, `src/core/mjk_player.c:15-67` | Secuencias de tiles CHR y atributos de animación |
-| `DifficultyTable` | `asm/src/data.asm:116-168` | `s_difficulty_table[16]` | `src/core/mjk_enemy.c:77-102` | Cadencias de spawn, velocidad y mutación por ronda |
-| `MainPalette` / `BackgroundPaletteSets` | `asm/src/data.asm:258-305` | `MjkRoom_LoadAuthenticPalettes` | `src/core/mjk_room_decoder.c:135-165` | Paletas de hardware PPU de fondo y sprites |
-| `DoorEntryXYPositionTable` | `asm/src/data.asm:322-339` | `g_door_entry_xy_table[16]` | `src/core/mjk_room_data.c:1601-1662` | Coordenadas mundo `(X, Y)` de spawn de Jack al entrar |
-| `DoorPositionTileTable` | `asm/src/prg.asm:3823-3839` | `g_door_position_tile_table[16]` | `src/core/mjk_room_data.c:1581-1599` | Coordenadas en rejilla y metatiles cerrado/abierto |
-| `AdjacentRoomsTable` | `asm/src/data.asm:1704-1962` | `g_adjacent_rooms[257]` | `src/core/mjk_room_data.c:820-1319` | Matriz topológica 257x4 de conexión entre salas |
-| `EnemySpawnPositionTable` | `asm/src/data.asm:1963-2226` | Tabla de puntos de spawn | `src/core/mjk_enemy.c:124-188` | Puntos canónicos de nacimiento de momias y pájaros |
-| `RoomDataPointers` | `asm/src/data.asm:2227-2485` | `g_room_data_table[256]` | `src/core/mjk_room_data.c:1321-1579` | Punteros al bytecode de objetos de las salas |
-| `MetatileDefinitions` | `asm/src/data.asm:1100-1703` | `g_metatile_definitions[154]` | `src/core/mjk_room_data.c:663-818` | Matriz 2x2 de tiles CHR por cada metatile 16x16 |
+Ninguna tabla con datos propietarios de Tecmo se incluye en el código fuente C. Todos los bloques se extraen en tiempo de ejecución desde `mbj-us.nes` (`SHA-1: a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`) mediante `src/core/mjk_rom_extractor.c` hacia `assets/assets.dat` v2 y se consultan por dirección CPU original mediante `MjkAssets_ResolveCpuPtr` (`include/mjk_assets.h`):
 
----
-
-## 4. Protocolo de Consulta de Bajo Coste (Neon + Hydrogen)
-
-Para evitar divagaciones y ahorrar tokens al diseñar o verificar un subsistema:
-
-1. **Paso 1 (`tools/asm_query.py`)**: Ejecutar `python tools/asm_query.py --ram <dir|nombre>` o `--sub <rutina>` o `--table <tabla>` para obtener líneas exactas y dependencias R/W sin explorar archivos completos.
-2. **Paso 2 (Este índice / Contratos)**: Consultar aquí la equivalencia exacta en `asm/src/` y `research/contracts/`.
-3. **Paso 3 (Lectura acotada)**: Usar `read_file` con `StartLine` y `EndLine` exactos sobre `asm/src/` y `src/core/`.
-4. **Paso 4 (Verificación en 3 Capas)**: Compilar con CMake, correr `ctest --test-dir build --output-on-failure` y contrastar con `python tools/nes_oracle.py` si hace falta observar la ROM.
+| Tabla ROM (`asm/src/`) | Dirección CPU | Macro en `include/mjk_assets.h` | Módulo Consumidor |
+| :--- | :---: | :--- | :--- |
+| `NoteFrequencyTable` (`music-engine.asm:776`) | `$B3FD` | `MJK_ADDR_NOTE_FREQ_TABLE` | `src/core/mjk_apu.c` |
+| `SpriteAnimationTable` (`data.asm:6`) | `$BEAE` | `MJK_ADDR_SPRITE_ANIM_TABLE` | `src/core/mjk_enemy.c` |
+| `DifficultyTable` (`data.asm:116`) | `$BF58` | `MJK_ADDR_DIFFICULTY_TABLE` | `src/core/mjk_enemy.c` |
+| `word_C0E3` / `word_C163` (`data.asm:187-256`) | `$BFB0` / `$C030` | `MJK_ADDR_JUMP_TABLE_C0E3` / `MJK_ADDR_VEL_X_TABLE_C163` | `src/core/mjk_player.c`, `mjk_title.c` |
+| `MainPalette` / `BackgroundPaletteSets` (`data.asm:258-305`) | `$C038` / `$C058` | `MJK_ADDR_MAIN_PALETTE` / `MJK_ADDR_BG_PALETTE_SETS` | `src/core/mjk_ppu.c` |
+| `MightyLevelColors` / `MightyLevelAPressesTable` (`data.asm:306-310`) | `$C0C4` / `$C0C8` | `MJK_ADDR_MIGHTY_COLORS` / `MJK_ADDR_MIGHTY_A_PRESSES` | `src/core/mjk_objects.c`, `mjk_player.c` |
+| `MusicOptionsTable` / `DoorEntryXYPositionTable` / `VectorTable` | `$C0CC` / `$C0D4` / `$C0F4` | `MJK_ADDR_MUSIC_OPTIONS` / `MJK_ADDR_DOOR_ENTRY_XY` / `MJK_ADDR_VECTOR_TABLE` | `src/core/mjk_state_machine.c` |
+| `SpritesTable` / `SpriteAttributeTable` (`data.asm:364, 588`) | `$C11C` / `$C4D9` | `MJK_ADDR_SPRITES_TABLE` / `MJK_ADDR_SPRITE_ATTR_TABLE` | `src/core/mjk_ppu.c` |
+| `StringPointerTable` (`data.asm:414`) | `$C202` | `MJK_ADDR_STRING_PTR_TABLE` | `src/core/mjk_assets.c`, `mjk_ppu.c` |
+| `TileAttributeTable` / `SectionRoomsTable` (`data.asm:598, 640`) | `$C4E1` / `$C509` | `MJK_ADDR_TILE_ATTR_TABLE` / `MJK_ADDR_SECTION_ROOMS_TBL` | `src/core/mjk_room_decoder.c` |
+| `FireBombBonus` / `MultipliedScoreTable` / `ScoreAddTable` | `$C646` / `$C64A` / `$C66A` | `MJK_ADDR_FIRE_BOMB_BONUS` / `MJK_ADDR_MULTIPLIED_SCORE` / `MJK_ADDR_SCORE_ADD_TABLE` | `src/core/mjk_hud.c`, `mjk_end_screens.c` |
+| `ItemToTileTable` / `RoomHalfScreens` / `HalfScreenLayouts` | `$C6AA` / `$C6CA` / `$C8CA` | `MJK_ADDR_ITEM_TO_TILE` / `MJK_ADDR_ROOM_HALF_SCREENS` / `MJK_ADDR_HALF_SCREEN_LAYTS` | `src/core/mjk_room_decoder.c`, `mjk_objects.c` |
+| `LayoutChunks` / `MetatileDefinitions` / `AdjacentRoomsTable` | `$D0EA` / `$D7AA` / `$DA0E` | `MJK_ADDR_LAYOUT_CHUNKS` / `MJK_ADDR_METATILE_DEFS` / `MJK_ADDR_ADJACENT_ROOMS` | `src/core/mjk_room_decoder.c`, `mjk_camera.c` |
+| `EnemySpawnPositionTable` / `RoomDataPointers` (`data.asm:1963, 2227`) | `$DF0E` / `$F1A0` | `MJK_ADDR_ENEMY_SPAWN_POS` / `MJK_ADDR_ROOM_DATA_PTRS` | `src/core/mjk_enemy.c`, `mjk_assets.c` |
+| `NoteLengthTable` / `SoundVolTable` / `SoundPointers` (`music-data.asm`) | `$F39E` / `$F3BE` / `$F45C` | `MJK_ADDR_NOTE_LENGTH_TABLE` / `MJK_ADDR_SOUND_VOL_TABLE` / `MJK_ADDR_SOUND_POINTERS` | `src/core/mjk_apu.c` |

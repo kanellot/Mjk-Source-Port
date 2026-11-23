@@ -240,7 +240,8 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 MjkPpu_ClearOam(&game->ppu);
                 MjkPpu_ClearNametable(&game->ppu, 0x24u);
                 MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
-                uint8_t slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0u, 0x70u, 0x60u, 0x01u, 0u);
+                MjkPpu_ClearOam(&game->ppu);
+            uint8_t slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0u, 0x70u, 0x60u, 0x01u, 0u);
                 MjkPpu_SetOam(&game->ppu, slot++, 0x80u, 0x5Cu, 0x0Cu, 0u);
                 MjkPpu_DrawBcdByte(&game->ppu, MjkBcd_FromBinary(game->lives), 0x94u, 0x60u, true, slot);
                 game->state_timer = 0x60u; /* 96f */
@@ -312,9 +313,10 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             } else {
                 const uint8_t* vec_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_VECTOR_TABLE, 8u);
                 uint8_t dir = (uint8_t)((game->entry_door_type >> 2u) & 3u);
+                uint8_t vec_idx = (uint8_t)(3u - dir);
                 if (vec_tbl) {
-                    game->jack_x = (uint8_t)(game->jack_x + (int8_t)vec_tbl[dir * 2u]);
-                    game->jack_y = (uint8_t)(game->jack_y + (int8_t)vec_tbl[dir * 2u + 1u]);
+                    game->jack_x = (uint8_t)(game->jack_x + (int8_t)vec_tbl[vec_idx * 2u]);
+                    game->jack_y = (uint8_t)(game->jack_y + (int8_t)vec_tbl[vec_idx * 2u + 1u]);
                 }
                 if (game->state_timer > 0u) {
                     game->state_timer--;
@@ -408,6 +410,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 break;
             }
 
+            MjkPpu_ClearOam(&game->ppu);
             uint8_t slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg,
                                                   game->player.sprite_id,
                                                   game->jack_x, game->jack_y,
@@ -484,7 +487,6 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                     game->state_timer--;
                 }
                 if (game->state_timer == 0u) {
-                    MjkPlayer_Init(&game->player, game->jack_x, game->jack_y);
                     game->state = MJK_GS_MAIN;
                     game->sub_state = 0u;
                 }

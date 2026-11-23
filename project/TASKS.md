@@ -1,10 +1,10 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **Hito 6 completado (`T-25`, `T-26`)** — `mjk_apu_synth.c` (Pulse 1/2 con sweep `$4001/$4005`, Triangle 32 pasos, Noise LFSR 15 bits, mezclador no lineal NTSC + filtro DC a 44.1 kHz / 735 muestras/frame), `mjk_apu.c` (máquina virtual bytecode `music-engine.asm` de 8 canales 4 BGM + 4 SFX con prioridad y restauración limpia al terminar SFX, 35 tracks verificados + silencio exacto), conectado a `MjkGame_StepAudio` y `src/main.c`, validados (`15/15` CTest en 1.23 s + CLI headless 120f y SDL2 3f exit `0`).
-> - **Protocolo tras fin de cuota**: Al retomar en una nueva sesión, leer únicamente este `CHECKPOINT ACTIVO` y `project/PROJECT_STATUS.md`, tomar la **primera micro-tarea `[TODO]`** (1 sola por ciclo) y dejar compilación + `ctest` siempre en verde al cerrarla.
-> - **Siguiente micro-tarea**: **`T-27`** (Hito 7: implementar `mjk_verify_api.c` + `tools/verify_scenarios.py` para Capa 2 semántica frente a `cynes` y aplicar fixes de auditoría `#30`).
-> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 7 (`T-30`).
+> - **Último subpaso completado**: **PROYECTO FINALIZADO — Hito 7 (`T-27`..`T-30`, 30/30 tareas `[DONE]`)** — `mjk_verify_api.h`/`.c` (`MjkVerify_*`), `tools/verify_scenarios.py` (`5/5` escenarios PASS frente a `cynes`), `tests/c/test_full_game.c` (`12/12` puntos de `GAME_COMPLETE_FLOW.md`), `research/CROSS_REFERENCE_INDEX.md` actualizado, `docs/EDUCATIONAL_ARCHITECTURE.md` creado, y certificación final (`16/16` CTests en 1.21 s, `0` warnings `/W4 /WX /utf-8`, BYOR CLI `0/0/1`, `0` includes SDL/OS en `src/core/`, `0` assets binarios en Git).
+> - **Protocolo tras fin de cuota**: Todos los hitos (`T-01`..`T-30`) están completados y certificados en verde.
+> - **Siguiente micro-tarea**: **Ninguna (`30/30` completadas)**.
+> - **Política de commits**: Todos los hitos (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`) cerrados con commit limpio.
 
 ---
 
@@ -54,7 +54,7 @@
 
 ## Hito 7 — Capa 2 Semántica, Juego Completo y Certificación Multiplataforma
 
-- `[TODO]` **`T-27`**: Implementar `mjk_verify_api.c` (API limpia de inspección headless) + `tools/verify_scenarios.py` ejecutando micro-escenarios cortos (60–240 frames) frente a `cynes` (reglas jugables, OAM/paletas NES y eventos APU + PNG 3-paneles).
-- `[TODO]` **`T-28`**: Auditoría *Full-Game Playthrough*: recorrer con `F2` (y jugando en vivo) todos los puntos del checklist de `research/GAME_COMPLETE_FLOW.md` (Copyright -> Title -> Pasajes -> Bomb Rooms -> RoundClear -> Torture Room -> 4 Finales -> GameOver -> Title) y corregir cualquier brecha de integración.
-- `[TODO]` **`T-29`**: Pulido educativo y extensibilidad: verificar módulos < 600 líneas y comentarios didácticos con citas `asm/src/`, actualizar `research/CROSS_REFERENCE_INDEX.md` al nuevo código C, y añadir guía práctica de modding en `docs/EDUCATIONAL_ARCHITECTURE.md`.
-- `[TODO]` **`T-30`**: Certificación final multiplataforma: compilar sin warnings (`-Wall -Wextra -Werror`) en Windows y Linux, pasar `ctest` al 100%, pasar `verify_scenarios.py` al 100% y validar ejecución limpia solo con `mbj-us.nes`.
+- `[DONE]` **`T-27`**: Implementar `mjk_verify_api.c` (API limpia de inspección headless) + `tools/verify_scenarios.py` ejecutando micro-escenarios cortos (60–240 frames) frente a `cynes` (reglas jugables, OAM/paletas NES y eventos APU + PNG 3-paneles).
+- `[DONE]` **`T-28`**: Auditoría *Full-Game Playthrough*: recorrer con `F2` (y jugando en vivo) todos los puntos del checklist de `research/GAME_COMPLETE_FLOW.md` (Copyright -> Title -> Pasajes -> Bomb Rooms -> RoundClear -> Torture Room -> 4 Finales -> GameOver -> Title) y corregir cualquier brecha de integración.
+- `[DONE]` **`T-29`**: Pulido educativo y extensibilidad: verificar módulos < 600 líneas y comentarios didácticos con citas `asm/src/`, actualizar `research/CROSS_REFERENCE_INDEX.md` al nuevo código C, y añadir guía práctica de modding en `docs/EDUCATIONAL_ARCHITECTURE.md`.
+- `[DONE]` **`T-30`**: Certificación final multiplataforma: compilar sin warnings (`-Wall -Wextra -Werror`) en Windows y Linux, pasar `ctest` al 100%, pasar `verify_scenarios.py` al 100% y validar ejecución limpia solo con `mbj-us.nes`.

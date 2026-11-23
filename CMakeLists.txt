@@ -56,6 +56,7 @@ set(MJK_CORE_SOURCES
     src/core/mjk_hud.c
     src/core/mjk_apu_synth.c
     src/core/mjk_apu.c
+    src/core/mjk_verify_api.c
 )
 
 # Target 1: Núcleo estático C11 puro
@@ -189,6 +190,12 @@ if(BUILD_TESTING)
     target_compile_definitions(test_apu PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     mjk_apply_warnings(test_apu)
     add_test(NAME mjk_apu COMMAND test_apu)
+
+    add_executable(test_full_game tests/c/test_full_game.c)
+    target_link_libraries(test_full_game PRIVATE mjk_core)
+    target_compile_definitions(test_full_game PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_full_game)
+    add_test(NAME mjk_full_game COMMAND test_full_game)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

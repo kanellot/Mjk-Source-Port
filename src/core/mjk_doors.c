@@ -94,13 +94,16 @@ void MjkDoors_OpenRoomDoor(MjkGame* game, uint8_t door_obj_idx) {
             s->objects[ro->ram_index] = ro->ram_state;
         }
     }
+    if (game->persist.scratch.room_id == game->current_room_id &&
+        ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
+        game->persist.scratch.objects[ro->ram_index] = ro->ram_state;
+    }
     uint8_t d_idx = (uint8_t)(ro->opcode & 0x0Fu);
-    const uint8_t* tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_DOOR_ENTRY_XY, 2u);
-    (void)tbl;
+    uint8_t open_mt = (d_idx < 8u) ? 0x8Au : 0x8Eu;
     /* Repintado: 2 metatiles contiguos de DoorPositionTileTable (estado abierto). */
-    MjkObjects_SetMetatile(game, ro->yx, (uint8_t)(0x95u + (d_idx & 3u)));
+    MjkObjects_SetMetatile(game, ro->yx, open_mt);
     if (ro->yx2 != 0u) {
-        MjkObjects_SetMetatile(game, ro->yx2, (uint8_t)(0x96u + (d_idx & 3u)));
+        MjkObjects_SetMetatile(game, ro->yx2, open_mt);
     }
 }
 

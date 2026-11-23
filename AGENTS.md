@@ -38,6 +38,7 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 ### Regla Anti-Agotamiento de Cuota (1 Micro-Tarea = 1 Estado Verde)
 - Ejecutar **estrictamente 1 micro-tarea** por ciclo de trabajo para poder retomar en cualquier momento si se agota la cuota de tokens.
 - Nunca cerrar una micro-tarea con la compilación rota o tests fallando; actualizar siempre `CHECKPOINT ACTIVO` al terminar.
+- **Commit por Hito**: Al completar la última micro-tarea de cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`) con compilación y `ctest` al 100%, crear un commit limpio en la rama activa resumiendo el hito (sin binarios ni ROMs).
 
 ### Paralelismo (Solo si se divide limpiamente)
 - Investigación multi-archivo solo lectura -> subagente `research` (`flash`) o `run_workflow`.

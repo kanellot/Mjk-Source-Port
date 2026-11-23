@@ -29,7 +29,7 @@ static uint8_t draw_title_sprites(const MjkTitleSystem* ts,
     slot = MjkPpu_WriteMetasprite(ppu, pkg, ts->jack_sprite,
                                   MjkUQ8_Int(ts->jack_x),
                                   MjkUQ8_Int(ts->jack_y),
-                                  0x04u, slot);
+                                  0x05u, slot);
     return slot;
 }
 

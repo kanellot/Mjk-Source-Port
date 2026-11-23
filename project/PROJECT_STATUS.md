@@ -1,7 +1,7 @@
 # Estado del Proyecto: Mighty Bomb Jack — Source Port C11
 
 **Última actualización**: 2026-11-23  
-**Fase Activa**: **Hito 4 Completado (`T-12`..`T-15`) — Siguiente: Hito 5 (`T-16`, Mecánicas de Gameplay)**  
+**Fase Activa**: **Hito 5 Completado (`T-16`..`T-24`) — Siguiente: Hito 6 (`T-25`, Motor APU 2A03)**  
 **Versión Base Canónica**: **USA / NTSC (`REV_US`)**  
 **Entorno Agéntico**: **Gemini 4 Neon** (Planificación/Diagnóstico) + **Gemini 4 Hydrogen** (Ejecución/Verificación)
 
@@ -16,10 +16,10 @@
 | **Documentación (`research/`)** | `[OK]` | Depurada y alineada a [`GAME_COMPLETE_FLOW.md`](../research/GAME_COMPLETE_FLOW.md), `verification_strategy.md` (3 Capas), `asset_extractor_spec.md` (BYOR v2 en C) y `source_port_architecture.md` (Clean-Slate). |
 | **Entorno Agéntico (`.agents/`)** | `[OK]` | `AGENTS.md` (< 6 KB), 3 skills (`mjk-verification-workflow`, `mjk-asm-ground-truth`, `mjk-educational-c-port`) y hook `guard_workspace.py`. |
 | **Oráculo NES (`tools/`)** | `[OK]` | `tools/asm_query.py` (consulta AST instantánea) + `tools/nes_oracle.py` (oráculo autónomo `cynes` para fixtures RAM/OAM y PNG). |
-| **Source Port C11 (`src/`)** | `[EN PROGRESO]` | **Hito 4 completado (`T-12`..`T-15`)** (`mjk_title.c`, `mjk_state_machine.c` `GameState 0..C` + `8/8` CTest en verde). Quedan `T-16`..`T-30` (Hitos 5–7) en [`TASKS.md`](./TASKS.md). |
+| **Source Port C11 (`src/`)** | `[EN PROGRESO]` | **Hito 5 completado (`T-16`..`T-24`)** (Jack Q8.8, cámara, bombas/cofres, 33 puertas, 6 enemigos + Power Coin, HUD BCD + `14/14` CTest en verde). Quedan `T-25`..`T-30` (Hitos 6–7) en [`TASKS.md`](./TASKS.md). |
 
 ---
 
 ## 2. Siguiente Paso Inmediato
 
-Ejecutar **`T-16`** (inicio de **Hito 5**) en [`project/TASKS.md`](./TASKS.md): implementar `mjk_player.c` (parte 1: cinemática Q8.8, tabla de salto de 64 pasos, salto alto/bajo, flutter y movimiento horizontal) + `CTest`.
+Ejecutar **`T-25`** (inicio de **Hito 6**) en [`project/TASKS.md`](./TASKS.md): implementar sintetizador hardware 2A03 `mjk_apu_synth.c` (Pulse 1/2, Triangle 32 pasos y Noise LFSR 15-bit a 44.1 kHz) + `CTest`.

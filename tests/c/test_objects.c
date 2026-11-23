@@ -1,0 +1,108 @@
+/**
+ * @file test_objects.c
+ * @brief Tests unitarios C11 (Capa 1 / CTest) para bombas, cofres, ítems y Mighty (T-19, T-20).
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "mjk_assets.h"
+#include "mjk_game.h"
+#include "mjk_rom_extractor.h"
+
+static int g_failures = 0;
+
+static bool load_rom_assets(MjkAssetPackage* out_pkg) {
+#ifdef MJK_SOURCE_DIR
+    char rom_path[512];
+    snprintf(rom_path, sizeof(rom_path), "%s/asm/bin/mbj-us.nes", MJK_SOURCE_DIR);
+    FILE* f = fopen(rom_path, "rb");
+    if (!f) { return false; }
+    uint8_t* rom = (uint8_t*)malloc(MJK_ROM_EXPECTED_SIZE);
+    if (!rom) { fclose(f); return false; }
+    size_t got = fread(rom, 1u, MJK_ROM_EXPECTED_SIZE, f);
+    fclose(f);
+    if (got != MJK_ROM_EXPECTED_SIZE) { free(rom); return false; }
+    uint8_t* v2_buf = NULL;
+    size_t v2_size = 0u;
+    char sha1_hex[MJK_SHA1_HEX_LEN + 1u];
+    MjkAssetError err = MjkRom_BuildAssetsV2Buffer(rom, MJK_ROM_EXPECTED_SIZE, &v2_buf, &v2_size, sha1_hex);
+    free(rom);
+    if (err != MJK_ASSET_OK) { free(v2_buf); return false; }
+    err = MjkAssets_LoadFromMemory(v2_buf, v2_size, out_pkg);
+    free(v2_buf);
+    return (err == MJK_ASSET_OK);
+#else
+    (void)out_pkg;
+    return false;
+#endif
+}
+
+int main(void) {
+    MjkAssetPackage pkg;
+    if (!load_rom_assets(&pkg)) {
+        printf("[INFO] ROM local no encontrada; saltando test_objects.\n");
+        return 0;
+    }
+
+    MjkGame g;
+    MjkGame_Init(&g, &pkg);
+    MjkGame_WarpToRoom(&g, 0x01u);
+    /* Avanzar LoadRoom -> DrawScreen -> EnterRoom (24f) -> Main */
+    MjkInputState in;
+    memset(&in, 0, sizeof(in));
+    for (int f = 0; f < 30; ++f) {
+        MjkInput_Update(&in, 0u);
+        MjkGame_StepFrame(&g, &in);
+    }
+
+    /* 1. Recoger 1ª bomba de Sala 1 ($85) -> puff 32f + 32f */
+    g.player.pos_x = MjkUQ8_FromInt(0x54u);
+    g.player.pos_y = MjkUQ8_FromInt(0x84u);
+    MjkObjects_Update(&g.objects, &g, &in);
+    if (!g.objects.puff.active || g.objects.puff.phase != 0u || g.objects.puff.timer != 32u) {
+        fprintf(stderr, "[FAIL] Puff fase 1 no inicio tras recoger bomba\n");
+        g_failures++;
+    }
+    for (int f = 0; f < 32; ++f) {
+        MjkObjects_Update(&g.objects, &g, &in);
+    }
+    if (!g.objects.puff.active || g.objects.puff.phase != 1u) {
+        fprintf(stderr, "[FAIL] Puff no paso a fase 2\n");
+        g_failures++;
+    }
+
+    /* 2. Botón B Mighty 1..3 y degradación por A */
+    g.mighty_coins = 3u;
+    bool transmute = false;
+    if (!MjkObjects_UseMightyCoin(&g, &transmute) || g.mighty_level != 1u || transmute) {
+        fprintf(stderr, "[FAIL] Mighty nivel 1 fallo\n");
+        g_failures++;
+    }
+    MjkObjects_UseMightyCoin(&g, &transmute);
+    MjkObjects_UseMightyCoin(&g, &transmute);
+    if (g.mighty_level != 3u || !transmute || g.mighty_coins != 0u) {
+        fprintf(stderr, "[FAIL] Mighty nivel 3 / transmute fallo\n");
+        g_failures++;
+    }
+
+    /* 3. 10 Mighty Coins -> TortureRoom */
+    g.room.objects[0].yx = 0x44u;
+    g.room.objects[0].ram_state = MJK_ITEM_MIGHTY_COIN;
+    g.mighty_coins = 9u;
+    g.player.pos_x = MjkUQ8_FromInt(0x44u);
+    g.player.pos_y = MjkUQ8_FromInt(0x44u);
+    MjkActionResult res = MjkObjects_Update(&g.objects, &g, &in);
+    if (res != MJK_ACTION_TORTURE_TRIGGERED || g.state != MJK_GS_TORTURE_ROOM) {
+        fprintf(stderr, "[FAIL] 10 Mighty Coins no disparo TortureRoom\n");
+        g_failures++;
+    }
+
+    MjkAssets_Unload(&pkg);
+    if (g_failures > 0) {
+        fprintf(stderr, "[FAIL] test_objects: %d fallo(s).\n", g_failures);
+        return 1;
+    }
+    printf("[OK] test_objects: bombas, puff 32+32f, Mighty B 1..3 y Torture trigger OK.\n");
+    return 0;
+}

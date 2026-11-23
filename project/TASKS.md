@@ -1,10 +1,10 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **Hito 4 completado (`T-12`..`T-15`)** — `mjk_title.c` (`TitleScreen_US_0/1` <-> `TitleScreen_0/1/2` -> `TitleScreen_3`), `mjk_state_machine.c` (`GameState 0..C`: `Init`, `RoundIntro`, `LoadRoom`, `DrawScreen`, `EnterRoom`, `Main` + pausa, `TimeOver`, `TortureRoom` 50 BCD, `RoundClear` + `FireBombs >= 20`, `ExitRoom`, `GameOver` + GDV BCD, `AnimateDoorOpen` y 4 Finales `$A0..$A3`) y conexión con `MjkDebugOverlay` en `src/main.c`, validados (`8/8` CTest en 0.11 s + CLI headless 270f y SDL2 exit `0`).
+> - **Último subpaso completado**: **Hito 5 completado (`T-16`..`T-24`)** — `mjk_player.c` (Q8.8, flutter, 9-probe + umbral acumulativo Mighty), `mjk_camera.c` (scroll pasillos 1<->6, seams), `mjk_objects.c` (bombas/mechas en pasillo+BombRoom, puff 32+32f con popup, cofres, secretos, ítems, Mighty 1..3), `mjk_doors.c` (33 condiciones `REV_US` + Sala `$61`), `mjk_enemy.c` (DifficultyTable, max 4 vivos, 6 arquetipos, Power Coin 320f), `mjk_hud.c` (BCD LE, `StageTimer` 256f, HUD OAM + puntuación flotante `0x30..0x3F`) y fixes de `#20`/`#24`, validados (`14/14` CTest en 0.62 s + CLI headless 450f y SDL2 exit `0`).
 > - **Protocolo tras fin de cuota**: Al retomar en una nueva sesión, leer únicamente este `CHECKPOINT ACTIVO` y `project/PROJECT_STATUS.md`, tomar la **primera micro-tarea `[TODO]`** (1 sola por ciclo) y dejar compilación + `ctest` siempre en verde al cerrarla.
-> - **Siguiente micro-tarea**: **`T-16`** (Hito 5: implementar `mjk_player.c` parte 1 — cinemática Q8.8, tabla de salto de 64 pasos, salto alto/bajo, flutter y movimiento horizontal + `CTest`).
-> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 5 (`T-24`).
+> - **Siguiente micro-tarea**: **`T-25`** (Hito 6: implementar sintetizador hardware 2A03 `mjk_apu_synth.c` — Pulse 1/2, Triangle 32 pasos y Noise LFSR 15-bit a 44.1 kHz + `CTest`).
+> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 6 (`T-26`).
 
 ---
 
@@ -37,15 +37,15 @@
 
 ## Hito 5 — Mecánicas de Gameplay Fiel por Subsistema
 
-- `[TODO]` **`T-16`**: Implementar `mjk_player.c` (parte 1): cinemática Q8.8, tabla de salto de 64 pasos, salto alto/bajo (`Arriba`/`Abajo`), freno en aire, *flutter* y aceleración horizontal + `CTest`.
-- `[TODO]` **`T-17`**: Implementar `mjk_player.c` (parte 2): matriz de colisiones 9-probe contra metatiles sólidos/parciales y muerte/invulnerabilidad + `CTest`.
-- `[TODO]` **`T-18`**: Implementar `mjk_camera.c`: scroll horizontal en pasillos, costuras/seams entre salas de sección y clamping en fronteras + `CTest`.
-- `[TODO]` **`T-19`**: Implementar `mjk_objects.c` (parte 1): bombas `100`/`200`, cadena de mechas con chispa, animación *puff* en 2 fases y lógica de Royal Palace / Bomb Room + `CTest`.
-- `[TODO]` **`T-20`**: Implementar `mjk_objects.c` (parte 2): cofres rojos/naranjas, bloques secretos, ítems (Bags, Gold Coin, Mighty Drink, Sphinx, Extra 1UP, Bonus/Secret Coins, Crystal Balls) y niveles Mighty `0..3` con degradación por pulsaciones de `A` + `CTest`.
-- `[TODO]` **`T-21`**: Implementar `mjk_doors.c`: evaluación de las **33 condiciones de puertas** USA (incluyendo caso especial sala `$61`), apertura en `RoomState` y detección de cruce por puerta + `CTest`.
-- `[TODO]` **`T-22`**: Implementar `mjk_enemy.c` (parte 1): tabla de dificultad por ronda, spawns diferidos por sala (máx 4 vivos), patrulla de Momias y colisión letal con Jack + `CTest`.
-- `[TODO]` **`T-23`**: Implementar `mjk_enemy.c` (parte 2): los 6 arquetipos mutados (Hanezo, GejiShogun, Gameido, Dokuron, Desufa, Horus), mutación `(APressCounter % 6) + 2` y Power Ball / Power Coin de 320 frames + `CTest`.
-- `[TODO]` **`T-24`**: Implementar `mjk_hud.c`: aritmética BCD unificada little-endian (`$00A0..$00A3`), `StageTimer` (`$60` BCD, divisor 256f), sprites OAM del HUD (`Score` Y=16, `T`/`M` Y=24) y puntuación flotante + `CTest`.
+- `[DONE]` **`T-16`**: Implementar `mjk_player.c` (parte 1): cinemática Q8.8, tabla de salto de 64 pasos, salto alto/bajo (`Arriba`/`Abajo`), freno en aire, *flutter* y aceleración horizontal + `CTest`.
+- `[DONE]` **`T-17`**: Implementar `mjk_player.c` (parte 2): matriz de colisiones 9-probe contra metatiles sólidos/parciales y muerte/invulnerabilidad + `CTest`.
+- `[DONE]` **`T-18`**: Implementar `mjk_camera.c`: scroll horizontal en pasillos, costuras/seams entre salas de sección y clamping en fronteras + `CTest`.
+- `[DONE]` **`T-19`**: Implementar `mjk_objects.c` (parte 1): bombas `100`/`200`, cadena de mechas con chispa, animación *puff* en 2 fases y lógica de Royal Palace / Bomb Room + `CTest`.
+- `[DONE]` **`T-20`**: Implementar `mjk_objects.c` (parte 2): cofres rojos/naranjas, bloques secretos, ítems (Bags, Gold Coin, Mighty Drink, Sphinx, Extra 1UP, Bonus/Secret Coins, Crystal Balls) y niveles Mighty `0..3` con degradación por pulsaciones de `A` + `CTest`.
+- `[DONE]` **`T-21`**: Implementar `mjk_doors.c`: evaluación de las **33 condiciones de puertas** USA (incluyendo caso especial sala `$61`), apertura en `RoomState` y detección de cruce por puerta + `CTest`.
+- `[DONE]` **`T-22`**: Implementar `mjk_enemy.c` (parte 1): tabla de dificultad por ronda, spawns diferidos por sala (máx 4 vivos), patrulla de Momias y colisión letal con Jack + `CTest`.
+- `[DONE]` **`T-23`**: Implementar `mjk_enemy.c` (parte 2): los 6 arquetipos mutados (Hanezo, GejiShogun, Gameido, Dokuron, Desufa, Horus), mutación `(APressCounter % 6) + 2` y Power Ball / Power Coin de 320 frames + `CTest`.
+- `[DONE]` **`T-24`**: Implementar `mjk_hud.c`: aritmética BCD unificada little-endian (`$00A0..$00A3`), `StageTimer` (`$60` BCD, divisor 256f), sprites OAM del HUD (`Score` Y=16, `T`/`M` Y=24) y puntuación flotante + `CTest`.
 
 ## Hito 6 — Motor de Audio Chiptune APU 2A03
 

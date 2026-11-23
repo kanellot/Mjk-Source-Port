@@ -47,6 +47,13 @@ set(MJK_CORE_SOURCES
     src/core/mjk_room_decoder.c
     src/core/mjk_title.c
     src/core/mjk_state_machine.c
+    src/core/mjk_end_screens.c
+    src/core/mjk_player.c
+    src/core/mjk_camera.c
+    src/core/mjk_objects.c
+    src/core/mjk_doors.c
+    src/core/mjk_enemy.c
+    src/core/mjk_hud.c
 )
 
 # Target 1: Núcleo estático C11 puro
@@ -138,6 +145,42 @@ if(BUILD_TESTING)
     target_compile_definitions(test_state_machine PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     mjk_apply_warnings(test_state_machine)
     add_test(NAME mjk_state_machine COMMAND test_state_machine)
+
+    add_executable(test_player tests/c/test_player.c)
+    target_link_libraries(test_player PRIVATE mjk_core)
+    target_compile_definitions(test_player PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_player)
+    add_test(NAME mjk_player COMMAND test_player)
+
+    add_executable(test_camera tests/c/test_camera.c)
+    target_link_libraries(test_camera PRIVATE mjk_core)
+    target_compile_definitions(test_camera PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_camera)
+    add_test(NAME mjk_camera COMMAND test_camera)
+
+    add_executable(test_objects tests/c/test_objects.c)
+    target_link_libraries(test_objects PRIVATE mjk_core)
+    target_compile_definitions(test_objects PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_objects)
+    add_test(NAME mjk_objects COMMAND test_objects)
+
+    add_executable(test_doors tests/c/test_doors.c)
+    target_link_libraries(test_doors PRIVATE mjk_core)
+    target_compile_definitions(test_doors PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_doors)
+    add_test(NAME mjk_doors COMMAND test_doors)
+
+    add_executable(test_enemy tests/c/test_enemy.c)
+    target_link_libraries(test_enemy PRIVATE mjk_core)
+    target_compile_definitions(test_enemy PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_enemy)
+    add_test(NAME mjk_enemy COMMAND test_enemy)
+
+    add_executable(test_hud tests/c/test_hud.c)
+    target_link_libraries(test_hud PRIVATE mjk_core)
+    target_compile_definitions(test_hud PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_hud)
+    add_test(NAME mjk_hud COMMAND test_hud)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

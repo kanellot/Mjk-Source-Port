@@ -62,6 +62,7 @@ typedef struct {
     uint8_t          section_id;
     bool             is_horizontal;
     bool             is_bomb_room;
+    uint8_t          static_metatiles[MJK_ROOM_MT_ROWS][MJK_ROOM_MT_COLS];
     uint8_t          metatiles[MJK_ROOM_MT_ROWS][MJK_ROOM_MT_COLS];
     uint8_t          attributes[MJK_ROOM_MT_ROWS][MJK_ROOM_MT_COLS];
     MjkRoomObject    objects[MJK_ROOM_MAX_OBJECTS];

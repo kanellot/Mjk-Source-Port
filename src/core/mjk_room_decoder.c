@@ -135,6 +135,7 @@ bool MjkRoom_DecodeGeometry(const MjkAssetPackage* pkg,
             out_room->section_id = (uint8_t)(rdata[2] & 0x7Fu);
         }
     }
+    memcpy(out_room->static_metatiles, out_room->metatiles, sizeof(out_room->static_metatiles));
     return true;
 }
 

@@ -1,7 +1,7 @@
 # Estado del Proyecto: Mighty Bomb Jack — Source Port C11
 
 **Última actualización**: 2026-11-23  
-**Fase Activa**: **Hito 5 Completado (`T-16`..`T-24`) — Siguiente: Hito 6 (`T-25`, Motor APU 2A03)**  
+**Fase Activa**: **Hito 6 Completado (`T-25`, `T-26`) — Siguiente: Hito 7 (`T-27`..`T-30`, Capa 2 Semántica y Certificación)**  
 **Versión Base Canónica**: **USA / NTSC (`REV_US`)**  
 **Entorno Agéntico**: **Gemini 4 Neon** (Planificación/Diagnóstico) + **Gemini 4 Hydrogen** (Ejecución/Verificación)
 
@@ -16,10 +16,10 @@
 | **Documentación (`research/`)** | `[OK]` | Depurada y alineada a [`GAME_COMPLETE_FLOW.md`](../research/GAME_COMPLETE_FLOW.md), `verification_strategy.md` (3 Capas), `asset_extractor_spec.md` (BYOR v2 en C) y `source_port_architecture.md` (Clean-Slate). |
 | **Entorno Agéntico (`.agents/`)** | `[OK]` | `AGENTS.md` (< 6 KB), 3 skills (`mjk-verification-workflow`, `mjk-asm-ground-truth`, `mjk-educational-c-port`) y hook `guard_workspace.py`. |
 | **Oráculo NES (`tools/`)** | `[OK]` | `tools/asm_query.py` (consulta AST instantánea) + `tools/nes_oracle.py` (oráculo autónomo `cynes` para fixtures RAM/OAM y PNG). |
-| **Source Port C11 (`src/`)** | `[EN PROGRESO]` | **Hito 5 completado (`T-16`..`T-24`)** (Jack Q8.8, cámara, bombas/cofres, 33 puertas, 6 enemigos + Power Coin, HUD BCD + `14/14` CTest en verde). Quedan `T-25`..`T-30` (Hitos 6–7) en [`TASKS.md`](./TASKS.md). |
+| **Source Port C11 (`src/`)** | `[EN PROGRESO]` | **Hito 6 completado (`T-25`..`T-26`)** (APU 2A03 44.1 kHz + bytecode VM 8 canales BGM/SFX + `MjkGame_StepAudio` + `15/15` CTest en verde). Quedan `T-27`..`T-30` (Hito 7) en [`TASKS.md`](./TASKS.md). |
 
 ---
 
 ## 2. Siguiente Paso Inmediato
 
-Ejecutar **`T-25`** (inicio de **Hito 6**) en [`project/TASKS.md`](./TASKS.md): implementar sintetizador hardware 2A03 `mjk_apu_synth.c` (Pulse 1/2, Triangle 32 pasos y Noise LFSR 15-bit a 44.1 kHz) + `CTest`.
+Ejecutar **`T-27`** (inicio de **Hito 7**) en [`project/TASKS.md`](./TASKS.md): implementar `mjk_verify_api.c` + `tools/verify_scenarios.py` para Capa 2 semántica frente a `cynes` (incluyendo los fixes de auditoría `#30`).

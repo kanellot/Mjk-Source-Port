@@ -261,8 +261,6 @@ static void render_game_frame(const MjkGame* game,
     tel.jack_y = (int16_t)game->jack_y;
     tel.has_jack = (game->top_mode == MJK_MODE_INGAME);
     MjkDebugOverlay_Render(dbg, &tel, out->framebuffer);
-    out->audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
-    memset(out->audio_samples, 0, MJK_SAMPLES_PER_NTSC_FRAME * sizeof(int16_t));
 }
 
 int main(int argc, char* argv[]) {
@@ -328,6 +326,8 @@ int main(int argc, char* argv[]) {
             MjkPlatform_PollInputs(&inputs, &debug_keys);
             if (has_assets) {
                 MjkGame_StepFrame(&game, &inputs);
+                MjkGame_StepAudio(&game, frame_output.audio_samples, MJK_SAMPLES_PER_NTSC_FRAME);
+                frame_output.audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
                 render_game_frame(&game, &dbg, &frame_output);
             } else {
                 render_hal_test_pattern(&frame_output, simulated_frames);
@@ -359,8 +359,13 @@ int main(int argc, char* argv[]) {
             if (has_assets) {
                 if (!dbg.paused || dbg.step_requested) {
                     MjkGame_StepFrame(&game, &inputs);
+                    MjkGame_StepAudio(&game, frame_output.audio_samples, MJK_SAMPLES_PER_NTSC_FRAME);
+                    frame_output.audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
                     dbg.step_requested = false;
                     simulated_frames++;
+                } else {
+                    frame_output.audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
+                    memset(frame_output.audio_samples, 0, MJK_SAMPLES_PER_NTSC_FRAME * sizeof(int16_t));
                 }
                 render_game_frame(&game, &dbg, &frame_output);
             } else {

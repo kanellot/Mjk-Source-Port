@@ -13,6 +13,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "mjk_apu.h"
 #include "mjk_assets.h"
 #include "mjk_camera.h"
 #include "mjk_doors.h"
@@ -96,10 +97,12 @@ typedef struct MjkGame {
     MjkSoundId last_sound_event;
     MjkSoundId sound_queue[MJK_GAME_SOUND_QUEUE_CAP];
     uint8_t    sound_queue_count;
+    MjkApu     apu;
 } MjkGame;
 
 MJK_CORE_API void MjkGame_Init(MjkGame* game, const MjkAssetPackage* pkg);
 MJK_CORE_API void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input);
+MJK_CORE_API void MjkGame_StepAudio(MjkGame* game, int16_t* out_samples, uint32_t sample_count);
 MJK_CORE_API void MjkGame_Render(const MjkGame* game, uint32_t* out_fb_argb8888);
 MJK_CORE_API void MjkGame_WarpToRoom(MjkGame* game, uint8_t room_id);
 

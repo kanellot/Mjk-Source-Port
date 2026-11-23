@@ -50,6 +50,21 @@ void MjkGame_Init(MjkGame* game, const MjkAssetPackage* pkg) {
     game->high_gdv_bcd = 0x00u;
     MjkTitle_Init(&game->title);
     MjkPpu_Init(&game->ppu, pkg);
+    MjkApu_Init(&game->apu);
+}
+
+void MjkGame_StepAudio(MjkGame* game, int16_t* out_samples, uint32_t sample_count) {
+    if (!game) {
+        if (out_samples && sample_count > 0u) {
+            memset(out_samples, 0, (size_t)sample_count * sizeof(int16_t));
+        }
+        return;
+    }
+    for (uint8_t i = 0u; i < game->sound_queue_count; ++i) {
+        MjkApu_QueueSound(&game->apu, game->sound_queue[i]);
+    }
+    game->sound_queue_count = 0u;
+    MjkApu_StepFrame(&game->apu, game->pkg, out_samples, sample_count);
 }
 
 void MjkGame_WarpToRoom(MjkGame* game, uint8_t room_id) {

@@ -1,10 +1,10 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **Hito 5 completado (`T-16`..`T-24`)** — `mjk_player.c` (Q8.8, flutter, 9-probe + umbral acumulativo Mighty), `mjk_camera.c` (scroll pasillos 1<->6, seams), `mjk_objects.c` (bombas/mechas en pasillo+BombRoom, puff 32+32f con popup, cofres, secretos, ítems, Mighty 1..3), `mjk_doors.c` (33 condiciones `REV_US` + Sala `$61`), `mjk_enemy.c` (DifficultyTable, max 4 vivos, 6 arquetipos, Power Coin 320f), `mjk_hud.c` (BCD LE, `StageTimer` 256f, HUD OAM + puntuación flotante `0x30..0x3F`) y fixes de `#20`/`#24`, validados (`14/14` CTest en 0.62 s + CLI headless 450f y SDL2 exit `0`).
+> - **Último subpaso completado**: **Hito 6 completado (`T-25`, `T-26`)** — `mjk_apu_synth.c` (Pulse 1/2 con sweep `$4001/$4005`, Triangle 32 pasos, Noise LFSR 15 bits, mezclador no lineal NTSC + filtro DC a 44.1 kHz / 735 muestras/frame), `mjk_apu.c` (máquina virtual bytecode `music-engine.asm` de 8 canales 4 BGM + 4 SFX con prioridad y restauración limpia al terminar SFX, 35 tracks verificados + silencio exacto), conectado a `MjkGame_StepAudio` y `src/main.c`, validados (`15/15` CTest en 1.23 s + CLI headless 120f y SDL2 3f exit `0`).
 > - **Protocolo tras fin de cuota**: Al retomar en una nueva sesión, leer únicamente este `CHECKPOINT ACTIVO` y `project/PROJECT_STATUS.md`, tomar la **primera micro-tarea `[TODO]`** (1 sola por ciclo) y dejar compilación + `ctest` siempre en verde al cerrarla.
-> - **Siguiente micro-tarea**: **`T-25`** (Hito 6: implementar sintetizador hardware 2A03 `mjk_apu_synth.c` — Pulse 1/2, Triangle 32 pasos y Noise LFSR 15-bit a 44.1 kHz + `CTest`).
-> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 6 (`T-26`).
+> - **Siguiente micro-tarea**: **`T-27`** (Hito 7: implementar `mjk_verify_api.c` + `tools/verify_scenarios.py` para Capa 2 semántica frente a `cynes` y aplicar fixes de auditoría `#30`).
+> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 7 (`T-30`).
 
 ---
 
@@ -49,8 +49,8 @@
 
 ## Hito 6 — Motor de Audio Chiptune APU 2A03
 
-- `[TODO]` **`T-25`**: Implementar sintetizador hardware `mjk_apu.c` (parte 1): osciladores Pulse 1/2 (4 duty cycles), Triangle 32 pasos y Noise LFSR de 15 bits a 44.1 kHz + `CTest`.
-- `[TODO]` **`T-26`**: Implementar intérprete de bytecode BGM/SFX en `mjk_apu.c` (parte 2) 100% alimentado desde `MjkAssetPackage` (envolventes, pitch bend, prioridad SFX sobre música) y conectarlo a todas las transiciones/eventos del juego + `CTest`.
+- `[DONE]` **`T-25`**: Implementar sintetizador hardware `mjk_apu_synth.c` (parte 1): osciladores Pulse 1/2 (4 duty cycles + hardware sweep `$4001/$4005`), Triangle 32 pasos y Noise LFSR de 15 bits a 44.1 kHz + `CTest`.
+- `[DONE]` **`T-26`**: Implementar intérprete de bytecode BGM/SFX en `mjk_apu.c` (parte 2) 100% alimentado desde `MjkAssetPackage` (envolventes, pitch bend, prioridad SFX sobre música, 8 canales) y conectarlo a `MjkGame_StepAudio` y `main.c` + `CTest`.
 
 ## Hito 7 — Capa 2 Semántica, Juego Completo y Certificación Multiplataforma
 

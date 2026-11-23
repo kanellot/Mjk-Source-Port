@@ -299,6 +299,28 @@ uint8_t MjkPpu_DrawHudMightyOrMult(MjkPpu* ppu,
     return slot;
 }
 
+uint8_t MjkPpu_DrawBcdByte(MjkPpu* ppu,
+                           uint8_t bcd_val,
+                           uint8_t x,
+                           uint8_t y,
+                           bool hide_leading_zero,
+                           uint8_t start_slot) {
+    if (!ppu) {
+        return start_slot;
+    }
+    uint8_t slot = start_slot;
+    uint8_t tens = (uint8_t)((bcd_val >> 4u) & 0x0Fu);
+    uint8_t ones = (uint8_t)(bcd_val & 0x0Fu);
+    if (slot < MJK_PPU_OAM_COUNT) {
+        uint8_t t_tile = (hide_leading_zero && tens == 0u) ? 0x0Fu : tens;
+        MjkPpu_SetOam(ppu, slot++, (uint8_t)(x - 4u), (uint8_t)(y - 4u), t_tile, 0u);
+    }
+    if (slot < MJK_PPU_OAM_COUNT) {
+        MjkPpu_SetOam(ppu, slot++, (uint8_t)(x + 4u), (uint8_t)(y - 4u), ones, 0u);
+    }
+    return slot;
+}
+
 void MjkPpu_RenderFrame(const MjkPpu* ppu,
                         const MjkAssetPackage* pkg,
                         uint32_t* out_fb_argb8888) {

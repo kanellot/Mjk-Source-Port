@@ -16,10 +16,9 @@
 #include "mjk_assets.h"
 #include "mjk_build_info.h"
 #include "mjk_debug_overlay.h"
+#include "mjk_game.h"
 #include "mjk_platform.h"
-#include "mjk_ppu.h"
 #include "mjk_rom_extractor.h"
-#include "mjk_room_decoder.h"
 
 #define MJK_SAMPLES_PER_NTSC_FRAME 735u
 
@@ -246,41 +245,21 @@ static bool load_or_extract_assets(const MjkCliOptions* opts,
     return true;
 }
 
-static void load_room_for_viewer(const MjkAssetPackage* pkg,
-                                 MjkPpu* ppu,
-                                 MjkRoomPersistRam* persist,
-                                 MjkRoomState* room,
-                                 uint8_t room_id) {
-    MjkPpu_RestoreDefaultPalettes(ppu, pkg);
-    MjkPpu_ClearNametable(ppu, 0x24u);
-    MjkPpu_ClearOam(ppu);
-    if (!MjkRoom_DecodeGeometry(pkg, room_id, room)) {
-        return;
-    }
-    MjkRoom_PreloadSection(pkg, room_id, persist, 0u);
-    MjkRoom_DecodeObjects(pkg, room_id, persist, room);
-    if (room_id >= 1u) {
-        MjkPpu_LoadRoomPalette(ppu, pkg, room->palette_set);
-    }
-    MjkRoom_BlitToPpu(room, pkg, ppu, 0u);
-    if (room_id == 0u) {
-        MjkPpu_WriteString(ppu, pkg, MJK_STR_PUSH_START_BUTTON);
-    }
-}
-
-static void render_viewer_frame(const MjkAssetPackage* pkg,
-                                const MjkPpu* ppu,
-                                const MjkRoomState* room,
-                                const MjkDebugOverlayState* dbg,
-                                MjkFrameOutput* out) {
-    MjkPpu_RenderFrame(ppu, pkg, out->framebuffer);
+static void render_game_frame(const MjkGame* game,
+                              const MjkDebugOverlayState* dbg,
+                              MjkFrameOutput* out) {
+    MjkGame_Render(game, out->framebuffer);
     MjkDebugTelemetry tel;
     memset(&tel, 0, sizeof(tel));
-    tel.room_id = room->room_id;
-    tel.lives = 3u;
-    tel.mighty_level = (dbg->cheat_mode == 2u) ? 3u : 0u;
-    tel.timer_bcd = 0x60u;
-    tel.camera_x = ppu->scroll_x;
+    tel.room_id = game->current_room_id;
+    tel.game_state = (uint8_t)game->state;
+    tel.lives = game->lives;
+    tel.mighty_level = (dbg->cheat_mode == 2u) ? 3u : game->mighty_level;
+    tel.timer_bcd = game->stage_timer_bcd;
+    tel.camera_x = game->ppu.scroll_x;
+    tel.jack_x = (int16_t)game->jack_x;
+    tel.jack_y = (int16_t)game->jack_y;
+    tel.has_jack = (game->top_mode == MJK_MODE_INGAME);
     MjkDebugOverlay_Render(dbg, &tel, out->framebuffer);
     out->audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
     memset(out->audio_samples, 0, MJK_SAMPLES_PER_NTSC_FRAME * sizeof(int16_t));
@@ -326,15 +305,11 @@ int main(int argc, char* argv[]) {
         has_assets = true;
     }
 
-    static MjkPpu ppu;
-    static MjkRoomPersistRam persist;
-    static MjkRoomState current_room;
+    static MjkGame game;
     MjkDebugOverlayState dbg;
     MjkDebugOverlay_Init(&dbg);
     if (has_assets) {
-        MjkPpu_Init(&ppu, &assets);
-        memset(&persist, 0, sizeof(persist));
-        load_room_for_viewer(&assets, &ppu, &persist, &current_room, dbg.warp_room_id);
+        MjkGame_Init(&game, &assets);
     }
 
     static MjkFrameOutput frame_output;
@@ -352,7 +327,8 @@ int main(int argc, char* argv[]) {
         if (opts.headless) {
             MjkPlatform_PollInputs(&inputs, &debug_keys);
             if (has_assets) {
-                render_viewer_frame(&assets, &ppu, &current_room, &dbg, &frame_output);
+                MjkGame_StepFrame(&game, &inputs);
+                render_game_frame(&game, &dbg, &frame_output);
             } else {
                 render_hal_test_pattern(&frame_output, simulated_frames);
             }
@@ -375,19 +351,18 @@ int main(int argc, char* argv[]) {
         if (has_assets) {
             uint8_t warp_target = 0u;
             if (MjkDebugOverlay_HandleKeys(&dbg, debug_keys, &warp_target)) {
-                load_room_for_viewer(&assets, &ppu, &persist, &current_room, warp_target);
+                MjkGame_WarpToRoom(&game, warp_target);
             }
         }
 
         while (accumulator >= seconds_per_frame) {
             if (has_assets) {
                 if (!dbg.paused || dbg.step_requested) {
-                    render_viewer_frame(&assets, &ppu, &current_room, &dbg, &frame_output);
+                    MjkGame_StepFrame(&game, &inputs);
                     dbg.step_requested = false;
                     simulated_frames++;
-                } else {
-                    render_viewer_frame(&assets, &ppu, &current_room, &dbg, &frame_output);
                 }
+                render_game_frame(&game, &dbg, &frame_output);
             } else {
                 render_hal_test_pattern(&frame_output, simulated_frames);
                 simulated_frames++;

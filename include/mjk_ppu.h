@@ -99,6 +99,14 @@ MJK_CORE_API uint8_t MjkPpu_DrawHudMightyOrMult(MjkPpu* ppu,
                                                 uint8_t value_0_9,
                                                 uint8_t start_slot);
 
+/** @brief Dibuja un byte BCD (2 dígitos 8x8) en OAM alrededor de (x, y) con WriteSprite. */
+MJK_CORE_API uint8_t MjkPpu_DrawBcdByte(MjkPpu* ppu,
+                                         uint8_t bcd_val,
+                                         uint8_t x,
+                                         uint8_t y,
+                                         bool hide_leading_zero,
+                                         uint8_t start_slot);
+
 /** @brief Renderiza la escena completa (BG + OAM) al framebuffer 256x240 ARGB8888. */
 MJK_CORE_API void MjkPpu_RenderFrame(const MjkPpu* ppu,
                                      const MjkAssetPackage* pkg,

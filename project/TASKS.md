@@ -1,10 +1,10 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **Hito 3 completado (`T-08`..`T-11`)** — `mjk_ppu.c` (paleta NTSC 2C02, 2bpp CHR Bank 1, metasprites, `WriteString` y HUD OAM), `mjk_room_decoder.c` (decodificación 4-tier de las 256 salas `0x00..0xFF`, persistencia de 8 slots + scratch y objetos), `mjk_debug_overlay.c` (fuente 5x7 Clean-Room + `F1`–`F6`) y visor de salas en `src/main.c`, validados (`7/7` CTest en 0.09 s + CLI headless y SDL2 exit `0`).
+> - **Último subpaso completado**: **Hito 4 completado (`T-12`..`T-15`)** — `mjk_title.c` (`TitleScreen_US_0/1` <-> `TitleScreen_0/1/2` -> `TitleScreen_3`), `mjk_state_machine.c` (`GameState 0..C`: `Init`, `RoundIntro`, `LoadRoom`, `DrawScreen`, `EnterRoom`, `Main` + pausa, `TimeOver`, `TortureRoom` 50 BCD, `RoundClear` + `FireBombs >= 20`, `ExitRoom`, `GameOver` + GDV BCD, `AnimateDoorOpen` y 4 Finales `$A0..$A3`) y conexión con `MjkDebugOverlay` en `src/main.c`, validados (`8/8` CTest en 0.11 s + CLI headless 270f y SDL2 exit `0`).
 > - **Protocolo tras fin de cuota**: Al retomar en una nueva sesión, leer únicamente este `CHECKPOINT ACTIVO` y `project/PROJECT_STATUS.md`, tomar la **primera micro-tarea `[TODO]`** (1 sola por ciclo) y dejar compilación + `ctest` siempre en verde al cerrarla.
-> - **Siguiente micro-tarea**: **`T-12`** (Hito 4: implementar `mjk_title.c` — ciclo `TitleScreen_US_0/1` <-> `TitleScreen_0/1/2` -> `TitleScreen_3` -> `InGameFlag=1`, `GameState=0` + `CTest`).
-> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 4 (`T-15`).
+> - **Siguiente micro-tarea**: **`T-16`** (Hito 5: implementar `mjk_player.c` parte 1 — cinemática Q8.8, tabla de salto de 64 pasos, salto alto/bajo, flutter y movimiento horizontal + `CTest`).
+> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 5 (`T-24`).
 
 ---
 
@@ -30,10 +30,10 @@
 
 ## Hito 4 — Esqueleto Completo del Juego (Todas las Pantallas y Transiciones)
 
-- `[TODO]` **`T-12`**: Implementar `mjk_title.c`: ciclo completo `TitleScreen_US_0/1` (Copyright 256f) $\leftrightarrow$ `TitleScreen_0/1/2` (Title Screen 512f timeout) $\to$ `TitleScreen_3` (Jack Falling 73f) $\to$ `InGameFlag=1` + `CTest`.
-- `[TODO]` **`T-13`**: Implementar `mjk_state_machine.c` para el ciclo central (`GameState 0..5, 9, B`): `Init`, `RoundIntro` (96f), `LoadRoom`, `DrawScreen`, `EnterRoom` (24f), `Main` (pausa `START`), `AnimateDoorOpen` y `ExitRoom` (`AdjacentRoomsTable` + `Entry ^ 4`) + `CTest`.
-- `[TODO]` **`T-14`**: Implementar estados `RoundClear` (`0..3`, Time Bonus + Fire Bombs Bonus >= 20), `TimeOver` (128f), pérdida de vida/checkpoint (`LoseALifeMaybeGameOver`) y `GameOver` (256f + cálculo `PlayerGDV` y `HighGDV` -> Título) + `CTest`.
-- `[TODO]` **`T-15`**: Implementar `TortureRoom` (mensaje 192f, sala `$AC`, 50 saltos BCD en US, retorno a checkpoint) y `GameState_C_Ending` (`EndingDoorChecks` en `$A0..$A3` con los **4 finales** según Crystal Balls y Secret Coins -> `GameOver`) + `CTest`.
+- `[DONE]` **`T-12`**: Implementar `mjk_title.c`: ciclo completo `TitleScreen_US_0/1` (Copyright 256f) $\leftrightarrow$ `TitleScreen_0/1/2` (Title Screen 512f timeout) $\to$ `TitleScreen_3` (Jack Falling 73f) $\to$ `InGameFlag=1` + `CTest`.
+- `[DONE]` **`T-13`**: Implementar `mjk_state_machine.c` para el ciclo central (`GameState 0..5, 9, B`): `Init`, `RoundIntro` (96f), `LoadRoom`, `DrawScreen`, `EnterRoom` (24f), `Main` (pausa `START`), `AnimateDoorOpen` y `ExitRoom` (`AdjacentRoomsTable` + `Entry ^ 4`) + `CTest`.
+- `[DONE]` **`T-14`**: Implementar estados `RoundClear` (`0..3`, Time Bonus + Fire Bombs Bonus >= 20), `TimeOver` (128f), pérdida de vida/checkpoint (`LoseALifeMaybeGameOver`) y `GameOver` (256f + cálculo `PlayerGDV` y `HighGDV` -> Título) + `CTest`.
+- `[DONE]` **`T-15`**: Implementar `TortureRoom` (mensaje 192f, sala `$AC`, 50 saltos BCD en US, retorno a checkpoint) y `GameState_C_Ending` (`EndingDoorChecks` en `$A0..$A3` con los **4 finales** según Crystal Balls y Secret Coins -> `GameOver`) + `CTest`.
 
 ## Hito 5 — Mecánicas de Gameplay Fiel por Subsistema
 

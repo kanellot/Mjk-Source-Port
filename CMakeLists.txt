@@ -45,6 +45,8 @@ set(MJK_CORE_SOURCES
     src/core/mjk_assets.c
     src/core/mjk_ppu.c
     src/core/mjk_room_decoder.c
+    src/core/mjk_title.c
+    src/core/mjk_state_machine.c
 )
 
 # Target 1: Núcleo estático C11 puro
@@ -130,6 +132,12 @@ if(BUILD_TESTING)
     target_compile_definitions(test_room_decoder PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     mjk_apply_warnings(test_room_decoder)
     add_test(NAME mjk_room_decoder COMMAND test_room_decoder)
+
+    add_executable(test_state_machine tests/c/test_state_machine.c)
+    target_link_libraries(test_state_machine PRIVATE mjk_core)
+    target_compile_definitions(test_state_machine PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_state_machine)
+    add_test(NAME mjk_state_machine COMMAND test_state_machine)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

@@ -1,0 +1,23 @@
+source_state,target_state,event_or_condition,guard_variables,executed_routines,modified_variables,epistemic_status,asm_evidence
+TITLE_SCREEN,STATE_0_INIT,Press Start Button,Joypad1_Immediate & JP_START,TitleScreen_1,InGameFlag=1;GameState=0,[CONFIRMADA],prg.asm:1855-1880
+STATE_0_INIT,STATE_1_ROUND_INTRO,Init completed (immediate),None,GameState_0_Init;QueueSound,PlayerLives=3;PlayerGDV=$47;CurrentRoomID=1;GameState=1,[CONFIRMADA],prg.asm:323-361
+STATE_1_ROUND_INTRO,STATE_2_LOAD_ROOM,Wait timer expired,GameState1WaitTimer == 0,GameState_1_RoundIntro,GameState=2,[CONFIRMADA],prg.asm:7671-7673
+STATE_2_LOAD_ROOM,STATE_3_DRAW_SCREEN,Room data pointers loaded,None,GameState_2_LoadRoom;LoadRoomData,MaybeBombThing=0;RoomStatusFlags=0;GameState=3,[CONFIRMADA],prg.asm:3130-3135
+STATE_3_DRAW_SCREEN,STATE_4_ENTER_ROOM,Screen decompression done,None,GameState_3_DrawScreen;DrawFullScreen,Object0Struct cleared;GameState=4,[CONFIRMADA],prg.asm:379-441
+STATE_4_ENTER_ROOM,STATE_5_MAIN,Door entry anim finished,byte_340 & 4,GameState_4_EnterRoom;AnimateDoorClose,GameState=5,[CONFIRMADA],prg.asm:445-623
+STATE_5_MAIN,STATE_5_MAIN,Active frame tick,MaybePauseFlag & $20 == 0,MainSub_1;RunEnemyLogic;HandleStageTimer,PlayerX/Y;Enemies;TimerFrames,[CONFIRMADA],prg.asm:647-668
+STATE_5_MAIN,STATE_6_TIME_OVER,Stage timer reaches zero,StageTimer == 0,HandleStageTimer,GameState=6,[CONFIRMADA],prg.asm:1225-1232
+STATE_5_MAIN,STATE_7_GO_TO_TORTURE_ROOM,Greedy jumps limit triggered,GreedyJumpCounter > 10,GameState_7_GoToTortureRoom,CurrentRoomID=$AC;GreedyJumpsRemaining=$50;GameState=7,[CONFIRMADA],prg.asm:698-738
+STATE_5_MAIN,STATE_8_ROUND_CLEAR,All 23 bombs collected,BombsCollected == 23,MainSub_1,RoundClearState=0;GameState=8,[CONFIRMADA],prg.asm:776-785
+STATE_5_MAIN,STATE_9_EXIT_ROOM,Jack enters open exit door,PlayerIntersectsDoor && DoorIsOpen,GameState_5_Main,GameState=9,[CONFIRMADA],prg.asm:7294-7300
+STATE_5_MAIN,STATE_A_GAME_OVER,Jack dies with 0 lives left,PlayerLives == 0,MainSub_1;LoseALifeMaybeGameOver,GameState=$0A,[CONFIRMADA],prg.asm:1135-1151
+STATE_5_MAIN,STATE_B_ANIMATE_DOOR_OPEN,Secret door opened,DoorOpenConditionMet,AnimateDoorOpen,GameState=$0B,[CONFIRMADA],prg.asm:1122-1127
+STATE_6_TIME_OVER,STATE_A_GAME_OVER,Time over with 0 lives left,PlayerLives == 0,LoseALifeMaybeGameOver,GameState=$0A,[CONFIRMADA],prg.asm:685-694
+STATE_6_TIME_OVER,STATE_1_ROUND_INTRO,Time over with lives remaining,PlayerLives > 0,LoseALifeMaybeGameOver;MaybeGoBackToOldRoom,PlayerLives--;GameState=1,[CONFIRMADA],prg.asm:1140-1151
+STATE_7_GO_TO_TORTURE_ROOM,STATE_2_LOAD_ROOM,50 torture jumps completed (PLA;PLA),GreedyJumpsRemaining == 0,GameState_7_GoToTortureRoom;MaybeGoBackToOldRoom,CurrentRoomID=CheckpointRoomID;GameState=2,[CONFIRMADA],prg.asm:765-772
+STATE_8_ROUND_CLEAR,STATE_2_LOAD_ROOM,Bonus tally finished (RoundClear_3),RoundClearState == 3,RoundClear_3,CurrentRoomID++;GameState=2,[CONFIRMADA],prg.asm:995-1004
+STATE_9_EXIT_ROOM,STATE_2_LOAD_ROOM,Exit door anim closed (normal room),CurrentRoomID < $A0,GameState_9_ExitRoom,CurrentRoomID=NextRoomID;GameState=2,[CONFIRMADA],prg.asm:7305-7320
+STATE_9_EXIT_ROOM,STATE_C_ENDING,Exit door anim closed (pyramid final),CurrentRoomID >= $A0,EndingDoorChecks,EndingType=RoomID & 3;GameState=$0C,[CONFIRMADA],prg.asm:7376-7380
+STATE_A_GAME_OVER,TITLE_SCREEN,Game over timer expired,GameOverTimer == 0,GameState_A_GameOver,InGameFlag=0,[CONFIRMADA],prg.asm:1085-1091
+STATE_B_ANIMATE_DOOR_OPEN,STATE_5_MAIN,Door opening anim finished,AnimateDoorOpen finished,GameState_B_AnimateDoorOpen,GameState=5,[CONFIRMADA],prg.asm:1125-1127
+STATE_C_ENDING,TITLE_SCREEN,Ending cutscene 4 finished,EndingState == 4 && Timer == 0,EndingState_4,InGameFlag=0,[CONFIRMADA],prg.asm:7706-7725

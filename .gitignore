@@ -1,0 +1,55 @@
+# =============================================================================
+# Mighty Bomb Jack - Git Ignore
+# =============================================================================
+
+# Desmontaje Ensamblador Original (repo independiente)
+/asm/
+
+# ROMs originales y paquetes de assets con copyright (Clean-Room BYOR)
+*.nes
+*.rom
+*.dat
+*.chr
+/assets/*.dat
+/bin/assets/
+
+# Librerías externas y dependencias de terceros
+/third_party/
+
+# Tests y arneses de verificación
+/tests/
+
+# Herramientas de análisis, ingeniería inversa y scripts de debug
+/tools/*
+!/tools/extract_assets.py
+!/tools/dual_play_recorder.py
+!/tools/hierarchical_parity_oracle.py
+!/tools/inspect_parity.py
+
+# Binarios y directorios de compilación
+/bin/
+build/
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# Entorno de pruebas y renders temporales
+/scratch/
+
+# Archivos multimedia y documentación en PDF
+*.mp4
+*.pdf
+
+# Configuración de agentes
+/.agents/
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# IDEs y editores
+.vscode/
+.vs/
+*.suo
+*.user

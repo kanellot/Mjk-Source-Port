@@ -91,6 +91,17 @@ bool MjkObjects_UseMightyCoin(MjkGame* game, bool* out_trigger_transmute) {
     return true;
 }
 
+static void spawn_puff_popup(MjkGame* game, const MjkBombPuff* puff) {
+    uint8_t px = MjkUQ8_Int(puff->x);
+    uint8_t py = MjkUQ8_Int(puff->y);
+    uint8_t fx = (px >= 8u) ? (uint8_t)(px - 8u) : 0u;
+    uint8_t fy = (py >= 8u) ? (uint8_t)(py - 8u) : 0u;
+    MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS,
+                              fx, fy,
+                              puff->bomb_type ? MJK_SCORE_200 : MJK_SCORE_100,
+                              game->score_multiplier, game->room.is_bomb_room);
+}
+
 static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
                          MjkRoomState* target_room, uint8_t target_nt,
                          bool in_right, MjkRoomPersistSlot* slot, uint8_t obj_idx) {
@@ -129,12 +140,18 @@ static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
     }
     if (obj->power_coin_acc >= 20u) {
         obj->power_coin_acc = 0u;
-        obj->power_coin_armed = 1u;
-        if (!target_room->is_bomb_room) {
+        if (target_room->is_bomb_room) {
+            MjkEnemy_SpawnPowerCoinBombRoom(&game->enemies, game);
+            play_sfx(game, MJK_SND_POWER_COIN_SPAWN);
+        } else {
+            obj->power_coin_armed = 1u;
             play_sfx(game, MJK_SND_BOMB_CHEST_BONUS);
         }
     }
 
+    if (obj->puff.active && obj->puff.phase == 0u) {
+        spawn_puff_popup(game, &obj->puff);
+    }
     obj->puff.active = true;
     obj->puff.phase = 0u;
     obj->puff.timer = 32u;
@@ -177,6 +194,8 @@ static void open_chest(MjkObjectSystem* obj, MjkGame* game,
     uint8_t item_id = (uint8_t)(ro->opcode & 0x0Fu);
     if ((item_id == 7u || item_id == 9u) && game->collected_1up != 0u) {
         item_id = 8u;
+    } else if (item_id == (uint8_t)MJK_ENEMY_BROTHER && game->collected_1up != 0u) {
+        item_id = (uint8_t)MJK_ENEMY_CAPTIVE;
     }
 
     int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
@@ -202,6 +221,9 @@ static void open_chest(MjkObjectSystem* obj, MjkGame* game,
         }
         set_room_metatile(game, target_room, target_nt, ro->yx, 0x2Fu);
         MjkEnemy_SpawnCollectible(&game->enemies, (MjkEnemyType)item_id, sx, sy);
+        if (item_id == (uint8_t)MJK_ENEMY_EXTRA_COIN || item_id == (uint8_t)MJK_ENEMY_BONUS_COIN) {
+            play_sfx(game, MJK_SND_BONUS_COIN_SPAWN);
+        }
     }
 
     if (obj->power_coin_armed != 0u) {
@@ -211,7 +233,7 @@ static void open_chest(MjkObjectSystem* obj, MjkGame* game,
 }
 
 static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uint8_t target_nt,
-                                   MjkRoomPersistSlot* slot, uint8_t obj_idx) {
+                                   bool in_right, MjkRoomPersistSlot* slot, uint8_t obj_idx) {
     MjkRoomObject* ro = &target_room->objects[obj_idx];
     uint8_t item_id = ro->ram_state;
     ro->ram_state = 0x0Fu;
@@ -220,17 +242,44 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
     }
     set_room_metatile(game, target_room, target_nt, ro->yx, 0x2Fu);
 
+    int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
+    int32_t sx_i = (int32_t)((ro->yx & 0x0Fu) << 4u) + (in_right ? 256 : 0) - scroll_x;
+    if (sx_i < 0) { sx_i = 0; }
+    if (sx_i > 255) { sx_i = 255; }
+    uint8_t sx = (uint8_t)sx_i;
+    uint8_t sy = (uint8_t)(ro->yx & 0xF0u);
+
     switch (item_id) {
-        case MJK_ITEM_100_BAG:    MjkGame_AddScore(game, MJK_SCORE_100); break;
-        case MJK_ITEM_300_BAG:    MjkGame_AddScore(game, MJK_SCORE_300); break;
-        case MJK_ITEM_1000_BAG:   MjkGame_AddScore(game, MJK_SCORE_1000); break;
+        case MJK_ITEM_100_BAG:
+            MjkGame_AddScore(game, MJK_SCORE_100);
+            play_sfx(game, MJK_SND_BOMB_LIT);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_100, game->score_multiplier, game->room.is_bomb_room);
+            break;
+        case MJK_ITEM_300_BAG:
+            MjkGame_AddScore(game, MJK_SCORE_300);
+            play_sfx(game, MJK_SND_BOMB_LIT);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_300, game->score_multiplier, game->room.is_bomb_room);
+            break;
+        case MJK_ITEM_1000_BAG:
+            MjkGame_AddScore(game, MJK_SCORE_1000);
+            play_sfx(game, MJK_SND_BOMB_LIT);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_1000, game->score_multiplier, game->room.is_bomb_room);
+            break;
         case MJK_ITEM_GOLD_COIN:
             MjkGame_AddScore(game, MJK_SCORE_500);
             game->gold_coins++;
+            play_sfx(game, MJK_SND_COIN_COLLECTED);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_500, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_MIGHTY_DRINK: {
             MjkGame_AddScore(game, MJK_SCORE_1000);
             play_sfx(game, MJK_SND_TIME_PICKUP);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_1000, game->score_multiplier, game->room.is_bomb_room);
             uint8_t carry = 0u;
             game->stage_timer_bcd = MjkBcd_AddByte(game->stage_timer_bcd, 0x10u, 0u, &carry);
             if (carry != 0u || game->stage_timer_bcd >= 0xA0u) {
@@ -240,6 +289,9 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
         }
         case MJK_ITEM_SPHINX:
             MjkGame_AddScore(game, MJK_SCORE_10000);
+            play_sfx(game, MJK_SND_DOOR);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_10000, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_TECMO_PLATE:
             MjkGame_AddScore(game, MJK_SCORE_100000);
@@ -247,29 +299,39 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
             game->extra_lives_found++;
             game->collected_1up = 1u;
             play_sfx(game, MJK_SND_1UP_CAPTIVE);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_100000, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_MIGHTY_COIN:
             MjkGame_AddScore(game, MJK_SCORE_1000);
             game->mighty_coins++;
+            play_sfx(game, MJK_SND_COIN_COLLECTED);
+            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
+                                      MJK_SCORE_1000, game->score_multiplier, game->room.is_bomb_room);
             if (game->mighty_coins >= 10u) {
                 return MjkGame_TriggerTortureRoom(game);
             }
             break;
         case MJK_ITEM_CRYSTAL_BALL_1:
             game->crystal_balls_mask |= 1u;
+            game->gdv_bcd = MjkGame_AddGdvBcd(game->gdv_bcd, 1u);
             play_sfx(game, MJK_SND_CRYSTAL_BALL);
             break;
         case MJK_ITEM_CRYSTAL_BALL_2:
             game->crystal_balls_mask |= 2u;
+            game->gdv_bcd = MjkGame_AddGdvBcd(game->gdv_bcd, 1u);
             play_sfx(game, MJK_SND_CRYSTAL_BALL);
             break;
         case MJK_ITEM_KING:
         case MJK_ITEM_QUEEN:
         case MJK_ITEM_PRINCESS:
             MjkGame_AddScore(game, MJK_SCORE_10000);
+            play_sfx(game, MJK_SND_DOOR);
             break;
         case MJK_ITEM_BEELZEBUT_MASK:
             MjkGame_AddScore(game, MJK_SCORE_1000000);
+            play_sfx(game, MJK_SND_DOOR);
+            play_sfx(game, MJK_MUS_COLLECTED_FULL_FAMILY);
             break;
         default:
             break;
@@ -288,23 +350,25 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
         bool transmute = false;
         MjkObjects_UseMightyCoin(game, &transmute);
         if (transmute) {
-            MjkEnemy_ActivatePowerCoin(&game->enemies);
+            MjkEnemy_ActivatePowerCoinEx(&game->enemies, game);
         }
     }
 
     if (obj->puff.active) {
-        obj->puff.x = (mjk_uq8_8_t)(obj->puff.x + (game->camera.delta_cam_x << 8));
-        obj->puff.y = (mjk_uq8_8_t)(obj->puff.y + (game->camera.delta_cam_y << 8));
-        if (obj->puff.timer > 0u) {
+        int32_t pnx = (int32_t)obj->puff.x + (int32_t)game->camera.delta_cam_x * 256;
+        int32_t pny = (int32_t)obj->puff.y + (int32_t)game->camera.delta_cam_y * 256;
+        if (pnx < 0 || pnx >= 0x10000 || pny < 0 || pny >= 0x10000) {
+            obj->puff.active = false;
+        } else {
+            obj->puff.x = (mjk_uq8_8_t)pnx;
+            obj->puff.y = (mjk_uq8_8_t)pny;
+        }
+        if (obj->puff.active && obj->puff.timer > 0u) {
             obj->puff.timer--;
         }
-        if (obj->puff.timer == 0u) {
-            if (obj->puff.phase == 0u) {
-                obj->puff.phase = 1u;
-                obj->puff.timer = 32u;
-            } else {
-                obj->puff.active = false;
-            }
+        if (obj->puff.active && obj->puff.timer == 0u) {
+            spawn_puff_popup(game, &obj->puff);
+            obj->puff.active = false;
         }
     }
 
@@ -325,6 +389,25 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
     uint8_t jy = (uint8_t)(MjkUQ8_Int(game->player.pos_y) + (uint8_t)(game->camera.scroll_y_fixed >> 8));
     uint8_t j_yx = (uint8_t)((jy & 0xF0u) | (jx >> 4u));
     uint8_t feet_yx = (uint8_t)(((jy + 8u) & 0xF0u) | (jx >> 4u));
+
+    bool facing_right = (game->player.facing_attr == 0x04u);
+    if (input && (input->held & MJK_BTN_RIGHT) != 0u && (input->held & MJK_BTN_LEFT) == 0u) {
+        facing_right = true;
+    } else if (input && (input->held & MJK_BTN_LEFT) != 0u && (input->held & MJK_BTN_RIGHT) == 0u) {
+        facing_right = false;
+    }
+    int32_t side_wx = facing_right ? ((int32_t)wx + 9) : ((int32_t)wx - 9);
+    bool has_side = (side_wx >= 0 && side_wx < 512 &&
+                     (side_wx < 256 || game->camera.neighbor_room_id != 0u));
+    bool side_in_right = (side_wx >= 256 && game->camera.neighbor_room_id != 0u);
+    MjkRoomState* side_room = side_in_right ? &game->right_room : &game->room;
+    uint8_t side_nt = side_in_right ? 1u : 0u;
+    uint8_t side_yx = has_side
+        ? (uint8_t)((jy & 0xF0u) | (((uint32_t)side_wx & 0xFFu) >> 4u))
+        : 0xFFu;
+    bool has_head = (game->player.vel_y < 0 || (game->player.collision_flags & MJK_CF_CEILING) != 0u) &&
+                    (jy >= 9u);
+    uint8_t head_yx = has_head ? (uint8_t)(((uint8_t)(jy - 9u) & 0xF0u) | (jx >> 4u)) : 0xFFu;
 
     if (game->player.just_jumped && obj->chest_target_yx != 0u) {
         bool chest_in_right = (obj->chest_target_room_id == game->right_room.room_id &&
@@ -380,7 +463,11 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
                 obj->chest_target_yx = ro->yx;
                 obj->chest_target_room_id = target_room->room_id;
             }
-            if (ro->yx == j_yx && game->mighty_level >= 2u && (st & 0x20u) == 0u) {
+            bool hit_mighty2 = (game->mighty_level >= 2u && (st & 0x20u) == 0u) &&
+                               (ro->yx == j_yx ||
+                                (has_head && ro->yx == head_yx) ||
+                                (has_side && side_room == target_room && ro->yx == side_yx));
+            if (hit_mighty2) {
                 open_chest(obj, game, target_room, target_nt, in_right, slot, i);
                 continue;
             }
@@ -406,9 +493,22 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
         }
 
         if (st <= 0x0Eu && ro->yx == j_yx) {
-            MjkActionResult res = pickup_item(game, target_room, target_nt, slot, i);
+            MjkActionResult res = pickup_item(game, target_room, target_nt, in_right, slot, i);
             if (res != MJK_ACTION_CONTINUE) {
                 return res;
+            }
+        }
+    }
+
+    if (has_side && side_room != target_room && game->mighty_level >= 2u) {
+        MjkRoomPersistSlot* side_slot = get_slot_for_room(game, side_room->room_id);
+        for (uint8_t i = 0u; i < side_room->object_count; ++i) {
+            MjkRoomObject* ro = &side_room->objects[i];
+            uint8_t st = ro->ram_state;
+            if (((st & 0x1Fu) == 0x10u || (st & 0x1Fu) == 0x11u) &&
+                (st & 0x20u) == 0u && ro->yx == side_yx) {
+                open_chest(obj, game, side_room, side_nt, side_in_right, side_slot, i);
+                break;
             }
         }
     }

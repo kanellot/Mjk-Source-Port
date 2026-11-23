@@ -33,9 +33,13 @@ void MjkGame_AddScore(MjkGame* game, MjkScoreId score_id) {
     bool spawn_extra = false;
     MjkHud_AddScore(game, score_id, &spawn_bonus, &spawn_extra);
     if (spawn_extra) {
-        MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_EXTRA_COIN, 0x80u, 0x40u);
+        if (MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_EXTRA_COIN, 0x80u, 0x40u)) {
+            MjkGame_QueueSound(game, MJK_SND_BONUS_COIN_SPAWN);
+        }
     } else if (spawn_bonus) {
-        MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_BONUS_COIN, 0x80u, 0x40u);
+        if (MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_BONUS_COIN, 0x80u, 0x40u)) {
+            MjkGame_QueueSound(game, MJK_SND_BONUS_COIN_SPAWN);
+        }
     }
 }
 
@@ -291,8 +295,9 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             if (game->room.is_bomb_room) {
                 game->mighty_level = 0u;
                 game->mighty_presses_left = 0u;
-                game->ppu.palette_ram[0x17u] = 0x16u;
             }
+            MjkPpu_SetJackMightyColor(&game->ppu, game->pkg, game->mighty_level);
+            MjkPpu_RestoreEnemyPalettes(&game->ppu, game->pkg);
             MjkRoom_BlitToPpu(&game->room, game->pkg, &game->ppu, 0u);
             if (game->camera.neighbor_room_id != 0u) {
                 MjkRoom_BlitToPpu(&game->right_room, game->pkg, &game->ppu, 1u);
@@ -350,6 +355,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             }
             MjkSoundId sfx = MJK_SND_SILENCE;
             bool add_10 = false;
+            uint8_t prev_mighty = game->mighty_level;
             MjkActionResult p_res = MjkPlayer_Update(
                 &game->player, input, game->pkg, &game->room,
                 (game->camera.neighbor_room_id != 0u) ? &game->right_room : NULL,
@@ -359,6 +365,9 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 game->torture_scene_flag != 0u,
                 &game->mighty_level, &game->mighty_presses_left, &game->mighty_coins,
                 &sfx, &add_10);
+            if (game->mighty_level != prev_mighty) {
+                MjkPpu_SetJackMightyColor(&game->ppu, game->pkg, game->mighty_level);
+            }
             game->jack_x = MjkUQ8_Int(game->player.pos_x);
             game->jack_y = MjkUQ8_Int(game->player.pos_y);
             if (sfx != MJK_SND_SILENCE) {

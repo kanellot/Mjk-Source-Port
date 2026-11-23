@@ -103,22 +103,27 @@ void MjkHud_SpawnFloatingScore(MjkFloatingScore* popups,
         0x34u, 0x35u, 0x35u, 0x31u, 0x31u, 0x32u, 0x31u, 0x32u,
         0x33u, 0x34u, 0x33u, 0x34u, 0x35u, 0x38u, 0x31u, 0x31u
     };
-    if (!popups) {
+    if (!popups || max_popups == 0u) {
         return;
     }
+    size_t chosen = 0u;
     for (size_t i = 0u; i < max_popups; ++i) {
         if (!popups[i].active) {
-            popups[i].active = true;
-            popups[i].timer = MJK_FLOAT_SCORE_FRAMES;
-            popups[i].tl_tile = k_hi_tile[(uint8_t)score_id & 31u];
-            popups[i].tr_tile = 0x30u;
-            popups[i].br_tile = (is_bomb_room && mult >= 2u && mult <= 5u)
-                ? (uint8_t)(0x3Au + mult) : 0x0Fu;
-            popups[i].x = MjkUQ8_FromInt(x);
-            popups[i].y = MjkUQ8_FromInt(y);
-            return;
+            chosen = i;
+            break;
+        }
+        if (popups[i].timer < popups[chosen].timer) {
+            chosen = i;
         }
     }
+    popups[chosen].active = true;
+    popups[chosen].timer = MJK_FLOAT_SCORE_FRAMES;
+    popups[chosen].tl_tile = k_hi_tile[(uint8_t)score_id & 31u];
+    popups[chosen].tr_tile = 0x30u;
+    popups[chosen].br_tile = (is_bomb_room && mult >= 1u && mult <= 4u)
+        ? (uint8_t)(0x3Bu + mult) : 0x0Fu;
+    popups[chosen].x = MjkUQ8_FromInt(x);
+    popups[chosen].y = MjkUQ8_FromInt(y);
 }
 
 void MjkHud_TickFloating(MjkFloatingScore* popups,
@@ -132,8 +137,14 @@ void MjkHud_TickFloating(MjkFloatingScore* popups,
         if (!popups[i].active) {
             continue;
         }
-        popups[i].x = (mjk_uq8_8_t)(popups[i].x + (uint16_t)(delta_cam_x * 256));
-        popups[i].y = (mjk_uq8_8_t)(popups[i].y + (uint16_t)(delta_cam_y * 256));
+        int32_t nx = (int32_t)popups[i].x + (int32_t)delta_cam_x * 256;
+        int32_t ny = (int32_t)popups[i].y + (int32_t)delta_cam_y * 256;
+        if (nx < 0 || nx >= 0x10000 || ny < 0 || ny >= 0x10000) {
+            popups[i].active = false;
+            continue;
+        }
+        popups[i].x = (mjk_uq8_8_t)nx;
+        popups[i].y = (mjk_uq8_8_t)ny;
         if (popups[i].timer > 0u) {
             popups[i].timer--;
         }

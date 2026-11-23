@@ -65,6 +65,17 @@ void MjkPpu_RestoreDefaultPalettes(MjkPpu* ppu, const MjkAssetPackage* pkg) {
     }
 }
 
+void MjkPpu_RestoreEnemyPalettes(MjkPpu* ppu, const MjkAssetPackage* pkg) {
+    if (!ppu || !pkg) {
+        return;
+    }
+    const uint8_t* pal = MjkAssets_ResolveCpuPtr(pkg, MJK_ADDR_MAIN_PALETTE, MJK_PPU_PALETTE_SIZE);
+    if (pal) {
+        memcpy(ppu->palette_ram + 0x19u, pal + 0x19u, 3u);
+        memcpy(ppu->palette_ram + 0x1Du, pal + 0x1Du, 3u);
+    }
+}
+
 bool MjkPpu_LoadRoomPalette(MjkPpu* ppu, const MjkAssetPackage* pkg, uint8_t set_idx) {
     if (!ppu || !pkg || set_idx >= 9u) {
         return false;

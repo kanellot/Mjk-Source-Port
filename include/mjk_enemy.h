@@ -50,6 +50,7 @@ typedef struct {
     uint8_t  spawn_cursor;
     uint16_t transmute_timer;
     uint8_t  transmute_streak;
+    uint8_t  post_transmute_grace;
 } MjkEnemyManager;
 
 MJK_CORE_API void MjkEnemy_InitForRoom(MjkEnemyManager* mgr,
@@ -58,6 +59,10 @@ MJK_CORE_API void MjkEnemy_InitForRoom(MjkEnemyManager* mgr,
                                        bool is_bomb_room);
 
 MJK_CORE_API void MjkEnemy_ActivatePowerCoin(MjkEnemyManager* mgr);
+
+MJK_CORE_API void MjkEnemy_ActivatePowerCoinEx(MjkEnemyManager* mgr, struct MjkGame* game);
+
+MJK_CORE_API bool MjkEnemy_SpawnPowerCoinBombRoom(MjkEnemyManager* mgr, const struct MjkGame* game);
 
 MJK_CORE_API bool MjkEnemy_SpawnCollectible(MjkEnemyManager* mgr,
                                             MjkEnemyType type,

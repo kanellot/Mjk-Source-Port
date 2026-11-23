@@ -67,8 +67,8 @@ int main(void) {
     for (int f = 0; f < 32; ++f) {
         MjkObjects_Update(&g.objects, &g, &in);
     }
-    if (!g.objects.puff.active || g.objects.puff.phase != 1u) {
-        fprintf(stderr, "[FAIL] Puff no paso a fase 2\n");
+    if (g.objects.puff.active || !g.popups[0].active) {
+        fprintf(stderr, "[FAIL] Puff no paso a popup flotante tras 32f\n");
         g_failures++;
     }
 

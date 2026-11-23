@@ -3,7 +3,7 @@
  * @brief Implementación de IA de enemigos, colisiones, mutación y Power Coin (asm/src/prg.asm:8171-10159).
  */
 
-#include "mjk_enemy.h"
+#include "mjk_enemy_internal.h"
 #include "mjk_game.h"
 #include "mjk_hud.h"
 #include <string.h>
@@ -14,11 +14,11 @@ static const uint8_t k_enemy_partial_masks[10] = {
     0xCCu, 0xFCu, 0x48u, 0x5Au, 0x7Bu, 0xDEu, 0x21u, 0x35u, 0xACu, 0x3Cu
 };
 
-static bool is_monster_type(uint8_t t) {
+bool MjkEnemyInternal_IsMonsterType(uint8_t t) {
     return t <= 7u || t == MJK_ENEMY_MUMMY1 || t == MJK_ENEMY_MUMMY2;
 }
 
-static mjk_q8_8_t enemy_speed_q8(const MjkAssetPackage* pkg, uint8_t speed_tier) {
+mjk_q8_8_t MjkEnemyInternal_SpeedQ8(const MjkAssetPackage* pkg, uint8_t speed_tier) {
     uint16_t raw = 0x0058u;
     uint8_t idx = (speed_tier < 8u) ? speed_tier : 7u;
     if (pkg) {
@@ -33,7 +33,7 @@ static uint8_t enemy_gameido_div(const MjkAssetPackage* pkg, uint8_t speed_tier)
     return (tbl && tbl[idx] != 0u) ? tbl[idx] : 0x4Cu;
 }
 
-static uint8_t archetype_sprite_id(uint8_t t, uint8_t anim, bool facing_left) {
+uint8_t MjkEnemyInternal_ArchetypeSpriteId(uint8_t t, uint8_t anim, bool facing_left) {
     uint8_t phase = (uint8_t)((anim >> 3u) & 1u);
     switch (t) {
         case MJK_ENEMY_MUMMY:
@@ -48,14 +48,15 @@ static uint8_t archetype_sprite_id(uint8_t t, uint8_t anim, bool facing_left) {
         case MJK_ENEMY_POWER_COIN: return 0x20u;
         case MJK_ENEMY_EXTRA_COIN: return 0x1Bu;
         case MJK_ENEMY_SECRET_COIN:return 0x1Fu;
-        case MJK_ENEMY_CAPTIVE:    return 0x23u;
+        case MJK_ENEMY_CAPTIVE:
+        case MJK_ENEMY_BROTHER:    return 0x23u;
         case MJK_ENEMY_BALLOON:    return 0x24u;
         case MJK_ENEMY_BONUS_COIN: return 0x19u;
         default:                   return 0x0Eu;
     }
 }
 
-static uint8_t archetype_palette(uint8_t t) {
+uint8_t MjkEnemyInternal_ArchetypePalette(uint8_t t) {
     switch (t) {
         case MJK_ENEMY_HANEZO:
         case MJK_ENEMY_GEJISHOGUN: return 2u;
@@ -102,7 +103,7 @@ static bool probe_enemy_solid(const MjkGame* game, int32_t wx, int32_t wy) {
     return false;
 }
 
-static uint8_t calc_enemy_collision_flags(const MjkGame* game, uint8_t ex, uint8_t ey) {
+uint8_t MjkEnemyInternal_CalcCollisionFlags(const MjkGame* game, uint8_t ex, uint8_t ey) {
     int32_t wx = (int32_t)ex + (int32_t)(game->camera.scroll_x_fixed >> 8);
     int32_t wy = (int32_t)ey + (int32_t)(game->camera.scroll_y_fixed >> 8);
     uint8_t cf = 0u;
@@ -113,7 +114,7 @@ static uint8_t calc_enemy_collision_flags(const MjkGame* game, uint8_t ex, uint8
     return cf;
 }
 
-static void init_mummy_fall(MjkEnemy* e, uint8_t transform_reload) {
+void MjkEnemyInternal_InitMummyFall(MjkEnemy* e, uint8_t transform_reload) {
     e->falling = true;
     e->jump_accum = 0x4000u;
     e->vel_x = 0;
@@ -139,7 +140,7 @@ static void update_gameido_vel(MjkEnemy* e, const MjkGame* game, const MjkEnemyM
 }
 
 static void init_archetype(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* mgr) {
-    mjk_q8_8_t spd = enemy_speed_q8(game->pkg, mgr->speed_tier);
+    mjk_q8_8_t spd = MjkEnemyInternal_SpeedQ8(game->pkg, mgr->speed_tier);
     uint8_t ex = MjkUQ8_Int(e->pos_x);
     uint8_t ey = MjkUQ8_Int(e->pos_y);
     e->ai_timer = 0u;
@@ -161,7 +162,7 @@ static void init_archetype(MjkEnemy* e, const MjkGame* game, const MjkEnemyManag
 static void transform_mummy(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* mgr) {
     e->type = (uint8_t)((game->player.a_press_counter % 6u) + 2u);
     e->spawn_flash_timer = 0x20u;
-    e->attr_base = archetype_palette(e->type);
+    e->attr_base = MjkEnemyInternal_ArchetypePalette(e->type);
     init_archetype(e, game, mgr);
 }
 
@@ -200,7 +201,7 @@ static void step_mummy(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* 
             e->transform_timer--;
             if (!e->edge_turned) { e->edge_turned = true; e->vel_x = (mjk_q8_8_t)(-e->vel_x); }
         } else if (game->room.is_bomb_room) {
-            init_mummy_fall(e, mgr->transform_reload);
+            MjkEnemyInternal_InitMummyFall(e, mgr->transform_reload);
         } else {
             transform_mummy(e, game, mgr);
         }
@@ -235,8 +236,8 @@ static void step_horus(MjkEnemy* e, const MjkGame* game, mjk_q8_8_t spd, uint8_t
 
 static void step_enemy_ai(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* mgr) {
     uint8_t ex = MjkUQ8_Int(e->pos_x), ey = MjkUQ8_Int(e->pos_y);
-    uint8_t cf = calc_enemy_collision_flags(game, ex, ey);
-    mjk_q8_8_t spd = enemy_speed_q8(game->pkg, mgr->speed_tier);
+    uint8_t cf = MjkEnemyInternal_CalcCollisionFlags(game, ex, ey);
+    mjk_q8_8_t spd = MjkEnemyInternal_SpeedQ8(game->pkg, mgr->speed_tier);
 
     switch (e->type) {
         case MJK_ENEMY_MUMMY: step_mummy(e, game, mgr, cf); break;
@@ -300,40 +301,6 @@ void MjkEnemy_InitForRoom(MjkEnemyManager* mgr, const MjkAssetPackage* pkg,
     mgr->spawn_timer = mgr->spawn_reload;
 }
 
-void MjkEnemy_ActivatePowerCoin(MjkEnemyManager* mgr) {
-    if (!mgr) { return; }
-    mgr->transmute_timer = MJK_POWER_COIN_FRAMES;
-    mgr->transmute_streak = 0u;
-    for (size_t i = 0u; i < MJK_ENEMY_MAX_SLOTS; ++i) {
-        if (mgr->slots[i].active && is_monster_type(mgr->slots[i].type)) { mgr->slots[i].transmuted = true; }
-    }
-}
-
-bool MjkEnemy_SpawnCollectible(MjkEnemyManager* mgr, MjkEnemyType type, uint8_t x, uint8_t y) {
-    if (!mgr) { return false; }
-    for (size_t i = 0u; i < MJK_ENEMY_MAX_SLOTS; ++i) {
-        if (!mgr->slots[i].active) {
-            MjkEnemy* e = &mgr->slots[i];
-            memset(e, 0, sizeof(*e));
-            e->active = true;
-            e->pos_x = MjkUQ8_FromInt(x);
-            e->pos_y = MjkUQ8_FromInt(y);
-            if (type == MJK_ENEMY_MUMMY || type == MJK_ENEMY_MUMMY1 || type == MJK_ENEMY_MUMMY2) {
-                e->type = MJK_ENEMY_MUMMY;
-                e->spawn_flash_timer = 0x20u;
-                init_mummy_fall(e, mgr->transform_reload);
-                mgr->alive_count++;
-            } else {
-                e->type = (uint8_t)type;
-            }
-            e->sprite_id = archetype_sprite_id(e->type, 0u, false);
-            e->attr_base = archetype_palette(e->type);
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool try_spawn_candidate(uint8_t yx, bool is_right_room, int32_t scroll_x,
                                 uint8_t* out_sx, uint8_t* out_sy) {
     if (yx == 0x00u) { return false; }
@@ -373,10 +340,24 @@ static void spawn_mummy(MjkEnemyManager* mgr, const MjkGame* game) {
 MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
     if (!mgr || !game || !game->pkg) { return MJK_ACTION_CONTINUE; }
 
+    if (mgr->post_transmute_grace > 0u) {
+        mgr->post_transmute_grace--;
+    }
+
     if (mgr->transmute_timer > 0u) {
         mgr->transmute_timer--;
         if (mgr->transmute_timer == 0u) {
             for (size_t i = 0u; i < MJK_ENEMY_MAX_SLOTS; ++i) { mgr->slots[i].transmuted = false; }
+            MjkPpu_RestoreEnemyPalettes(&game->ppu, game->pkg);
+            game->objects.power_coin_armed = 0u;
+            game->objects.power_coin_acc = 0u;
+            const uint8_t* mus_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_MUSIC_OPTIONS, 8u);
+            if (mus_tbl) {
+                uint8_t m_idx = (uint8_t)(game->room.music_id & 7u);
+                if (m_idx == 0u) { m_idx = 1u; }
+                MjkGame_QueueSound(game, (MjkSoundId)mus_tbl[m_idx]);
+            }
+            mgr->post_transmute_grace = 32u;
         }
     } else {
         if (mgr->spawn_timer > 0u) { mgr->spawn_timer--; }
@@ -397,9 +378,11 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
         e->pos_y = (mjk_uq8_8_t)ny;
         e->anim_timer++;
 
-        if (is_monster_type(e->type)) {
+        if (MjkEnemyInternal_IsMonsterType(e->type)) {
             mgr->alive_count++;
-            if (e->spawn_flash_timer > 0u) {
+            if (e->transmuted) {
+                /* Transmutados en moneda quedan congelados en su posición (solo scroll). */
+            } else if (e->spawn_flash_timer > 0u) {
                 e->spawn_flash_timer--;
             } else {
                 step_enemy_ai(e, game, mgr);
@@ -413,42 +396,31 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
                 e->pos_x = (mjk_uq8_8_t)nx;
                 e->pos_y = (mjk_uq8_8_t)ny;
             }
+        } else if (!MjkEnemyInternal_StepCollectible(e, game)) {
+            continue;
         }
 
-        int16_t dx = (int16_t)MjkUQ8_Int(e->pos_x) - (int16_t)game->jack_x;
-        int16_t dy = (int16_t)MjkUQ8_Int(e->pos_y) - (int16_t)game->jack_y;
+        uint8_t ex = MjkUQ8_Int(e->pos_x);
+        uint8_t ey = MjkUQ8_Int(e->pos_y);
+        int16_t dx = (int16_t)ex - (int16_t)game->jack_x;
+        int16_t dy = (int16_t)ey - (int16_t)game->jack_y;
         if (dx > -8 && dx < 8 && dy > -8 && dy < 8) {
             if (e->transmuted) {
-                static const MjkScoreId k_chain[7] = {
-                    MJK_SCORE_100, MJK_SCORE_200, MJK_SCORE_300, MJK_SCORE_500,
-                    MJK_SCORE_800, MJK_SCORE_1200, MJK_SCORE_2000
-                };
-                uint8_t s_idx = (mgr->transmute_streak < 7u) ? mgr->transmute_streak : 6u;
-                MjkGame_AddScore(game, k_chain[s_idx]);
-                if (mgr->transmute_streak < 6u) { mgr->transmute_streak++; }
-                e->active = false;
-                if (mgr->alive_count > 0u) { mgr->alive_count--; }
-            } else if (!is_monster_type(e->type)) {
-                if (e->type == MJK_ENEMY_POWER_COIN) { MjkEnemy_ActivatePowerCoin(mgr); }
-                else if (e->type == MJK_ENEMY_EXTRA_COIN) {
-                    game->lives++; game->extra_lives_found++; MjkGame_QueueSound(game, MJK_SND_1UP_CAPTIVE);
-                } else if (e->type == MJK_ENEMY_SECRET_COIN) {
-                    game->secret_coins++; MjkGame_AddScore(game, MJK_SCORE_50000);
-                } else if (e->type == MJK_ENEMY_BONUS_COIN && game->score_multiplier < 4u) {
-                    game->score_multiplier++;
-                }
-                e->active = false;
+                MjkEnemyInternal_HandleTransmutedPickup(e, mgr, game, ex, ey);
+            } else if (!MjkEnemyInternal_IsMonsterType(e->type)) {
+                MjkEnemyInternal_HandleCollectiblePickup(e, mgr, game, ex, ey);
             } else if (game->mighty_level == 3u) {
                 MjkGame_AddScore(game, MJK_SCORE_500);
                 e->active = false;
                 if (mgr->alive_count > 0u) { mgr->alive_count--; }
-            } else if (!game->player.is_dying && e->spawn_flash_timer == 0u) {
+            } else if (!game->player.is_dying && e->spawn_flash_timer == 0u &&
+                       mgr->post_transmute_grace == 0u) {
                 game->player.is_dying = true;
                 game->player.death_timer = 0u;
                 MjkGame_QueueSound(game, MJK_SND_DEATH);
             }
         }
-        if (e->active) { e->sprite_id = archetype_sprite_id(e->type, e->anim_timer, e->facing_left); }
+        if (e->active) { e->sprite_id = MjkEnemyInternal_ArchetypeSpriteId(e->type, e->anim_timer, e->facing_left); }
     }
     return MJK_ACTION_CONTINUE;
 }
@@ -463,9 +435,11 @@ uint8_t MjkEnemy_RenderOam(const MjkEnemyManager* mgr, const MjkAssetPackage* pk
         uint8_t ex = MjkUQ8_Int(e->pos_x), ey = MjkUQ8_Int(e->pos_y);
         if (ey >= 240u) { continue; }
         if (e->transmuted) {
-            if (mgr->transmute_timer < 64u && ((mgr->transmute_timer >> 2u) & 1u) != 0u) { continue; }
-            slot = MjkPpu_WriteMetasprite(ppu, pkg, 0x21u, ex, ey, 0x02u, slot);
-        } else if (is_monster_type(e->type) && e->spawn_flash_timer > 16u) {
+            uint8_t pal = (mgr->transmute_timer < 64u)
+                ? (uint8_t)(mgr->transmute_timer & 3u)
+                : 0x02u;
+            slot = MjkPpu_WriteMetasprite(ppu, pkg, 0x21u, ex, ey, pal, slot);
+        } else if (MjkEnemyInternal_IsMonsterType(e->type) && e->spawn_flash_timer > 16u) {
             slot = MjkPpu_WriteMetasprite(ppu, pkg, 0x25u, ex, ey, 0x00u, slot);
         } else {
             uint8_t attr = (uint8_t)((e->attr_base & 3u) | (e->facing_left ? 0x00u : 0x04u));

@@ -78,10 +78,10 @@ int main(void) {
         g_failures++;
     }
 
-    /* 3. Puntuación flotante canónica tiles 0x30..0x3F (RES-034) */
+    /* 3. Puntuación flotante canónica tiles 0x30..0x3F (RES-034, mult 1..4 -> 0x3C..0x3F) */
     MjkHud_SpawnFloatingScore(g.popups, MJK_FLOAT_SCORE_SLOTS, 80u, 100u, MJK_SCORE_200, 2u, true);
     if (!g.popups[0].active || g.popups[0].tl_tile != 0x32u ||
-        g.popups[0].tr_tile != 0x30u || g.popups[0].br_tile != 0x3Cu) {
+        g.popups[0].tr_tile != 0x30u || g.popups[0].br_tile != 0x3Du) {
         fprintf(stderr, "[FAIL] FloatingScore tiles incorrectos (0x%02X,0x%02X,0x%02X)\n",
                 g.popups[0].tl_tile, g.popups[0].tr_tile, g.popups[0].br_tile);
         g_failures++;

@@ -51,6 +51,7 @@ MJK_CORE_API uint32_t MjkPpu_GetMasterColor(uint8_t nes_color_index);
 
 MJK_CORE_API void MjkPpu_Init(MjkPpu* ppu, const MjkAssetPackage* pkg);
 MJK_CORE_API void MjkPpu_RestoreDefaultPalettes(MjkPpu* ppu, const MjkAssetPackage* pkg);
+MJK_CORE_API void MjkPpu_RestoreEnemyPalettes(MjkPpu* ppu, const MjkAssetPackage* pkg);
 MJK_CORE_API bool MjkPpu_LoadRoomPalette(MjkPpu* ppu, const MjkAssetPackage* pkg, uint8_t set_idx);
 MJK_CORE_API void MjkPpu_SetJackMightyColor(MjkPpu* ppu, const MjkAssetPackage* pkg, uint8_t mighty_level);
 

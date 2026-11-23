@@ -53,6 +53,7 @@ set(MJK_CORE_SOURCES
     src/core/mjk_objects.c
     src/core/mjk_doors.c
     src/core/mjk_enemy.c
+    src/core/mjk_enemy_collectibles.c
     src/core/mjk_hud.c
     src/core/mjk_apu_synth.c
     src/core/mjk_apu.c
@@ -196,6 +197,12 @@ if(BUILD_TESTING)
     target_compile_definitions(test_full_game PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     mjk_apply_warnings(test_full_game)
     add_test(NAME mjk_full_game COMMAND test_full_game)
+
+    add_executable(test_items_mighty tests/c/test_items_mighty.c)
+    target_link_libraries(test_items_mighty PRIVATE mjk_core)
+    target_compile_definitions(test_items_mighty PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_items_mighty)
+    add_test(NAME mjk_items_mighty COMMAND test_items_mighty)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

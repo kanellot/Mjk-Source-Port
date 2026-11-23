@@ -8,6 +8,7 @@
 #include <string.h>
 #include "mjk_assets.h"
 #include "mjk_camera.h"
+#include "mjk_game.h"
 #include "mjk_rom_extractor.h"
 
 static int g_failures = 0;
@@ -89,6 +90,48 @@ int main(void) {
     MjkCamera_InitForRoom(&cam, 0x06u, &r6.adj, false);
     if (cam.neighbor_room_id != 0u || (cam.room_flags & MJK_RF_AT_SCROLL_EDGE) == 0u) {
         fprintf(stderr, "[FAIL] Sala 6 no clampo en borde derecho\n");
+        g_failures++;
+    }
+
+    /* 4. Regresión Bug 4: cruzar seam derecho e izquierdo mantiene delta_cam_x continuo y preserva enemigos/monedas */
+    MjkGame g;
+    MjkGame_Init(&g, &pkg);
+    MjkCamera_InitForRoom(&g.camera, 0x01u, &r1.adj, false);
+    MjkPlayer_Init(&g.player, 128u, 184u);
+    g.camera.room_flags &= (uint8_t)~MJK_RF_AT_SCROLL_EDGE;
+    g.camera.scroll_x_fixed = 0xFF00; /* sx = 255 */
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 128u, 100u);
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_BONUS_COIN, 128u, 140u);
+    g.enemies.slots[0].spawn_flash_timer = 0u;
+    g.enemies.slots[0].vel_x = 0;
+    g.enemies.slots[0].vel_y = 0;
+
+    /* Cruzar seam derecho 255 -> 0 */
+    g.player.vel_x = (mjk_q8_8_t)0x0200;
+    MjkCamera_Update(&g.camera, &g.player, &pkg);
+    if (!g.camera.room_crossed || g.camera.delta_cam_x < -4 || g.camera.delta_cam_x > 4) {
+        fprintf(stderr, "[FAIL] Bug 4 seam derecho delta_cam_x=%d\n", g.camera.delta_cam_x);
+        g_failures++;
+    }
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (!g.enemies.slots[0].active || !g.enemies.slots[1].active) {
+        fprintf(stderr, "[FAIL] Bug 4 seam derecho despawneo enemigo/moneda (%d,%d)\n",
+                g.enemies.slots[0].active ? 1 : 0, g.enemies.slots[1].active ? 1 : 0);
+        g_failures++;
+    }
+
+    /* Cruzar seam izquierdo 0/1 -> 255 */
+    g.player.vel_x = (mjk_q8_8_t)(-0x0300);
+    MjkCamera_Update(&g.camera, &g.player, &pkg);
+    if (!g.camera.room_crossed || g.camera.delta_cam_x < -4 || g.camera.delta_cam_x > 4) {
+        fprintf(stderr, "[FAIL] Bug 4 seam izquierdo delta_cam_x=%d\n", g.camera.delta_cam_x);
+        g_failures++;
+    }
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (!g.enemies.slots[0].active || !g.enemies.slots[1].active) {
+        fprintf(stderr, "[FAIL] Bug 4 seam izquierdo despawneo enemigo/moneda (%d,%d)\n",
+                g.enemies.slots[0].active ? 1 : 0, g.enemies.slots[1].active ? 1 : 0);
         g_failures++;
     }
 

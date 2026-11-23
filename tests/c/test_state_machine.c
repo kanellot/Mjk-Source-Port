@@ -108,7 +108,7 @@ int main(void) {
         g_failures++;
     }
     step_n(&g, 97, 0u); /* RoundIntro (96f) -> LoadRoom */
-    step_n(&g, 28, 0u); /* Load + Draw + Enter (24f) -> Main */
+    step_n(&g, 175, 0u); /* Load + Draw + Enter (169f) -> Main */
     if (g.state != MJK_GS_MAIN) {
         fprintf(stderr, "[FAIL] No llego a MJK_GS_MAIN (st=%d)\n", (int)g.state);
         g_failures++;
@@ -243,6 +243,63 @@ int main(void) {
                     behind_count);
             g_failures++;
         }
+    }
+
+    /* 10. Regresión Bug 1: Animación completa EnterRoom (open 72f + walk 24f + close 72f) */
+    MjkGame_Init(&g, &pkg);
+    MjkGame_WarpToRoom(&g, 0x01u);
+    step_n(&g, 2, 0u); /* LoadRoom -> DrawScreen -> EnterRoom (sub_state 0) */
+    step_n(&g, 1, 0u); /* sub_state 0 -> sub_state 1 */
+    if (g.state != MJK_GS_ENTER_ROOM || g.sub_state != 1u || g.jack_x != 8u ||
+        (g.ppu.oam[0].attr & 0x20u) == 0u || g.last_sound_event != MJK_SND_DOOR) {
+        fprintf(stderr, "[FAIL] EnterRoom sub_state 0 fallo (st=%d sub=%u x=%u attr=0x%02X snd=0x%02X)\n",
+                (int)g.state, g.sub_state, g.jack_x, g.ppu.oam[0].attr, g.last_sound_event);
+        g_failures++;
+    }
+    step_n(&g, 32, 0u); /* state_timer == 40 -> yx1 (0xC0) = 0x8E */
+    if (g.room.metatiles[0x0C][0x00] != 0x8Eu || (g.ppu.oam[0].attr & 0x20u) == 0u) {
+        fprintf(stderr, "[FAIL] AnimateDoorOpen 32f fallo (mt=0x%02X attr=0x%02X)\n",
+                g.room.metatiles[0x0C][0x00], g.ppu.oam[0].attr);
+        g_failures++;
+    }
+    step_n(&g, 8, 0u); /* state_timer == 32 -> yx0 (0xB0) = 0x8D */
+    if (g.room.metatiles[0x0B][0x00] != 0x8Du) {
+        fprintf(stderr, "[FAIL] AnimateDoorOpen 40f fallo (mt=0x%02X)\n",
+                g.room.metatiles[0x0B][0x00]);
+        g_failures++;
+    }
+    step_n(&g, 32, 0u); /* Fin open (72f) -> sub_state 2 */
+    step_n(&g, 24, 0u); /* Walk 24f (x=8 -> x=32) -> sub_state 3 */
+    if (g.sub_state != 3u || g.jack_x != 32u || (g.ppu.oam[0].attr & 0x23u) != 0x01u ||
+        g.last_sound_event != MJK_SND_DOOR) {
+        fprintf(stderr, "[FAIL] EnterRoom walk 24f fallo (sub=%u x=%u attr=0x%02X)\n",
+                g.sub_state, g.jack_x, g.ppu.oam[0].attr);
+        g_failures++;
+    }
+    step_n(&g, 32, 0u); /* state_timer == 40 -> yx0 (0xB0) = 0x8B */
+    step_n(&g, 8, 0u);  /* state_timer == 32 -> yx1 (0xC0) = 0x8C */
+    if (g.room.metatiles[0x0B][0x00] != 0x8Bu || g.room.metatiles[0x0C][0x00] != 0x8Cu) {
+        fprintf(stderr, "[FAIL] AnimateDoorClose no restauro puerta (0x%02X/0x%02X)\n",
+                g.room.metatiles[0x0B][0x00], g.room.metatiles[0x0C][0x00]);
+        g_failures++;
+    }
+    step_n(&g, 32, 0u); /* Fin close (72f) -> MJK_GS_MAIN */
+    if (g.state != MJK_GS_MAIN) {
+        fprintf(stderr, "[FAIL] EnterRoom no transiciono a MJK_GS_MAIN (st=%d)\n", (int)g.state);
+        g_failures++;
+    }
+
+    /* Puerta superior (dir=0): camina +24 en Y */
+    g.state = MJK_GS_ENTER_ROOM;
+    g.sub_state = 0u;
+    g.entry_door_type = 0x00u;
+    step_n(&g, 1, 0u); /* init */
+    uint8_t top_y0 = g.jack_y;
+    step_n(&g, 72 + 24, 0u); /* open + walk */
+    if (g.jack_y != (uint8_t)(top_y0 + 24u)) {
+        fprintf(stderr, "[FAIL] Puerta superior dir=0 no camino +24 en Y (%u -> %u)\n",
+                top_y0, g.jack_y);
+        g_failures++;
     }
 
     MjkAssets_Unload(&pkg);

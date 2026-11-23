@@ -43,7 +43,7 @@ static void init_room_main(MjkGame* g, const MjkAssetPackage* pkg, uint8_t room_
     MjkGame_WarpToRoom(g, room_id);
     MjkInputState in;
     memset(&in, 0, sizeof(in));
-    for (int f = 0; f < 30; ++f) {
+    for (int f = 0; f < 175; ++f) {
         MjkInput_Update(&in, 0u);
         MjkGame_StepFrame(g, &in);
     }
@@ -63,25 +63,28 @@ static void test_item_and_bomb_feedback(const MjkAssetPackage* pkg) {
     MjkInputState in;
     memset(&in, 0, sizeof(in));
 
-    /* Test BG items SFX, GDV, and floating popups */
+    /* Test BG items SFX, GDV, and NO floating popups (Bug 2) */
     static const struct {
         uint8_t item;
         MjkSoundId sfx;
-        bool has_popup;
     } k_cases[] = {
-        { MJK_ITEM_100_BAG,        MJK_SND_BOMB_LIT,              true },
-        { MJK_ITEM_300_BAG,        MJK_SND_BOMB_LIT,              true },
-        { MJK_ITEM_1000_BAG,       MJK_SND_BOMB_LIT,              true },
-        { MJK_ITEM_GOLD_COIN,      MJK_SND_COIN_COLLECTED,        true },
-        { MJK_ITEM_MIGHTY_COIN,    MJK_SND_COIN_COLLECTED,        true },
-        { MJK_ITEM_SPHINX,         MJK_SND_DOOR,                  true },
-        { MJK_ITEM_CRYSTAL_BALL_1, MJK_SND_CRYSTAL_BALL,          false },
-        { MJK_ITEM_BEELZEBUT_MASK, MJK_MUS_COLLECTED_FULL_FAMILY, false }
+        { MJK_ITEM_100_BAG,        MJK_SND_BOMB_LIT },
+        { MJK_ITEM_300_BAG,        MJK_SND_BOMB_LIT },
+        { MJK_ITEM_1000_BAG,       MJK_SND_BOMB_LIT },
+        { MJK_ITEM_GOLD_COIN,      MJK_SND_COIN_COLLECTED },
+        { MJK_ITEM_MIGHTY_DRINK,   MJK_SND_TIME_PICKUP },
+        { MJK_ITEM_SPHINX,         MJK_SND_DOOR },
+        { MJK_ITEM_TECMO_PLATE,    MJK_SND_1UP_CAPTIVE },
+        { MJK_ITEM_MIGHTY_COIN,    MJK_SND_COIN_COLLECTED },
+        { MJK_ITEM_CRYSTAL_BALL_1, MJK_SND_CRYSTAL_BALL },
+        { MJK_ITEM_BEELZEBUT_MASK, MJK_MUS_COLLECTED_FULL_FAMILY }
     };
 
     for (size_t i = 0u; i < sizeof(k_cases) / sizeof(k_cases[0]); ++i) {
         memset(g.popups, 0, sizeof(g.popups));
         g.sound_queue_count = 0u;
+        g.mighty_coins = 0u;
+        g.stage_timer_bcd = 0x50u;
         g.room.objects[0].ram_state = k_cases[i].item;
         g.room.objects[0].yx = 0x55u;
         g.player.pos_x = MjkUQ8_FromInt(0x58u);
@@ -93,9 +96,12 @@ static void test_item_and_bomb_feedback(const MjkAssetPackage* pkg) {
             fprintf(stderr, "[FAIL] Item %u no encolo SFX 0x%02X\n", k_cases[i].item, k_cases[i].sfx);
             g_failures++;
         }
-        if (k_cases[i].has_popup && !g.popups[0].active) {
-            fprintf(stderr, "[FAIL] Item %u no activo popup flotante\n", k_cases[i].item);
-            g_failures++;
+        for (size_t p = 0u; p < MJK_FLOAT_SCORE_SLOTS; ++p) {
+            if (g.popups[p].active) {
+                fprintf(stderr, "[FAIL] Item BG %u activo popup flotante indebido\n", k_cases[i].item);
+                g_failures++;
+                break;
+            }
         }
     }
     if (g.gdv_bcd != 0x01u) {

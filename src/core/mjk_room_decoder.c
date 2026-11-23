@@ -374,3 +374,13 @@ void MjkRoom_BlitToPpu(const MjkRoomState* room,
         }
     }
 }
+
+void MjkRoom_GetDoorMeta(uint8_t door_type,
+                         uint8_t* yx0,
+                         uint8_t* yx1,
+                         uint8_t* base_mt) {
+    uint8_t idx = (uint8_t)(door_type & 0x0Fu);
+    if (yx0)     { *yx0     = k_door_pos_tile_table[idx][0]; }
+    if (yx1)     { *yx1     = k_door_pos_tile_table[idx][1]; }
+    if (base_mt) { *base_mt = k_door_pos_tile_table[idx][2]; }
+}

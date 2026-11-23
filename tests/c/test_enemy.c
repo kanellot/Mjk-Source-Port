@@ -256,6 +256,26 @@ int main(void) {
         g_failures++;
     }
 
+    /* 8. Regresión Bug 3: Enemigos no transmutados matan a Jack incluso en Mighty 3 */
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    g.mighty_level = 3u;
+    g.enemies.transmute_timer = 0u;
+    g.enemies.post_transmute_grace = 0u;
+    g.player.is_dying = false;
+    g.jack_x = 128u;
+    g.jack_y = 128u;
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 128u, 128u);
+    g.enemies.slots[0].spawn_flash_timer = 0u;
+    g.enemies.slots[0].falling = false;
+    g.enemies.slots[0].vel_x = 0;
+    g.enemies.slots[0].vel_y = 0;
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (!g.player.is_dying || !g.enemies.slots[0].active) {
+        fprintf(stderr, "[FAIL] Bug 3: enemigo no transmutado no mato a Jack en Mighty 3 (dying=%d active=%d)\n",
+                g.player.is_dying ? 1 : 0, g.enemies.slots[0].active ? 1 : 0);
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_enemy: %d fallo(s).\n", g_failures);

@@ -88,6 +88,7 @@ void MjkCamera_Update(MjkCamera* cam,
 
     int32_t old_sx = cam->scroll_x_fixed >> 8;
     int32_t next_sx = cam->scroll_x_fixed + (int32_t)player->vel_x;
+    int32_t unwrapped_sx = next_sx;
     player->pos_x = MjkUQ8_FromInt(128u);
 
     if (next_sx >= 0x10000) {
@@ -101,10 +102,12 @@ void MjkCamera_Update(MjkCamera* cam,
             } else {
                 cam->neighbor_room_id = 0u;
                 next_sx = 0;
+                unwrapped_sx = 0x10000;
                 cam->room_flags |= MJK_RF_AT_SCROLL_EDGE;
             }
         } else {
             next_sx = 0;
+            unwrapped_sx = 0;
             cam->room_flags |= MJK_RF_AT_SCROLL_EDGE;
         }
     } else if (next_sx < 0) {
@@ -116,11 +119,14 @@ void MjkCamera_Update(MjkCamera* cam,
             cam->room_flags &= (uint8_t)0x7Fu;
         } else {
             next_sx = 0;
+            unwrapped_sx = 0;
             cam->room_flags |= (uint8_t)(MJK_RF_AT_SCROLL_EDGE | MJK_RF_SECTION_START);
         }
     }
 
     cam->scroll_x_fixed = next_sx;
-    int32_t new_sx = cam->scroll_x_fixed >> 8;
-    cam->delta_cam_x = (int16_t)(old_sx - new_sx);
+    int32_t new_unwrapped_px = (unwrapped_sx >= 0)
+        ? (unwrapped_sx >> 8)
+        : -(((-unwrapped_sx) + 255) >> 8);
+    cam->delta_cam_x = (int16_t)(old_sx - new_unwrapped_px);
 }

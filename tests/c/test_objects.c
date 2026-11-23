@@ -48,10 +48,10 @@ int main(void) {
     MjkGame g;
     MjkGame_Init(&g, &pkg);
     MjkGame_WarpToRoom(&g, 0x01u);
-    /* Avanzar LoadRoom -> DrawScreen -> EnterRoom (24f) -> Main */
+    /* Avanzar LoadRoom -> DrawScreen -> EnterRoom (169f) -> Main */
     MjkInputState in;
     memset(&in, 0, sizeof(in));
-    for (int f = 0; f < 30; ++f) {
+    for (int f = 0; f < 175; ++f) {
         MjkInput_Update(&in, 0u);
         MjkGame_StepFrame(&g, &in);
     }
@@ -121,7 +121,7 @@ int main(void) {
 
     /* 5. Regresión Problema 1: saltar encima de un cofre rojo en Sala 1 lo abre en el frame del salto */
     MjkGame_WarpToRoom(&g, 0x01u);
-    for (int f = 0; f < 30; ++f) {
+    for (int f = 0; f < 175; ++f) {
         MjkInput_Update(&in, 0u);
         MjkGame_StepFrame(&g, &in);
     }

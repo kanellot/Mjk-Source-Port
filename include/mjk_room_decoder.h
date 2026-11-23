@@ -88,4 +88,9 @@ MJK_CORE_API void MjkRoom_BlitToPpu(const MjkRoomState* room,
                                     MjkPpu* ppu,
                                     uint8_t nt_idx);
 
+MJK_CORE_API void MjkRoom_GetDoorMeta(uint8_t door_type,
+                                      uint8_t* yx0,
+                                      uint8_t* yx1,
+                                      uint8_t* base_mt);
+
 #endif /* MJK_ROOM_DECODER_H */

@@ -409,10 +409,6 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
                 MjkEnemyInternal_HandleTransmutedPickup(e, mgr, game, ex, ey);
             } else if (!MjkEnemyInternal_IsMonsterType(e->type)) {
                 MjkEnemyInternal_HandleCollectiblePickup(e, mgr, game, ex, ey);
-            } else if (game->mighty_level == 3u) {
-                MjkGame_AddScore(game, MJK_SCORE_500);
-                e->active = false;
-                if (mgr->alive_count > 0u) { mgr->alive_count--; }
             } else if (!game->player.is_dying && e->spawn_flash_timer == 0u &&
                        mgr->post_transmute_grace == 0u) {
                 game->player.is_dying = true;

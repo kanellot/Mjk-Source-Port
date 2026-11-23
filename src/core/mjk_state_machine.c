@@ -306,26 +306,76 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             game->sub_state = 0u;
             break;
 
-        case MJK_GS_ENTER_ROOM:
+        case MJK_GS_ENTER_ROOM: {
+            uint8_t yx0 = 0u;
+            uint8_t yx1 = 0u;
+            uint8_t base_mt = 0u;
+            MjkRoom_GetDoorMeta(game->entry_door_type, &yx0, &yx1, &base_mt);
+
             if (game->sub_state == 0u) {
                 MjkPpu_LoadRoomPalette(&game->ppu, game->pkg, game->room.palette_set);
                 const uint8_t* pos_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_DOOR_ENTRY_XY, 32u);
                 uint8_t idx = (uint8_t)(game->entry_door_type & 0x0Fu);
                 game->jack_y = pos_tbl ? pos_tbl[idx * 2u] : 0x78u;
                 game->jack_x = pos_tbl ? pos_tbl[idx * 2u + 1u] : 0x80u;
-                game->state_timer = 0x18u; /* 24f */
+                MjkPpu_ClearOam(&game->ppu);
+                MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x00u,
+                                       game->jack_x, game->jack_y, 0x21u, 0u);
+                queue_sound(game, MJK_SND_DOOR);
+                game->state_timer = 72u;
                 game->sub_state = 1u;
-            } else {
-                const uint8_t* vec_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_VECTOR_TABLE, 8u);
-                uint8_t dir = (uint8_t)((game->entry_door_type >> 2u) & 3u);
-                uint8_t vec_idx = (uint8_t)(3u - dir);
-                if (vec_tbl) {
-                    game->jack_x = (uint8_t)(game->jack_x + (int8_t)vec_tbl[vec_idx * 2u]);
-                    game->jack_y = (uint8_t)(game->jack_y + (int8_t)vec_tbl[vec_idx * 2u + 1u]);
-                }
+            } else if (game->sub_state == 1u) {
                 if (game->state_timer > 0u) {
                     game->state_timer--;
                 }
+                if (game->state_timer == 40u) {
+                    MjkObjects_SetMetatile(game, yx1, (uint8_t)(base_mt + 3u));
+                } else if (game->state_timer == 32u) {
+                    MjkObjects_SetMetatile(game, yx0, (uint8_t)(base_mt + 2u));
+                }
+                MjkPpu_ClearOam(&game->ppu);
+                MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x00u,
+                                       game->jack_x, game->jack_y, 0x21u, 0u);
+                if (game->state_timer == 0u) {
+                    game->state_timer = 24u;
+                    game->sub_state = 2u;
+                }
+            } else if (game->sub_state == 2u) {
+                const uint8_t* vec_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_VECTOR_TABLE, 8u);
+                uint8_t dir = (uint8_t)((game->entry_door_type >> 2u) & 3u);
+                int8_t dy = vec_tbl ? (int8_t)vec_tbl[dir * 2u] : 0;
+                int8_t dx = vec_tbl ? (int8_t)vec_tbl[dir * 2u + 1u] : 0;
+                game->jack_y = (uint8_t)(game->jack_y + dy);
+                game->jack_x = (uint8_t)(game->jack_x + dx);
+                if (game->state_timer > 0u) {
+                    game->state_timer--;
+                }
+                uint8_t walk_spr = (dx != 0) ? (((game->state_timer >> 2u) & 1u) ? 0x04u : 0x05u) : 0x00u;
+                uint8_t walk_attr = (dx > 0) ? 0x05u : 0x01u;
+                MjkPpu_ClearOam(&game->ppu);
+                MjkPpu_WriteMetasprite(&game->ppu, game->pkg, walk_spr,
+                                       game->jack_x, game->jack_y, walk_attr, 0u);
+                if (game->state_timer == 0u) {
+                    queue_sound(game, MJK_SND_DOOR);
+                    game->state_timer = 72u;
+                    game->sub_state = 3u;
+                }
+            } else {
+                if (game->state_timer > 0u) {
+                    game->state_timer--;
+                }
+                if (game->state_timer == 40u) {
+                    MjkObjects_SetMetatile(game, yx0, base_mt);
+                } else if (game->state_timer == 32u) {
+                    MjkObjects_SetMetatile(game, yx1, (uint8_t)(base_mt + 1u));
+                }
+                const uint8_t* vec_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_VECTOR_TABLE, 8u);
+                uint8_t dir = (uint8_t)((game->entry_door_type >> 2u) & 3u);
+                int8_t dx = vec_tbl ? (int8_t)vec_tbl[dir * 2u + 1u] : 0;
+                uint8_t stand_attr = (dx > 0) ? 0x05u : 0x01u;
+                MjkPpu_ClearOam(&game->ppu);
+                MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x00u,
+                                       game->jack_x, game->jack_y, stand_attr, 0u);
                 if (game->state_timer == 0u) {
                     if (game->timer_status == 0u) {
                         game->stage_timer_bcd = 0x60u;
@@ -341,6 +391,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 }
             }
             break;
+        }
 
         case MJK_GS_MAIN: {
             if (input && (input->just_pressed & MJK_BTN_START) != 0u) {

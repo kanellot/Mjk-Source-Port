@@ -234,6 +234,7 @@ static void open_chest(MjkObjectSystem* obj, MjkGame* game,
 
 static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uint8_t target_nt,
                                    bool in_right, MjkRoomPersistSlot* slot, uint8_t obj_idx) {
+    (void)in_right;
     MjkRoomObject* ro = &target_room->objects[obj_idx];
     uint8_t item_id = ro->ram_state;
     ro->ram_state = 0x0Fu;
@@ -242,44 +243,27 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
     }
     set_room_metatile(game, target_room, target_nt, ro->yx, 0x2Fu);
 
-    int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
-    int32_t sx_i = (int32_t)((ro->yx & 0x0Fu) << 4u) + (in_right ? 256 : 0) - scroll_x;
-    if (sx_i < 0) { sx_i = 0; }
-    if (sx_i > 255) { sx_i = 255; }
-    uint8_t sx = (uint8_t)sx_i;
-    uint8_t sy = (uint8_t)(ro->yx & 0xF0u);
-
     switch (item_id) {
         case MJK_ITEM_100_BAG:
             MjkGame_AddScore(game, MJK_SCORE_100);
             play_sfx(game, MJK_SND_BOMB_LIT);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_100, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_300_BAG:
             MjkGame_AddScore(game, MJK_SCORE_300);
             play_sfx(game, MJK_SND_BOMB_LIT);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_300, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_1000_BAG:
             MjkGame_AddScore(game, MJK_SCORE_1000);
             play_sfx(game, MJK_SND_BOMB_LIT);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_1000, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_GOLD_COIN:
             MjkGame_AddScore(game, MJK_SCORE_500);
             game->gold_coins++;
             play_sfx(game, MJK_SND_COIN_COLLECTED);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_500, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_MIGHTY_DRINK: {
             MjkGame_AddScore(game, MJK_SCORE_1000);
             play_sfx(game, MJK_SND_TIME_PICKUP);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_1000, game->score_multiplier, game->room.is_bomb_room);
             uint8_t carry = 0u;
             game->stage_timer_bcd = MjkBcd_AddByte(game->stage_timer_bcd, 0x10u, 0u, &carry);
             if (carry != 0u || game->stage_timer_bcd >= 0xA0u) {
@@ -290,8 +274,6 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
         case MJK_ITEM_SPHINX:
             MjkGame_AddScore(game, MJK_SCORE_10000);
             play_sfx(game, MJK_SND_DOOR);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_10000, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_TECMO_PLATE:
             MjkGame_AddScore(game, MJK_SCORE_100000);
@@ -299,15 +281,11 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
             game->extra_lives_found++;
             game->collected_1up = 1u;
             play_sfx(game, MJK_SND_1UP_CAPTIVE);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_100000, game->score_multiplier, game->room.is_bomb_room);
             break;
         case MJK_ITEM_MIGHTY_COIN:
             MjkGame_AddScore(game, MJK_SCORE_1000);
             game->mighty_coins++;
             play_sfx(game, MJK_SND_COIN_COLLECTED);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, sx, sy,
-                                      MJK_SCORE_1000, game->score_multiplier, game->room.is_bomb_room);
             if (game->mighty_coins >= 10u) {
                 return MjkGame_TriggerTortureRoom(game);
             }

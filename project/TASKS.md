@@ -1,10 +1,10 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **Hito 2 completado (`T-04`..`T-07`)** — `mjk_sha1.c` (SHA-1 + CRC-32), `mjk_rom_extractor.c` (validación iNES `65552` B + SHA-1 + empaquetado v2 `49255` B), `mjk_assets.c` (carga/validación CRC-32 + 32 cadenas US + 255 salas + 35 sonidos), `MjkPlatform_EnsureDir` y auto-BYOR v2 en `src/main.c` (`--assets`/`--rom` con `--smoke-test` libre de ROM), validados (`5/5` CTest: `mjk_smoke`, `mjk_types`, `mjk_hash`, `mjk_assets`, `mjk_platform_smoke` + CLI BYOR exit `0` / fallo limpio exit `1`).
+> - **Último subpaso completado**: **Hito 3 completado (`T-08`..`T-11`)** — `mjk_ppu.c` (paleta NTSC 2C02, 2bpp CHR Bank 1, metasprites, `WriteString` y HUD OAM), `mjk_room_decoder.c` (decodificación 4-tier de las 256 salas `0x00..0xFF`, persistencia de 8 slots + scratch y objetos), `mjk_debug_overlay.c` (fuente 5x7 Clean-Room + `F1`–`F6`) y visor de salas en `src/main.c`, validados (`7/7` CTest en 0.09 s + CLI headless y SDL2 exit `0`).
 > - **Protocolo tras fin de cuota**: Al retomar en una nueva sesión, leer únicamente este `CHECKPOINT ACTIVO` y `project/PROJECT_STATUS.md`, tomar la **primera micro-tarea `[TODO]`** (1 sola por ciclo) y dejar compilación + `ctest` siempre en verde al cerrarla.
-> - **Siguiente micro-tarea**: **`T-08`** (Hito 3: implementar `mjk_ppu.c` — paleta maestra 2C02 de 64 colores, decodificación planar 2bpp, blitter de metatiles 16x16 y sprites OAM sin flicker artificial de 8/scanline + `CTest`).
-> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 3 (`T-11`).
+> - **Siguiente micro-tarea**: **`T-12`** (Hito 4: implementar `mjk_title.c` — ciclo `TitleScreen_US_0/1` <-> `TitleScreen_0/1/2` -> `TitleScreen_3` -> `InGameFlag=1`, `GameState=0` + `CTest`).
+> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 4 (`T-15`).
 
 ---
 
@@ -23,10 +23,10 @@
 
 ## Hito 3 — Renderizador PPU 2C02, 257 Salas y Debug Overlay
 
-- `[TODO]` **`T-08`**: Implementar `mjk_ppu.c` (paleta maestra 2C02 de 64 colores, decodificación planar 2bpp, blitter de metatiles 16x16 y sprites OAM sin flicker artificial de 8/scanline) + `CTest`.
-- `[TODO]` **`T-09`**: Añadir al PPU el renderizado de cadenas de texto (`WriteStringToPPU`) y dígitos/HUD directamente desde los tiles oficiales de `CHR-ROM` + `CTest`.
-- `[TODO]` **`T-10`**: Implementar `mjk_room_decoder.c` con `MjkRoomState` limpio (4-tier + paletas + persistencia de 8 salas) + `CTest` validando geometría de las **257 salas** contra fixture de `nes_oracle.py`.
-- `[TODO]` **`T-11`**: Implementar **Capa 3 Debug Overlay SDL2**: `F1` telemetría/hitboxes 9-probe, `F2` warp directo a cualquier sala `0..256`/Bomb/Torture/Final, `F3` invencibilidad/Mighty, `F4` pausa/frame-step.
+- `[DONE]` **`T-08`**: Implementar `mjk_ppu.c` (paleta maestra 2C02 de 64 colores, decodificación planar 2bpp, blitter de metatiles 16x16 y sprites OAM sin flicker artificial de 8/scanline) + `CTest`.
+- `[DONE]` **`T-09`**: Añadir al PPU el renderizado de cadenas de texto (`WriteStringToPPU`) y dígitos/HUD directamente desde los tiles oficiales de `CHR-ROM` + `CTest`.
+- `[DONE]` **`T-10`**: Implementar `mjk_room_decoder.c` con `MjkRoomState` limpio (4-tier + paletas + persistencia de 8 salas) + `CTest` validando geometría de las **257 salas** contra fixture de `nes_oracle.py`.
+- `[DONE]` **`T-11`**: Implementar **Capa 3 Debug Overlay SDL2**: `F1` telemetría/hitboxes 9-probe, `F2` warp directo a cualquier sala `0..256`/Bomb/Torture/Final, `F3` invencibilidad/Mighty, `F4` pausa/frame-step.
 
 ## Hito 4 — Esqueleto Completo del Juego (Todas las Pantallas y Transiciones)
 

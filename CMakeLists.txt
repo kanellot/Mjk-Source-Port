@@ -43,6 +43,8 @@ set(MJK_CORE_SOURCES
     src/core/mjk_sha1.c
     src/core/mjk_rom_extractor.c
     src/core/mjk_assets.c
+    src/core/mjk_ppu.c
+    src/core/mjk_room_decoder.c
 )
 
 # Target 1: Núcleo estático C11 puro
@@ -75,6 +77,7 @@ endif()
 add_executable(mjk
     src/main.c
     src/platform/mjk_platform_sdl.c
+    src/platform/mjk_debug_overlay.c
 )
 target_link_libraries(mjk PRIVATE mjk_core SDL2::SDL2)
 if(TARGET SDL2::SDL2main)
@@ -115,6 +118,18 @@ if(BUILD_TESTING)
     target_compile_definitions(test_assets PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     mjk_apply_warnings(test_assets)
     add_test(NAME mjk_assets COMMAND test_assets)
+
+    add_executable(test_ppu tests/c/test_ppu.c)
+    target_link_libraries(test_ppu PRIVATE mjk_core)
+    target_compile_definitions(test_ppu PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_ppu)
+    add_test(NAME mjk_ppu COMMAND test_ppu)
+
+    add_executable(test_room_decoder tests/c/test_room_decoder.c)
+    target_link_libraries(test_room_decoder PRIVATE mjk_core)
+    target_compile_definitions(test_room_decoder PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_room_decoder)
+    add_test(NAME mjk_room_decoder COMMAND test_room_decoder)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

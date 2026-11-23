@@ -49,8 +49,18 @@ int main(void) {
     MjkGame g;
     MjkGame_Init(&g, &pkg);
     MjkGame_WarpToRoom(&g, 0x02u);
+    MjkInputState in;
+    memset(&in, 0, sizeof(in));
+    for (int f = 0; f < 30; ++f) {
+        MjkInput_Update(&in, 0u);
+        MjkGame_StepFrame(&g, &in);
+    }
 
     /* 1. DifficultyTable y spawn diferido hasta máximo 4 monstruos vivos */
+    for (uint8_t my = 0u; my < MJK_ROOM_MT_ROWS; ++my) {
+        g.room.static_metatiles[my][0] = 0x01u;
+        g.room.static_metatiles[my][MJK_ROOM_MT_COLS - 1u] = 0x01u;
+    }
     MjkEnemy_InitForRoom(&g.enemies, &pkg, 0x90u, false);
     if (g.enemies.spawn_reload != 0xA0u || g.enemies.transform_reload != 0x80u) {
         fprintf(stderr, "[FAIL] DifficultyTable R1 inesperada (%u, %u)\n",
@@ -111,6 +121,138 @@ int main(void) {
     }
     if (g.enemies.alive_count != 1u) {
         fprintf(stderr, "[FAIL] Room 0x02 alive_count=%u tras 200f (esperado 1)\n", g.enemies.alive_count);
+        g_failures++;
+    }
+
+    /* 5. Regresión Problema 2a: velocidad R1=0x0058, Momia cae con gravedad, camina ±0x0080 y rebota en paredes */
+    uint16_t r1_spd = 0u;
+    MjkAssets_ReadCpuU16(&pkg, MJK_ADDR_ENEMY_SPEED_TABLE, &r1_spd);
+    const uint8_t* g_div = MjkAssets_ResolveCpuPtr(&pkg, MJK_ADDR_GAMEIDO_DIV_TABLE, 8u);
+    if (r1_spd != 0x0058u || !g_div || g_div[0] != 0x4Cu) {
+        fprintf(stderr, "[FAIL] Tablas velocidad/Gameido R1 inesperadas (spd=0x%04X div=0x%02X)\n",
+                r1_spd, g_div ? g_div[0] : 0u);
+        g_failures++;
+    }
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.room_id = 0x02u;
+    for (uint8_t mx = 0u; mx < MJK_ROOM_MT_COLS; ++mx) {
+        g.room.static_metatiles[10][mx] = 0x01u; /* Suelo sólido en fila 10 (y=160) */
+    }
+    g.room.static_metatiles[9][10] = 0x01u; /* Pared sólida en col 10 (x=160) */
+    g.jack_x = 200u;
+    g.jack_y = 152u;
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 120u, 80u);
+    MjkEnemy* m = &g.enemies.slots[0];
+    m->spawn_flash_timer = 0u;
+    if (!m->falling || m->vel_x != 0) {
+        fprintf(stderr, "[FAIL] Momia no inicia cayendo con vel_x=0\n");
+        g_failures++;
+    }
+    for (int f = 0; f < 60 && m->falling; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (m->falling || m->vel_x != 0x0080) {
+        fprintf(stderr, "[FAIL] Momia no aterrizo o no camino a +0x0080 (falling=%d vx=0x%04X)\n",
+                m->falling, (uint16_t)m->vel_x);
+        g_failures++;
+    }
+    for (int f = 0; f < 100 && m->vel_x > 0; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (m->vel_x >= 0 || MjkUQ8_Int(m->pos_x) >= 160u) {
+        fprintf(stderr, "[FAIL] Momia atraveso pared o no reboto (x=%u vx=%d)\n",
+                MjkUQ8_Int(m->pos_x), m->vel_x);
+        g_failures++;
+    }
+
+    /* 6. Regresión Problema 2b: arquetipos 2..7, Gameido div, despawn por scroll y hitbox < 8px */
+    for (uint8_t ap = 0u; ap < 6u; ++ap) {
+        MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+        memset(&g.room, 0, sizeof(g.room));
+        g.room.room_id = 0x02u;
+        g.room.static_metatiles[10][8] = 0x01u;
+        g.jack_x = 40u;
+        g.jack_y = 40u;
+        g.player.a_press_counter = ap;
+        MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 128u, 152u);
+        g.enemies.slots[0].spawn_flash_timer = 0u;
+        g.enemies.slots[0].falling = false;
+        g.enemies.slots[0].transform_timer = 0u;
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+        MjkEnemy* e = &g.enemies.slots[0];
+        uint8_t expected_type = (uint8_t)(ap + 2u);
+        if (e->type != expected_type) {
+            fprintf(stderr, "[FAIL] Mutacion ap=%u dio tipo=%u (esperado %u)\n",
+                    ap, e->type, expected_type);
+            g_failures++;
+        }
+        if (expected_type == MJK_ENEMY_GAMEIDO) {
+            int16_t exp_vx = -(int16_t)(((128u - 40u) << 8u) / 0x4Cu);
+            if (e->vel_x != exp_vx) {
+                fprintf(stderr, "[FAIL] Gameido vel_x=%d (esperado %d)\n", e->vel_x, exp_vx);
+                g_failures++;
+            }
+        } else {
+            int16_t avx = (e->vel_x < 0) ? (int16_t)(-e->vel_x) : e->vel_x;
+            int16_t avy = (e->vel_y < 0) ? (int16_t)(-e->vel_y) : e->vel_y;
+            if (avx != 0x0058 && avy != 0x0058) {
+                fprintf(stderr, "[FAIL] Arquetipo %u no usa speed R1 0x0058 (vx=%d vy=%d)\n",
+                        expected_type, e->vel_x, e->vel_y);
+                g_failures++;
+            }
+        }
+    }
+    /* Despawn por scroll offscreen y hitbox < 8 px */
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 10u, 100u);
+    g.camera.delta_cam_x = -20;
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (g.enemies.slots[0].active) {
+        fprintf(stderr, "[FAIL] Enemigo no despawneo al salir por scroll (x=%u)\n",
+                MjkUQ8_Int(g.enemies.slots[0].pos_x));
+        g_failures++;
+    }
+    g.camera.delta_cam_x = 0;
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    g.player.is_dying = false;
+    g.jack_x = 128u;
+    g.jack_y = 128u;
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 137u, 128u); /* dx = 9 -> no mata */
+    g.enemies.slots[0].spawn_flash_timer = 0u;
+    g.enemies.slots[0].falling = false;
+    g.enemies.slots[0].vel_x = 0;
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (g.player.is_dying) {
+        fprintf(stderr, "[FAIL] Hitbox mato a Jack con dx=9 (>= 8)\n");
+        g_failures++;
+    }
+    g.enemies.slots[0].pos_x = MjkUQ8_FromInt(135u); /* dx = 7 -> sí mata */
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (!g.player.is_dying) {
+        fprintf(stderr, "[FAIL] Hitbox no mato a Jack con dx=7 (< 8)\n");
+        g_failures++;
+    }
+
+    /* 7. Regresión Problema 2c: Bomb Room muta al aterrizar en Y >= 0xD8 */
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, true);
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.room_id = 0x10u;
+    g.room.is_bomb_room = true;
+    for (uint8_t mx = 0u; mx < MJK_ROOM_MT_COLS; ++mx) {
+        g.room.static_metatiles[14][mx] = 0x01u; /* Fondo en y=224 (0xE0) -> centro aterrizaje 0xD8 */
+    }
+    g.player.is_dying = false;
+    g.jack_x = 200u;
+    g.jack_y = 40u;
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_MUMMY, 100u, 190u);
+    g.enemies.slots[0].spawn_flash_timer = 0u;
+    for (int f = 0; f < 40 && g.enemies.slots[0].type == MJK_ENEMY_MUMMY; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (g.enemies.slots[0].type < 2u || g.enemies.slots[0].type > 7u) {
+        fprintf(stderr, "[FAIL] Bomb Room Momia no muto al aterrizar en Y>=0xD8 (type=%u y=0x%02X)\n",
+                g.enemies.slots[0].type, MjkUQ8_Int(g.enemies.slots[0].pos_y));
         g_failures++;
     }
 

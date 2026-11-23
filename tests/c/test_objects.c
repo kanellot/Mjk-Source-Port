@@ -119,6 +119,50 @@ int main(void) {
         g_failures++;
     }
 
+    /* 5. Regresión Problema 1: saltar encima de un cofre rojo en Sala 1 lo abre en el frame del salto */
+    MjkGame_WarpToRoom(&g, 0x01u);
+    for (int f = 0; f < 30; ++f) {
+        MjkInput_Update(&in, 0u);
+        MjkGame_StepFrame(&g, &in);
+    }
+    uint8_t chest_idx = g.room.object_count;
+    if (chest_idx < MJK_ROOM_MAX_OBJECTS) {
+        g.room.object_count++;
+        g.room.objects[chest_idx].yx = 0xA4u;
+        g.room.objects[chest_idx].ram_state = 0x10u; /* Cofre rojo visible */
+        g.room.objects[chest_idx].opcode = 0x00u;    /* Item 0 (100 bag -> metatile != 0x28) */
+        g.room.objects[chest_idx].ram_index = chest_idx;
+        g.room.static_metatiles[0x0A][0x04] = 0x00u;
+        MjkObjects_SetMetatile(&g, 0xA4u, 0x28u);
+        g.player.pos_x = MjkUQ8_FromInt(0x48u);
+        g.player.pos_y = MjkUQ8_FromInt(0x98u);
+        g.player.vel_x = 0;
+        g.player.vel_y = 0;
+        g.player.in_air = false;
+        g.player.just_jumped = false;
+
+        /* 1 frame de pie -> latch */
+        MjkInput_Update(&in, 0u);
+        MjkGame_StepFrame(&g, &in);
+        if (g.objects.chest_target_yx != 0xA4u) {
+            fprintf(stderr, "[FAIL] Cofre bajo los pies no latcheado (target=0x%02X)\n",
+                    g.objects.chest_target_yx);
+            g_failures++;
+        }
+
+        /* Pulsar A -> debe abrirse en el mismo frame del salto */
+        MjkInput_Update(&in, MJK_BTN_A);
+        MjkGame_StepFrame(&g, &in);
+        uint8_t nt_tile = g.ppu.nt[0][0x0Au * 2u][0x04u * 2u];
+        if (g.room.objects[chest_idx].ram_state != 0x00u ||
+            g.room.metatiles[0x0A][0x04] == 0x28u ||
+            nt_tile == 0u) {
+            fprintf(stderr, "[FAIL] Cofre no abrio al saltar (st=0x%02X mt=0x%02X)\n",
+                    g.room.objects[chest_idx].ram_state, g.room.metatiles[0x0A][0x04]);
+            g_failures++;
+        }
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_objects: %d fallo(s).\n", g_failures);

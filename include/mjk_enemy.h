@@ -33,6 +33,11 @@ typedef struct {
     mjk_uq8_8_t pos_y;
     mjk_q8_8_t  vel_x;
     mjk_q8_8_t  vel_y;
+    uint16_t    jump_accum;
+    uint8_t     ai_timer;
+    uint8_t     ai_dir;
+    bool        falling;
+    bool        edge_turned;
 } MjkEnemy;
 
 typedef struct {

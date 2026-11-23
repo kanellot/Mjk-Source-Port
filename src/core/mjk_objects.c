@@ -170,13 +170,21 @@ static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
     }
 }
 
-static void open_chest(MjkGame* game, MjkRoomState* target_room, uint8_t target_nt,
-                       MjkRoomPersistSlot* slot, uint8_t obj_idx) {
+static void open_chest(MjkObjectSystem* obj, MjkGame* game,
+                       MjkRoomState* target_room, uint8_t target_nt,
+                       bool in_right, MjkRoomPersistSlot* slot, uint8_t obj_idx) {
     MjkRoomObject* ro = &target_room->objects[obj_idx];
     uint8_t item_id = (uint8_t)(ro->opcode & 0x0Fu);
     if ((item_id == 7u || item_id == 9u) && game->collected_1up != 0u) {
         item_id = 8u;
     }
+
+    int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
+    int32_t sx_i = (int32_t)(((ro->yx & 0x0Fu) << 4u) + 8u) + (in_right ? 256 : 0) - scroll_x;
+    if (sx_i < 0) { sx_i = 0; }
+    if (sx_i > 255) { sx_i = 255; }
+    uint8_t sx = (uint8_t)sx_i;
+    uint8_t sy = (uint8_t)((ro->yx & 0xF0u) + 8u);
 
     const uint8_t* item_to_tile = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_ITEM_TO_TILE, 18u);
     if (item_id < 9u) {
@@ -193,6 +201,12 @@ static void open_chest(MjkGame* game, MjkRoomState* target_room, uint8_t target_
             slot->objects[ro->ram_index] = 0x0Fu;
         }
         set_room_metatile(game, target_room, target_nt, ro->yx, 0x2Fu);
+        MjkEnemy_SpawnCollectible(&game->enemies, (MjkEnemyType)item_id, sx, sy);
+    }
+
+    if (obj->power_coin_armed != 0u) {
+        obj->power_coin_armed = 0u;
+        MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_POWER_COIN, sx, sy);
     }
 }
 
@@ -312,6 +326,39 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
     uint8_t j_yx = (uint8_t)((jy & 0xF0u) | (jx >> 4u));
     uint8_t feet_yx = (uint8_t)(((jy + 8u) & 0xF0u) | (jx >> 4u));
 
+    if (game->player.just_jumped && obj->chest_target_yx != 0u) {
+        bool chest_in_right = (obj->chest_target_room_id == game->right_room.room_id &&
+                               game->camera.neighbor_room_id != 0u);
+        MjkRoomState* chest_room = chest_in_right ? &game->right_room : &game->room;
+        uint8_t chest_nt = chest_in_right ? 1u : 0u;
+        MjkRoomPersistSlot* chest_slot = get_slot_for_room(game, chest_room->room_id);
+        for (uint8_t i = 0u; i < chest_room->object_count; ++i) {
+            MjkRoomObject* ro = &chest_room->objects[i];
+            uint8_t st = ro->ram_state;
+            if (ro->yx == obj->chest_target_yx &&
+                ((st & 0x1Fu) == 0x10u || (st & 0x1Fu) == 0x11u)) {
+                bool is_orange = ((st & 0x1Fu) == 0x11u);
+                if (is_orange && game->mighty_level == 0u) {
+                    break;
+                }
+                if ((st & 0x20u) != 0u) {
+                    ro->ram_state &= (uint8_t)0xDFu;
+                    if (chest_slot && ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
+                        chest_slot->objects[ro->ram_index] = ro->ram_state;
+                    }
+                    set_room_metatile(game, chest_room, chest_nt, ro->yx,
+                                      is_orange ? 0x4Au : 0x28u);
+                } else {
+                    open_chest(obj, game, chest_room, chest_nt, chest_in_right, chest_slot, i);
+                }
+                break;
+            }
+        }
+        obj->chest_target_yx = 0u;
+    } else if (!game->player.just_jumped) {
+        obj->chest_target_yx = 0u;
+    }
+
     for (uint8_t i = 0u; i < target_room->object_count; ++i) {
         MjkRoomObject* ro = &target_room->objects[i];
         uint8_t st = ro->ram_state;
@@ -329,20 +376,12 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
             if (is_orange && game->mighty_level == 0u) {
                 continue;
             }
-            if (ro->yx == feet_yx && game->player.just_jumped) {
-                if ((st & 0x20u) != 0u) {
-                    ro->ram_state &= (uint8_t)0xDFu;
-                    if (slot && ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
-                        slot->objects[ro->ram_index] = ro->ram_state;
-                    }
-                    set_room_metatile(game, target_room, target_nt, ro->yx, is_orange ? 0x4Au : 0x28u);
-                } else {
-                    open_chest(game, target_room, target_nt, slot, i);
-                }
-                continue;
+            if (!game->player.in_air && ro->yx == feet_yx) {
+                obj->chest_target_yx = ro->yx;
+                obj->chest_target_room_id = target_room->room_id;
             }
             if (ro->yx == j_yx && game->mighty_level >= 2u && (st & 0x20u) == 0u) {
-                open_chest(game, target_room, target_nt, slot, i);
+                open_chest(obj, game, target_room, target_nt, in_right, slot, i);
                 continue;
             }
         }

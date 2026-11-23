@@ -38,6 +38,7 @@ typedef struct {
     uint8_t      power_coin_acc;
     uint8_t      power_coin_armed;
     uint8_t      chest_target_yx;
+    uint8_t      chest_target_room_id;
     uint8_t      chest_target_cmd;
     uint8_t      chest_target_ram_idx;
     uint8_t      chest_target_prev_state;

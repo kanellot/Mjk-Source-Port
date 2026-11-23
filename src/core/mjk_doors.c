@@ -79,32 +79,59 @@ bool MjkDoors_EvaluateCondition(MjkGame* game, uint8_t cond_idx) {
     }
 }
 
-void MjkDoors_OpenRoomDoor(MjkGame* game, uint8_t door_obj_idx) {
-    if (!game || door_obj_idx >= game->room.object_count) {
+static const uint8_t k_unknown_door_table_us[32] = {
+    0x1Fu, 0x06u, 0x17u, 0x03u, 0x03u, 0x1Au, 0x03u, 0x1Fu,
+    0x0Eu, 0x03u, 0x0Fu, 0x16u, 0x1Eu, 0x17u, 0x16u, 0x0Bu,
+    0x03u, 0x1Eu, 0x1Du, 0x10u, 0x13u, 0x1Au, 0x11u, 0x19u,
+    0x1Du, 0x1Eu, 0x0Au, 0x1Fu, 0x05u, 0x12u, 0x03u, 0x16u
+};
+
+static void sync_door_persist(MjkGame* game, uint8_t room_id, uint8_t ram_index, uint8_t ram_state) {
+    if (ram_index >= MJK_ROOM_SLOT_OBJ_BYTES) {
         return;
     }
-    MjkRoomObject* ro = &game->room.objects[door_obj_idx];
+    for (size_t i = 0u; i < MJK_ROOM_PERSIST_SLOTS; ++i) {
+        MjkRoomPersistSlot* s = &game->persist.slots[i];
+        if (s->room_id == room_id) {
+            s->objects[ram_index] = ram_state;
+        }
+    }
+    if (game->persist.scratch.room_id == room_id) {
+        game->persist.scratch.objects[ram_index] = ram_state;
+    }
+}
+
+void MjkDoors_OpenDoorInRoom(MjkGame* game,
+                             MjkRoomState* target_room,
+                             uint8_t target_nt,
+                             uint8_t door_obj_idx) {
+    if (!game || !target_room || door_obj_idx >= target_room->object_count) {
+        return;
+    }
+    MjkRoomObject* ro = &target_room->objects[door_obj_idx];
     if ((ro->opcode & 0xF0u) != 0x80u) {
         return;
     }
-    ro->ram_state |= 0x40u;
-    for (size_t i = 0u; i < MJK_ROOM_PERSIST_SLOTS; ++i) {
-        MjkRoomPersistSlot* s = &game->persist.slots[i];
-        if (s->room_id == game->current_room_id && ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
-            s->objects[ro->ram_index] = ro->ram_state;
-        }
+    ro->ram_state = (uint8_t)((ro->ram_state | 0x40u) & 0x7Fu);
+    sync_door_persist(game, target_room->room_id, ro->ram_index, ro->ram_state);
+
+    uint8_t yx0 = 0u;
+    uint8_t yx1 = 0u;
+    uint8_t base_mt = 0u;
+    MjkRoom_GetDoorMeta((uint8_t)(ro->opcode & 0x0Fu), &yx0, &yx1, &base_mt);
+    if (ro->yx != 0u) {
+        MjkObjects_SetRoomMetatile(game, target_room, target_nt, ro->yx, (uint8_t)(base_mt + 2u));
     }
-    if (game->persist.scratch.room_id == game->current_room_id &&
-        ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
-        game->persist.scratch.objects[ro->ram_index] = ro->ram_state;
-    }
-    uint8_t d_idx = (uint8_t)(ro->opcode & 0x0Fu);
-    uint8_t open_mt = (d_idx < 8u) ? 0x8Au : 0x8Eu;
-    /* Repintado: 2 metatiles contiguos de DoorPositionTileTable (estado abierto). */
-    MjkObjects_SetMetatile(game, ro->yx, open_mt);
     if (ro->yx2 != 0u) {
-        MjkObjects_SetMetatile(game, ro->yx2, open_mt);
+        MjkObjects_SetRoomMetatile(game, target_room, target_nt, ro->yx2, (uint8_t)(base_mt + 3u));
     }
+}
+
+void MjkDoors_OpenRoomDoor(MjkGame* game, uint8_t door_obj_idx) {
+    if (!game) {
+        return;
+    }
+    MjkDoors_OpenDoorInRoom(game, &game->room, 0u, door_obj_idx);
 }
 
 bool MjkDoors_Update(MjkGame* game) {
@@ -119,39 +146,118 @@ bool MjkDoors_Update(MjkGame* game) {
     for (uint8_t i = 0u; i < game->room.object_count; ++i) {
         const MjkRoomObject* ro = &game->room.objects[i];
         if ((ro->opcode & 0xF0u) == 0x80u && (ro->ram_state & 0x40u) == 0u) {
-            MjkDoors_OpenRoomDoor(game, i);
+            MjkDoors_OpenDoorInRoom(game, &game->room, 0u, i);
             opened = true;
         }
     }
     if (opened) {
-        MjkGame_QueueSound(game, MJK_SND_DOOR);
         game->state = MJK_GS_ANIMATE_DOOR_OPEN;
         game->sub_state = 0u;
     }
     return opened;
 }
 
+void MjkDoors_HandleSphinxEvent(MjkGame* game, uint8_t event_idx) {
+    if (!game || event_idx >= 32u) {
+        return;
+    }
+    if ((game->persist.sphinx_flags[event_idx] & 0x80u) == 0u) {
+        return;
+    }
+    game->persist.sphinx_flags[event_idx] = 0x52u;
+    uint8_t val = k_unknown_door_table_us[event_idx];
+    if ((val & 0x10u) != 0u) {
+        uint8_t door_idx = (uint8_t)(val & 0x0Fu);
+        MjkRoomState* rooms[2] = { &game->room, (game->camera.neighbor_room_id != 0u) ? &game->right_room : NULL };
+        for (uint8_t r = 0u; r < 2u; ++r) {
+            MjkRoomState* tr = rooms[r];
+            if (!tr) {
+                continue;
+            }
+            for (uint8_t i = 0u; i < tr->object_count; ++i) {
+                const MjkRoomObject* ro = &tr->objects[i];
+                if ((ro->opcode & 0xF0u) == 0x80u && (ro->opcode & 0x0Fu) == door_idx) {
+                    MjkDoors_OpenDoorInRoom(game, tr, r, i);
+                    game->entry_door_type = door_idx;
+                    game->state = MJK_GS_ANIMATE_DOOR_OPEN;
+                    game->state_timer = 72u;
+                    game->sub_state = 1u;
+                    return;
+                }
+            }
+        }
+    }
+}
+
+static void resolve_door_probe(MjkGame* game, int32_t px, int32_t py,
+                               MjkRoomState** out_room, uint8_t* out_cell) {
+    if (px < 0) { px = 0; }
+    if (py < 0) { py = 0; }
+    if (!game->room.is_horizontal && py >= 240 && game->camera.neighbor_room_id != 0u) {
+        *out_room = &game->right_room;
+        py -= 240;
+        if (py >= 240) { py = 239; }
+        if (px >= 256) { px = 255; }
+    } else if (px >= 256 && game->camera.neighbor_room_id != 0u) {
+        *out_room = &game->right_room;
+        px -= 256;
+        if (px >= 256) { px = 255; }
+        if (py >= 240) { py = 239; }
+    } else {
+        *out_room = &game->room;
+        if (px >= 256) { px = 255; }
+        if (py >= 240) { py = 239; }
+    }
+    *out_cell = (uint8_t)((((uint8_t)py >> 4u) << 4u) | ((uint8_t)px >> 4u));
+}
+
 MjkActionResult MjkDoors_CheckPlayerEntry(MjkGame* game) {
     if (!game) {
         return MJK_ACTION_CONTINUE;
     }
-    uint16_t wx = (uint16_t)MjkUQ8_Int(game->player.pos_x) + (uint16_t)(game->camera.scroll_x_fixed >> 8);
-    bool in_right = (wx >= 256u && game->camera.neighbor_room_id != 0u);
-    const MjkRoomState* target_room = in_right ? &game->right_room : &game->room;
-    uint8_t jx = (uint8_t)(wx & 0xFFu);
-    uint8_t jy = MjkUQ8_Int(game->player.pos_y);
-    uint8_t cell = (uint8_t)(((jy >> 4u) << 4u) | (jx >> 4u));
-    for (uint8_t i = 0u; i < target_room->object_count; ++i) {
-        const MjkRoomObject* ro = &target_room->objects[i];
-        if ((ro->opcode & 0xF0u) != 0x80u || (ro->ram_state & 0x40u) == 0u) {
+    int32_t wx = (int32_t)MjkUQ8_Int(game->player.pos_x) + (int32_t)(game->camera.scroll_x_fixed >> 8);
+    int32_t wy = (int32_t)MjkUQ8_Int(game->player.pos_y) + (int32_t)(game->camera.scroll_y_fixed >> 8);
+
+    int32_t vx = wx;
+    int32_t vy = wy;
+    if (game->player.vel_y < 0) {
+        vy = wy - 9;
+    } else if (game->player.vel_y > 0) {
+        vy = wy + 9;
+    }
+    int32_t hx = wx + (((game->player.facing_attr & 0x04u) != 0u) ? 10 : -10);
+    int32_t hy = wy;
+
+    int32_t px[3] = { wx, vx, hx };
+    int32_t py[3] = { wy, vy, hy };
+
+    for (uint8_t p = 0u; p < 3u; ++p) {
+        MjkRoomState* target_room = NULL;
+        uint8_t cell = 0u;
+        resolve_door_probe(game, px[p], py[p], &target_room, &cell);
+        if (!target_room) {
             continue;
         }
-        if (cell == ro->yx || cell == ro->yx2) {
-            MjkGame_QueueSound(game, MJK_SND_SILENCE);
-            game->entry_door_type = (uint8_t)(ro->opcode & 0x0Fu);
-            game->state = MJK_GS_EXIT_ROOM;
-            game->sub_state = 0u;
-            return MJK_ACTION_ROOM_CHANGED;
+        for (uint8_t i = 0u; i < target_room->object_count; ++i) {
+            MjkRoomObject* ro = &target_room->objects[i];
+            if ((ro->opcode & 0xF0u) != 0x80u) {
+                continue;
+            }
+            if ((ro->ram_state & 0x40u) == 0u || (ro->ram_state & 0x20u) != 0u) {
+                continue;
+            }
+            if (cell == ro->yx || cell == ro->yx2) {
+                if ((ro->extra & 1u) == 0u) {
+                    ro->ram_state &= 0xBFu;
+                    sync_door_persist(game, target_room->room_id, ro->ram_index, ro->ram_state);
+                }
+                MjkGame_QueueSound(game, MJK_SND_SILENCE);
+                game->exit_source_room_id = target_room->room_id;
+                game->entry_door_type = (uint8_t)(ro->opcode & 0x0Fu);
+                game->state = MJK_GS_EXIT_ROOM;
+                game->sub_state = 0u;
+                return MJK_ACTION_ROOM_CHANGED;
+            }
         }
     }
     return MJK_ACTION_CONTINUE;

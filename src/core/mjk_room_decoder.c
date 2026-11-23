@@ -335,6 +335,12 @@ bool MjkRoom_DecodeObjects(const MjkAssetPackage* pkg,
         if (obj.opcode == 0x16u || obj.opcode == 0x36u || obj.opcode == 0x96u || (obj.opcode & 0xF0u) == 0xE0u) {
             obj.extra = rdata[f++];
         } else if ((obj.opcode & 0xF0u) == 0x80u) {
+            uint8_t raw_arg = obj.yx;
+            obj.extra = raw_arg;
+            if (persist && (k_door_state_table_us[raw_arg & 7u] & 0x80u) != 0u &&
+                (obj.ram_state & 0x80u) != 0u) {
+                obj.ram_state = persist->sphinx_flags[raw_arg >> 3u];
+            }
             uint8_t d_idx = (uint8_t)(obj.opcode & 0x0Fu);
             uint8_t y_off = ((obj.ram_state & 0x40u) != 0u) ? 2u : 0u;
             uint8_t open_off = ((obj.ram_state & 0x80u) != 0u) ? 1u : 0u;

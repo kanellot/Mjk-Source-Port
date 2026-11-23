@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "mjk_assets.h"
+#include "mjk_room_decoder.h"
 #include "mjk_types.h"
 
 struct MjkGame;
@@ -25,11 +26,20 @@ MJK_CORE_API bool MjkDoors_EvaluateCondition(struct MjkGame* game, uint8_t cond_
 /** @brief Índice de condición de la sala actual (header $Ex byte 1 >> 3, o $1F en sala $61). */
 MJK_CORE_API int MjkDoors_RoomConditionIndex(const struct MjkGame* game);
 
-/** @brief Marca `|= 0x40` en la puerta, la repinta y encola `MJK_SND_DOOR`. */
+/** @brief Marca `|= 0x40` en la puerta de `target_room`, la repinta y actualiza persistencia. */
+MJK_CORE_API void MjkDoors_OpenDoorInRoom(struct MjkGame* game,
+                                          MjkRoomState* target_room,
+                                          uint8_t target_nt,
+                                          uint8_t door_obj_idx);
+
+/** @brief Marca `|= 0x40` en la puerta de `game->room`, la repinta y actualiza persistencia. */
 MJK_CORE_API void MjkDoors_OpenRoomDoor(struct MjkGame* game, uint8_t door_obj_idx);
 
 /** @brief Evalúa la condición de la sala y abre sus puertas; `true` si abrió alguna. */
 MJK_CORE_API bool MjkDoors_Update(struct MjkGame* game);
+
+/** @brief Procesa evento de Esfinge / Familia Real / Beelzebut (`UnknownDoorTable`). */
+MJK_CORE_API void MjkDoors_HandleSphinxEvent(struct MjkGame* game, uint8_t event_idx);
 
 /** @brief Detecta el cruce de Jack por una puerta abierta -> `MJK_ACTION_ROOM_CHANGED`. */
 MJK_CORE_API MjkActionResult MjkDoors_CheckPlayerEntry(struct MjkGame* game);

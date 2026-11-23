@@ -50,11 +50,13 @@ typedef struct MjkGame {
     uint8_t  door_1e_deaths;
 
     uint8_t  current_room_id;
+    uint8_t  exit_source_room_id;
     uint8_t  checkpoint_room_id;
     uint8_t  torture_return_room_id;
     uint8_t  entry_door_type;
     uint8_t  entry_door_backup;
     uint8_t  torture_return_door_type;
+    bool     entry_door_already_open;
 
     uint8_t  lives;
     uint8_t  gdv_bcd;

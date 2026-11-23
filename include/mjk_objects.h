@@ -11,6 +11,7 @@
 #include "mjk_assets.h"
 #include "mjk_platform.h"
 #include "mjk_ppu.h"
+#include "mjk_room_decoder.h"
 #include "mjk_types.h"
 
 struct MjkGame;
@@ -49,6 +50,12 @@ typedef struct {
 } MjkObjectSystem;
 
 MJK_CORE_API void MjkObjects_SetMetatile(struct MjkGame* game, uint8_t yx, uint8_t metatile_id);
+
+MJK_CORE_API void MjkObjects_SetRoomMetatile(struct MjkGame* game,
+                                              MjkRoomState* target_room,
+                                              uint8_t target_nt,
+                                              uint8_t yx,
+                                              uint8_t metatile_id);
 
 MJK_CORE_API void MjkObjects_InitForRoom(MjkObjectSystem* obj, struct MjkGame* game);
 

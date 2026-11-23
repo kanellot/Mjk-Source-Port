@@ -23,7 +23,7 @@
 #define MJK_ROOM_MT_ROWS         15u
 #define MJK_ROOM_MAX_OBJECTS     32u
 #define MJK_ROOM_PERSIST_SLOTS   8u
-#define MJK_ROOM_SLOT_OBJ_BYTES  14u
+#define MJK_ROOM_SLOT_OBJ_BYTES  32u
 
 typedef struct {
     uint8_t flags;
@@ -51,7 +51,7 @@ typedef struct {
 typedef struct {
     MjkRoomPersistSlot slots[MJK_ROOM_PERSIST_SLOTS];
     MjkRoomPersistSlot scratch;
-    uint8_t            sphinx_flags[16];
+    uint8_t            sphinx_flags[32];
 } MjkRoomPersistRam;
 
 typedef struct {

@@ -23,6 +23,15 @@ static void resolve_probe_cell(const MjkRoomState* cur_room,
                                uint8_t* out_mx,
                                uint8_t* out_my) {
     if (wy < 0) { wy = 0; }
+    if (cur_room && !cur_room->is_horizontal && wy >= 240 && right_room) {
+        *out_src = right_room;
+        wy -= 240;
+        if (wy >= 240) { wy = 239; }
+        uint32_t uwx = (uint32_t)(wx & 255);
+        *out_mx = (uint8_t)(uwx >> 4u);
+        *out_my = (uint8_t)((uint32_t)wy >> 4u);
+        return;
+    }
     if (wy >= 240) { wy = 239; }
     uint32_t uwx = (uint32_t)(wx & 511);
     *out_src = (uwx >= 256u && right_room) ? right_room : cur_room;

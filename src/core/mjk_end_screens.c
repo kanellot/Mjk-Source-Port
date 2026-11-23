@@ -18,6 +18,8 @@ void MjkState_StepRoundClear(MjkGame* game) {
     static const uint8_t k_fire_bomb_bonus[4] = { 0x10u, 0x20u, 0x30u, 0x50u };
     switch (game->sub_state) {
         case 0u: {
+            game->ppu.scroll_x = 0u;
+            game->ppu.scroll_y = 0u;
             game->timer_status |= 0x40u;
             game->state_timer = 0x40u;
             MjkPpu_ClearOam(&game->ppu);
@@ -80,7 +82,13 @@ void MjkState_StepRoundClear(MjkGame* game) {
             game->timer_status &= 0xBFu;
             MjkGame_QueueSound(game, MJK_SND_SILENCE);
             if (game->fire_bombs_collected == 1u && game->last_bomb_room_cleared != 0x9Fu) {
-                game->current_room_id = (uint8_t)(game->last_bomb_room_cleared + 1u);
+                uint8_t next = (uint8_t)(game->last_bomb_room_cleared + 1u);
+                game->current_room_id = next;
+                const uint8_t* entry_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_MAYBE_ENTRY_TYPE, 32u);
+                if (entry_tbl) {
+                    game->entry_door_type = entry_tbl[(next & 0x0Fu) * 2u];
+                }
+                game->timer_status = 0u;
             }
             game->state = MJK_GS_LOAD_ROOM;
             game->sub_state = 0u;
@@ -88,8 +96,102 @@ void MjkState_StepRoundClear(MjkGame* game) {
     }
 }
 
+static void trigger_ending(MjkGame* game, uint8_t ending_idx) {
+    MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
+    game->ending_type = (uint8_t)(ending_idx & 3u);
+    game->ending_state = 0u;
+    game->gdv_bcd = MjkGame_AddGdvBcd(game->gdv_bcd, 3u);
+    game->state = MJK_GS_ENDING;
+    game->sub_state = 0u;
+}
+
+static void resolve_entry_door(MjkGame* game, uint8_t next_room, uint8_t exit_door) {
+    uint8_t target = (uint8_t)(exit_door ^ 0x04u);
+    uint8_t alt = (uint8_t)(exit_door ^ 0x06u);
+    game->entry_door_type = target;
+    game->entry_door_already_open = false;
+    if (next_room == 0u) {
+        return;
+    }
+    MjkRoom_PreloadSection(game->pkg, next_room, &game->persist, game->crystal_balls_mask);
+    MjkRoomState tmp;
+    memset(&tmp, 0, sizeof(tmp));
+    tmp.is_bomb_room = (next_room >= 0x90u && next_room <= 0x9Fu);
+    if (!MjkRoom_DecodeObjects(game->pkg, next_room, &game->persist, &tmp)) {
+        return;
+    }
+    const MjkRoomObject* found = NULL;
+    for (uint8_t i = 0u; i < tmp.object_count; ++i) {
+        const MjkRoomObject* ro = &tmp.objects[i];
+        if ((ro->opcode & 0xF0u) != 0x80u) {
+            continue;
+        }
+        uint8_t d = (uint8_t)(ro->opcode & 0x0Fu);
+        if (d == target) {
+            found = ro;
+            break;
+        }
+        if (d == alt && !found) {
+            found = ro;
+        }
+    }
+    if (found) {
+        game->entry_door_type = (uint8_t)(found->opcode & 0x0Fu);
+        game->entry_door_already_open = ((found->ram_state & 0x40u) != 0u);
+    }
+}
+
+void MjkGame_ExitRoom(MjkGame* game, uint8_t exit_door_dir) {
+    if (!game || !game->pkg) {
+        return;
+    }
+    uint8_t prev_room = (game->exit_source_room_id != 0u) ? game->exit_source_room_id : game->current_room_id;
+    game->exit_source_room_id = 0u;
+    const uint8_t* adj_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_ADJACENT_ROOMS, 256u * 5u);
+    uint8_t next_room = prev_room;
+    if (adj_tbl) {
+        const uint8_t* entry = adj_tbl + ((size_t)prev_room * 5u);
+        next_room = entry[1u + (exit_door_dir & 3u)];
+    }
+
+    uint8_t exit_door = (uint8_t)(game->entry_door_type & 0x0Fu);
+    game->current_room_id = next_room;
+    resolve_entry_door(game, next_room, exit_door);
+    game->state = MJK_GS_LOAD_ROOM;
+    game->sub_state = 0u;
+
+    if (prev_room >= 0x90u && prev_room < 0xA0u) {
+        game->last_bomb_room_cleared = prev_room;
+        game->gs8_status = 0u;
+        game->state = MJK_GS_ROUND_CLEAR;
+        return;
+    }
+    if (next_room == 0xACu) {
+        MjkGame_TriggerTortureRoom(game);
+        return;
+    }
+    if (prev_room >= 0xA0u && prev_room <= 0xA3u) {
+        uint8_t etype = (uint8_t)(prev_room & 3u);
+        bool match = false;
+        if (etype == 0u && game->crystal_balls_mask == 0u) {
+            match = true;
+        } else if (etype == 1u && game->crystal_balls_mask != 3u) {
+            match = true;
+        } else if (etype == 2u && game->secret_coins < 5u) {
+            match = true;
+        } else if (etype == 3u) {
+            match = true;
+        }
+        if (match) {
+            trigger_ending(game, etype);
+        }
+    }
+}
+
 void MjkState_StepGameOver(MjkGame* game) {
     if (game->sub_state == 0u) {
+        game->ppu.scroll_x = 0u;
+        game->ppu.scroll_y = 0u;
         MjkPpu_ClearOam(&game->ppu);
         MjkPpu_ClearNametable(&game->ppu, 0x24u);
         MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
@@ -117,6 +219,8 @@ void MjkState_StepGameOver(MjkGame* game) {
         game->state_timer--;
     }
     if (game->state_timer == 0u) {
+        game->ppu.scroll_x = 0u;
+        game->ppu.scroll_y = 0u;
         game->top_mode = MJK_MODE_TITLE;
         MjkTitle_Init(&game->title);
         MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
@@ -132,6 +236,8 @@ void MjkState_StepEnding(MjkGame* game, const MjkInputState* input) {
 
     switch (game->ending_state) {
         case 0u:
+            game->ppu.scroll_x = 0u;
+            game->ppu.scroll_y = 0u;
             MjkPpu_ClearOam(&game->ppu);
             if (MjkRoom_DecodeGeometry(game->pkg, 0x00u, &game->room)) {
                 MjkRoom_BlitToPpu(&game->room, game->pkg, &game->ppu, 0u);

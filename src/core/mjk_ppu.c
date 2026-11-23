@@ -347,14 +347,16 @@ void MjkPpu_RenderFrame(const MjkPpu* ppu,
     uint8_t bg_opaque[MJK_SCREEN_HEIGHT][MJK_SCREEN_WIDTH];
 
     for (uint32_t y = 0u; y < (uint32_t)MJK_SCREEN_HEIGHT; ++y) {
-        uint32_t wy = (y + (uint32_t)ppu->scroll_y) % 240u;
+        uint32_t wy_sum = y + (uint32_t)ppu->scroll_y;
+        uint8_t v_nt = (ppu->scroll_x == 0u && wy_sum >= 240u) ? 1u : 0u;
+        uint32_t wy = wy_sum % 240u;
         uint8_t tile_row = (uint8_t)(wy >> 3u);
         uint8_t fine_y = (uint8_t)(wy & 7u);
         uint8_t my = (uint8_t)(tile_row >> 1u);
 
         for (uint32_t x = 0u; x < (uint32_t)MJK_SCREEN_WIDTH; ++x) {
             uint32_t wx = (x + (uint32_t)ppu->scroll_x) & 511u;
-            uint8_t nt_idx = (uint8_t)((wx >> 8u) & 1u);
+            uint8_t nt_idx = (v_nt != 0u) ? 1u : (uint8_t)((wx >> 8u) & 1u);
             uint8_t tile_col = (uint8_t)((wx >> 3u) & 31u);
             uint8_t fine_x = (uint8_t)(wx & 7u);
             uint8_t mx = (uint8_t)(tile_col >> 1u);

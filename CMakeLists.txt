@@ -204,5 +204,11 @@ if(BUILD_TESTING)
     mjk_apply_warnings(test_items_mighty)
     add_test(NAME mjk_items_mighty COMMAND test_items_mighty)
 
+    add_executable(test_game_flow tests/c/test_game_flow.c)
+    target_link_libraries(test_game_flow PRIVATE mjk_core)
+    target_compile_definitions(test_game_flow PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_game_flow)
+    add_test(NAME mjk_game_flow COMMAND test_game_flow)
+
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

@@ -15,50 +15,73 @@ static const uint8_t k_partial_masks[10] = {
     0xCCu, 0xFCu, 0x48u, 0x5Au, 0x7Bu, 0xDEu, 0x21u, 0x35u, 0xACu, 0x3Cu
 };
 
-static uint8_t sample_static_metatile(const MjkRoomState* cur_room,
-                                      const MjkRoomState* right_room,
-                                      int32_t wx,
-                                      int32_t wy) {
+static void resolve_probe_cell(const MjkRoomState* cur_room,
+                               const MjkRoomState* right_room,
+                               int32_t wx,
+                               int32_t wy,
+                               const MjkRoomState** out_src,
+                               uint8_t* out_mx,
+                               uint8_t* out_my) {
     if (wy < 0) { wy = 0; }
     if (wy >= 240) { wy = 239; }
     uint32_t uwx = (uint32_t)(wx & 511);
-    const MjkRoomState* src = (uwx >= 256u && right_room) ? right_room : cur_room;
-    if (!src) {
-        return 0x00u;
-    }
-    uint8_t mx = (uint8_t)((uwx & 255u) >> 4u);
+    *out_src = (uwx >= 256u && right_room) ? right_room : cur_room;
+    *out_mx = (uint8_t)((uwx & 255u) >> 4u);
     uint8_t my = (uint8_t)((uint32_t)wy >> 4u);
     if (my >= MJK_ROOM_MT_ROWS) {
         my = MJK_ROOM_MT_ROWS - 1u;
     }
-    return src->static_metatiles[my][mx];
+    *out_my = my;
 }
 
 static bool is_probe_solid(const MjkRoomState* cur_room,
                            const MjkRoomState* right_room,
                            int32_t wx,
                            int32_t wy,
+                           bool is_ground_probe,
                            uint8_t* out_fire_tile) {
-    uint8_t m = sample_static_metatile(cur_room, right_room, wx, wy);
-    if (m == 0x00u || m == 0x27u || m == 0x2Fu) {
+    const MjkRoomState* src = NULL;
+    uint8_t mx = 0u;
+    uint8_t my = 0u;
+    resolve_probe_cell(cur_room, right_room, wx, wy, &src, &mx, &my);
+    if (!src) {
         return false;
     }
+    uint8_t m = src->static_metatiles[my][mx];
     if (m >= 0x5Cu && m <= 0x62u) {
         if (out_fire_tile) {
             *out_fire_tile = m;
         }
         return false;
     }
-    if (m >= 0x38u && m <= 0x4Bu) {
-        uint8_t idx = (uint8_t)((m - 0x38u) >> 1u);
-        uint8_t packed = k_partial_masks[idx];
-        uint8_t nibble = ((m & 1u) == 0u) ? (uint8_t)(packed >> 4u) : (uint8_t)(packed & 0x0Fu);
-        uint8_t qx = (uint8_t)((wx >> 3u) & 1u);
-        uint8_t qy = (uint8_t)((wy >> 3u) & 1u);
-        uint8_t bit = (uint8_t)(3u - (qy * 2u + qx));
-        return ((nibble >> bit) & 1u) != 0u;
+    if (m != 0x00u && m != 0x27u && m != 0x2Fu) {
+        if (m >= 0x38u && m <= 0x4Bu) {
+            uint8_t idx = (uint8_t)((m - 0x38u) >> 1u);
+            uint8_t packed = k_partial_masks[idx];
+            uint8_t nibble = ((m & 1u) == 0u) ? (uint8_t)(packed >> 4u) : (uint8_t)(packed & 0x0Fu);
+            uint8_t qx = (uint8_t)((wx >> 3u) & 1u);
+            uint8_t qy = (uint8_t)((wy >> 3u) & 1u);
+            uint8_t bit = (uint8_t)(3u - (qy * 2u + qx));
+            return ((nibble >> bit) & 1u) != 0u;
+        }
+        return true;
     }
-    return true;
+
+    uint8_t cell_yx = (uint8_t)((my << 4u) | mx);
+    for (uint8_t i = 0u; i < src->object_count; ++i) {
+        const MjkRoomObject* ro = &src->objects[i];
+        if (ro->yx != cell_yx) {
+            continue;
+        }
+        uint8_t kind = (uint8_t)(ro->ram_state & 0x1Fu);
+        if (kind == 0x10u || kind == 0x11u || kind == 0x13u) {
+            if ((ro->ram_state & 0x20u) == 0u) {
+                return true;
+            }
+            return is_ground_probe;
+        }
+    }
+    return false;
 }
 
 void MjkPlayer_Init(MjkPlayer* p, uint8_t x, uint8_t y) {
@@ -177,15 +200,15 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
     int32_t cy = (int32_t)MjkUQ8_Int(p->pos_y) + (int32_t)scroll_y;
 
     if (p->vel_x > 0) {
-        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[7], cy + k_probe_dy[7], NULL) ||
-            is_probe_solid(cur_room, right_room, cx + k_probe_dx[8], cy + k_probe_dy[8], NULL)) {
+        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[7], cy + k_probe_dy[7], false, NULL) ||
+            is_probe_solid(cur_room, right_room, cx + k_probe_dx[8], cy + k_probe_dy[8], false, NULL)) {
             p->collision_flags |= MJK_CF_RIGHT_WALL;
             p->pos_x = MjkUQ8_AddSigned(p->pos_x, (mjk_q8_8_t)(-p->vel_x));
             p->vel_x = 0;
         }
     } else if (p->vel_x < 0) {
-        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[5], cy + k_probe_dy[5], NULL) ||
-            is_probe_solid(cur_room, right_room, cx + k_probe_dx[6], cy + k_probe_dy[6], NULL)) {
+        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[5], cy + k_probe_dy[5], false, NULL) ||
+            is_probe_solid(cur_room, right_room, cx + k_probe_dx[6], cy + k_probe_dy[6], false, NULL)) {
             p->collision_flags |= MJK_CF_LEFT_WALL;
             p->pos_x = MjkUQ8_AddSigned(p->pos_x, (mjk_q8_8_t)(-p->vel_x));
             p->vel_x = 0;
@@ -197,16 +220,16 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
     cy = (int32_t)MjkUQ8_Int(p->pos_y) + (int32_t)scroll_y;
 
     if (p->vel_y < 0) {
-        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[1], cy + k_probe_dy[1], NULL) ||
-            is_probe_solid(cur_room, right_room, cx + k_probe_dx[2], cy + k_probe_dy[2], NULL)) {
+        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[1], cy + k_probe_dy[1], false, NULL) ||
+            is_probe_solid(cur_room, right_room, cx + k_probe_dx[2], cy + k_probe_dy[2], false, NULL)) {
             p->collision_flags |= MJK_CF_CEILING;
             p->jump_accum = 0x4000u;
             p->pos_y = (mjk_uq8_8_t)((p->pos_y & 0xF800u) | 0x0700u);
             p->vel_y = 0;
         }
     } else {
-        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], NULL) ||
-            is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], NULL)) {
+        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, NULL) ||
+            is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL)) {
             p->collision_flags |= MJK_CF_GROUND;
             p->in_air = false;
             p->pos_y = (mjk_uq8_8_t)(p->pos_y & 0xF800u);
@@ -224,6 +247,7 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
     is_probe_solid(cur_room, right_room,
                    (int32_t)MjkUQ8_Int(p->pos_x) + (int32_t)scroll_x,
                    (int32_t)MjkUQ8_Int(p->pos_y) + (int32_t)scroll_y,
+                   false,
                    &fire_tile);
     if (fire_tile != 0u) {
         p->is_dying = true;

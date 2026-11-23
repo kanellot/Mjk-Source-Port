@@ -215,6 +215,36 @@ int main(void) {
         g_failures++;
     }
 
+    /* 9. Regresión Bug 4: Title MJK_TS_JACK_FALLING usa prioridad detrás de BG (0x20) */
+    MjkTitleSystem ts;
+    MjkTitle_Init(&ts);
+    ts.state = MJK_TS_TITLE_WAIT;
+    ts.jack_x = MjkUQ8_FromInt(128u);
+    ts.jack_y = MjkUQ8_FromInt(96u);
+    MjkInputState in_title;
+    memset(&in_title, 0, sizeof(in_title));
+    MjkInput_Update(&in_title, MJK_BTN_START);
+    MjkTitle_Step(&ts, &in_title, &pkg, &g.ppu, g.score_bcd, g.high_gdv_bcd);
+    MjkInput_Update(&in_title, 0u);
+    MjkTitle_Step(&ts, &in_title, &pkg, &g.ppu, g.score_bcd, g.high_gdv_bcd);
+    if (ts.state != MJK_TS_JACK_FALLING) {
+        fprintf(stderr, "[FAIL] Title START no paso a MJK_TS_JACK_FALLING (st=%d)\n", (int)ts.state);
+        g_failures++;
+    } else {
+        /* Los últimos 4 slots OAM escritos por draw_title_sprites pertenecen a Jack */
+        int behind_count = 0;
+        for (size_t s = 0u; s < MJK_PPU_OAM_COUNT; ++s) {
+            if (g.ppu.oam[s].y < 0xF0u && (g.ppu.oam[s].attr & 0x20u) != 0u) {
+                behind_count++;
+            }
+        }
+        if (behind_count < 4) {
+            fprintf(stderr, "[FAIL] Jack en MJK_TS_JACK_FALLING sin bit 0x20 behind-BG (count=%d)\n",
+                    behind_count);
+            g_failures++;
+        }
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_state_machine: %d fallo(s).\n", g_failures);

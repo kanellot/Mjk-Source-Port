@@ -100,6 +100,33 @@ int main(void) {
         g_failures++;
     }
 
+    /* 4. Regresión Bug 2: Cofre rojo cerrado (0x10) sólido y cofre oculto (0x30) solo sólido por arriba */
+    memset(&room, 0, sizeof(room));
+    room.object_count = 1u;
+    room.objects[0].yx = 0x84u; /* my=8 (y=128..143), mx=4 (x=64..79) */
+    room.objects[0].ram_state = 0x10u;
+    MjkPlayer_Init(&p, 0x48u, 0x75u);
+    p.in_air = true;
+    p.jump_accum = 0x4000u;
+    MjkInput_Update(&in, 0u);
+    for (int f = 0; f < 15; ++f) {
+        MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+    }
+    if (p.in_air || (p.collision_flags & MJK_CF_GROUND) == 0u) {
+        fprintf(stderr, "[FAIL] Jack no aterrizo sobre cofre cerrado 0x10 (in_air=%d cf=0x%02X)\n",
+                p.in_air, p.collision_flags);
+        g_failures++;
+    }
+    /* Cofre oculto (0x30) NO debe bloquear pared lateral */
+    room.objects[0].ram_state = 0x30u;
+    MjkPlayer_Init(&p, 0x36u, 0x88u);
+    MjkInput_Update(&in, MJK_BTN_RIGHT);
+    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+    if ((p.collision_flags & MJK_CF_RIGHT_WALL) != 0u) {
+        fprintf(stderr, "[FAIL] Cofre oculto 0x30 bloqueo pared lateral\n");
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_player: %d fallo(s).\n", g_failures);

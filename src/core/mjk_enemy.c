@@ -108,7 +108,70 @@ bool MjkEnemy_SpawnCollectible(MjkEnemyManager* mgr,
     return false;
 }
 
-static void spawn_mummy(MjkEnemyManager* mgr, const MjkAssetPackage* pkg) {
+static bool try_spawn_candidate(uint8_t yx,
+                                bool is_right_room,
+                                int32_t scroll_x,
+                                uint8_t* out_sx,
+                                uint8_t* out_sy) {
+    if (yx == 0x00u) {
+        return false;
+    }
+    int32_t world_x = (int32_t)(((yx & 0x0Fu) << 4u) + 8u) + (is_right_room ? 256 : 0);
+    int32_t screen_x = world_x - scroll_x;
+    if (screen_x < 0 || screen_x >= 256) {
+        return false;
+    }
+    *out_sx = (uint8_t)screen_x;
+    *out_sy = (uint8_t)((yx & 0xF0u) + 8u);
+    return true;
+}
+
+static uint16_t manhattan_dist(uint8_t ax, uint8_t ay, uint8_t bx, uint8_t by) {
+    int16_t dx = (int16_t)ax - (int16_t)bx;
+    int16_t dy = (int16_t)ay - (int16_t)by;
+    if (dx < 0) { dx = (int16_t)(-dx); }
+    if (dy < 0) { dy = (int16_t)(-dy); }
+    return (uint16_t)(dx + dy);
+}
+
+static void spawn_mummy(MjkEnemyManager* mgr, const MjkGame* game) {
+    int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
+    uint16_t wx = (uint16_t)MjkUQ8_Int(game->player.pos_x) + (uint16_t)scroll_x;
+    bool is_right_room = (wx >= 256u && game->camera.neighbor_room_id != 0u);
+    uint8_t active_room_id = is_right_room ? game->camera.neighbor_room_id : game->current_room_id;
+
+    const uint8_t* sp = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_ENEMY_SPAWN_POS, 512u);
+    if (!sp) {
+        return;
+    }
+    uint8_t b0 = sp[(size_t)active_room_id * 2u];
+    uint8_t b1 = sp[(size_t)active_room_id * 2u + 1u];
+    if (b0 == 0x00u) {
+        return; /* Room 0/1 y salas seguras nunca spawnean enemigos (_AbortSpawn). */
+    }
+
+    uint8_t sx0 = 0u, sy0 = 0u;
+    uint8_t sx1 = 0u, sy1 = 0u;
+    bool v0 = try_spawn_candidate(b0, is_right_room, scroll_x, &sx0, &sy0);
+    bool v1 = try_spawn_candidate(b1, is_right_room, scroll_x, &sx1, &sy1);
+    if (!v0 && !v1) {
+        return;
+    }
+
+    uint8_t sx = sx0;
+    uint8_t sy = sy0;
+    if (v0 && v1) {
+        uint16_t d0 = manhattan_dist(sx0, sy0, game->jack_x, game->jack_y);
+        uint16_t d1 = manhattan_dist(sx1, sy1, game->jack_x, game->jack_y);
+        if (d1 > d0) {
+            sx = sx1;
+            sy = sy1;
+        }
+    } else if (v1) {
+        sx = sx1;
+        sy = sy1;
+    }
+
     for (size_t i = 0u; i < MJK_ENEMY_MAX_SLOTS; ++i) {
         if (!mgr->slots[i].active) {
             MjkEnemy* e = &mgr->slots[i];
@@ -119,18 +182,6 @@ static void spawn_mummy(MjkEnemyManager* mgr, const MjkAssetPackage* pkg) {
             e->transform_timer = mgr->transform_reload;
             e->sprite_id = 0x0Eu;
             e->attr_base = 3u;
-
-            uint8_t sx = 0x80u;
-            uint8_t sy = 0x30u;
-            const uint8_t* sp = MjkAssets_ResolveCpuPtr(pkg, MJK_ADDR_ENEMY_SPAWN_POS, 14u);
-            if (sp) {
-                uint8_t idx = (uint8_t)(4u + ((mgr->spawn_cursor++ % 5u) * 2u));
-                uint8_t yx = sp[idx];
-                if (yx != 0u) {
-                    sx = (uint8_t)(((yx & 0x0Fu) << 4u) + 8u);
-                    sy = (uint8_t)((yx & 0xF0u) + 8u);
-                }
-            }
             e->pos_x = MjkUQ8_FromInt(sx);
             e->pos_y = MjkUQ8_FromInt(sy);
             e->vel_x = (mjk_q8_8_t)(0x00C0 + (mgr->speed_tier * 0x0020));
@@ -182,7 +233,7 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
         }
         if (mgr->spawn_timer == 0u) {
             mgr->spawn_timer = mgr->spawn_reload;
-            spawn_mummy(mgr, game->pkg);
+            spawn_mummy(mgr, game);
         }
     }
 

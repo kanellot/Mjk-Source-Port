@@ -98,6 +98,27 @@ int main(void) {
         g_failures++;
     }
 
+    /* 4. Regresión Bug 3: bomba en right_room (wx >= 256) */
+    g.state = MJK_GS_MAIN;
+    g.current_room_id = 0x02u;
+    g.camera.neighbor_room_id = 0x03u;
+    g.camera.scroll_x_fixed = (mjk_uq8_8_t)(160u << 8);
+    memset(&g.right_room, 0, sizeof(g.right_room));
+    g.right_room.room_id = 0x03u;
+    g.right_room.object_count = 1u;
+    g.right_room.objects[0].yx = 0x42u; /* y=0x40..0x4F, x=0x20..0x2F (wx=288 -> 0x20) */
+    g.right_room.objects[0].ram_state = 0x05u;
+    g.right_room.objects[0].ram_index = 0u;
+    g.player.pos_x = MjkUQ8_FromInt(128u);
+    g.player.pos_y = MjkUQ8_FromInt(0x44u);
+    MjkInput_Update(&in, 0u);
+    MjkObjects_Update(&g.objects, &g, &in);
+    if (g.right_room.objects[0].ram_state != 0x0Fu || g.right_room.metatiles[4][2] != 0x2Fu) {
+        fprintf(stderr, "[FAIL] Bomba en right_room no recogida (st=0x%02X mt=0x%02X)\n",
+                g.right_room.objects[0].ram_state, g.right_room.metatiles[4][2]);
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_objects: %d fallo(s).\n", g_failures);

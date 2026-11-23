@@ -135,11 +135,14 @@ MjkActionResult MjkDoors_CheckPlayerEntry(MjkGame* game) {
     if (!game) {
         return MJK_ACTION_CONTINUE;
     }
-    uint8_t jx = (uint8_t)(MjkUQ8_Int(game->player.pos_x) + (uint8_t)(game->camera.scroll_x_fixed >> 8));
+    uint16_t wx = (uint16_t)MjkUQ8_Int(game->player.pos_x) + (uint16_t)(game->camera.scroll_x_fixed >> 8);
+    bool in_right = (wx >= 256u && game->camera.neighbor_room_id != 0u);
+    const MjkRoomState* target_room = in_right ? &game->right_room : &game->room;
+    uint8_t jx = (uint8_t)(wx & 0xFFu);
     uint8_t jy = MjkUQ8_Int(game->player.pos_y);
     uint8_t cell = (uint8_t)(((jy >> 4u) << 4u) | (jx >> 4u));
-    for (uint8_t i = 0u; i < game->room.object_count; ++i) {
-        const MjkRoomObject* ro = &game->room.objects[i];
+    for (uint8_t i = 0u; i < target_room->object_count; ++i) {
+        const MjkRoomObject* ro = &target_room->objects[i];
         if ((ro->opcode & 0xF0u) != 0x80u || (ro->ram_state & 0x40u) == 0u) {
             continue;
         }

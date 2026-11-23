@@ -48,7 +48,7 @@ int main(void) {
 
     MjkGame g;
     MjkGame_Init(&g, &pkg);
-    MjkGame_WarpToRoom(&g, 0x01u);
+    MjkGame_WarpToRoom(&g, 0x02u);
 
     /* 1. DifficultyTable y spawn diferido hasta máximo 4 monstruos vivos */
     MjkEnemy_InitForRoom(&g.enemies, &pkg, 0x90u, false);
@@ -86,6 +86,31 @@ int main(void) {
     uint8_t used = MjkEnemy_RenderOam(&g.enemies, &pkg, &g.ppu, 0u);
     if (used == 0u) {
         fprintf(stderr, "[FAIL] RenderOam no escribio sprites de enemigos\n");
+        g_failures++;
+    }
+
+    /* 4. Regresión Bug 1: Room 0x01 nunca spawnea enemigos; Room 0x02 sí spawnea */
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    g.current_room_id = 0x01u;
+    g.camera.scroll_x_fixed = 0u;
+    g.camera.neighbor_room_id = 0u;
+    g.player.pos_x = MjkUQ8_FromInt(128u);
+    g.jack_x = 128u;
+    g.jack_y = 128u;
+    for (int f = 0; f < 400; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (g.enemies.alive_count != 0u) {
+        fprintf(stderr, "[FAIL] Room 0x01 spawneo %u enemigos (esperado 0)\n", g.enemies.alive_count);
+        g_failures++;
+    }
+    g.current_room_id = 0x02u;
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    for (int f = 0; f < 200; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (g.enemies.alive_count != 1u) {
+        fprintf(stderr, "[FAIL] Room 0x02 alive_count=%u tras 200f (esperado 1)\n", g.enemies.alive_count);
         g_failures++;
     }
 

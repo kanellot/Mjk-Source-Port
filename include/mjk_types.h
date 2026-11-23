@@ -308,7 +308,14 @@ typedef enum {
     MJK_STR_ENDING_4A          = 0x17,
     MJK_STR_ENDING_4B          = 0x18,
     MJK_STR_ENDING_4C          = 0x19,
-    MJK_STR_ENDING_4D          = 0x1A
+    MJK_STR_ENDING_4D          = 0x1A,
+    /* Cadenas adicionales exclusivas de REV_US (asm/src/data.asm:440-446) */
+    MJK_STR_TM                 = 0x1B,
+    MJK_STR_MIGHTY_BOMB_JACK_TM = 0x1C,
+    MJK_STR_TM_AND_C_TECMO_LTD = 0x1D,
+    MJK_STR_LICENSED_BY        = 0x1E,
+    MJK_STR_NINTENDO_OF_AMERICA = 0x1F,
+    MJK_STR_COUNT              = 0x20
 } MjkStringId;
 
 /** @brief Entradas de tabla de puntuación `enum Score` (asm/src/defs.asm:125-157). */

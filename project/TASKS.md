@@ -1,10 +1,10 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **Hito 1 completado (`T-01`, `T-02`, `T-03`)** — Código heredado retirado; `include/mjk_types.h` (Q8.8, BCD, `MjkActionResult`, enums canónicos `REV_US`), `include/mjk_platform.h`, `src/platform/mjk_platform_sdl.c` (HAL SDL2 + headless + `SDL_GetBasePath` + debug keys) y `src/main.c` (`60.0988 Hz` + CLI `--rom`/`--headless`/`--frames`/`--smoke-test`) validados (`3/3` CTest: `mjk_smoke`, `mjk_types`, `mjk_platform_smoke` y `mjk.exe --frames 3` exit `0`).
+> - **Último subpaso completado**: **Hito 2 completado (`T-04`..`T-07`)** — `mjk_sha1.c` (SHA-1 + CRC-32), `mjk_rom_extractor.c` (validación iNES `65552` B + SHA-1 + empaquetado v2 `49255` B), `mjk_assets.c` (carga/validación CRC-32 + 32 cadenas US + 255 salas + 35 sonidos), `MjkPlatform_EnsureDir` y auto-BYOR v2 en `src/main.c` (`--assets`/`--rom` con `--smoke-test` libre de ROM), validados (`5/5` CTest: `mjk_smoke`, `mjk_types`, `mjk_hash`, `mjk_assets`, `mjk_platform_smoke` + CLI BYOR exit `0` / fallo limpio exit `1`).
 > - **Protocolo tras fin de cuota**: Al retomar en una nueva sesión, leer únicamente este `CHECKPOINT ACTIVO` y `project/PROJECT_STATUS.md`, tomar la **primera micro-tarea `[TODO]`** (1 sola por ciclo) y dejar compilación + `ctest` siempre en verde al cerrarla.
-> - **Siguiente micro-tarea**: **`T-04`** (Hito 2: implementar `mjk_sha1.c` y `mjk_crc32` en C11 puro + `CTest` verificando vectores estándar y SHA-1 de `mbj-us.nes`).
-> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 2 (`T-07`).
+> - **Siguiente micro-tarea**: **`T-08`** (Hito 3: implementar `mjk_ppu.c` — paleta maestra 2C02 de 64 colores, decodificación planar 2bpp, blitter de metatiles 16x16 y sprites OAM sin flicker artificial de 8/scanline + `CTest`).
+> - **Política de commits**: Hacer 1 `git commit` limpio al cerrar cada Hito (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`). Siguiente commit al finalizar Hito 3 (`T-11`).
 
 ---
 
@@ -16,10 +16,10 @@
 
 ## Hito 2 — Extractor BYOR v2 Integrado en C (Cero Python al Arrancar)
 
-- `[TODO]` **`T-04`**: Implementar `mjk_sha1.c` y `mjk_crc32` en C11 puro + `CTest` verificando vectores estándar y el hash de `mbj-us.nes` (`a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`).
-- `[TODO]` **`T-05`**: Implementar primera mitad de `mjk_rom_extractor.c`: validación iNES (`65.552` B + SHA-1) y extracción de `CHR-ROM` (32 KB), tablas/bytecodes de audio (`music-data.asm`) y cadenas de texto PPU (`$C244..$C500`) + `CTest`.
-- `[TODO]` **`T-06`**: Completar `mjk_rom_extractor.c`: extracción de tablas de las 257 salas (`RoomHalfScreens`, `HalfScreenLayouts`, `LayoutChunks`, `MetatileDefinitions`, `AdjacentRoomsTable`, `RoomData_01..FF`, paletas) y tablas de sprites/spawns/dificultad -> escritura de `assets/assets.dat` v2 + `CTest`.
-- `[TODO]` **`T-07`**: Implementar `mjk_assets.c` (carga/validación CRC-32 de `assets.dat` v2) e integrar auto-extracción al arranque en `main.c` (`--rom`, ruta local/exe y cuadro de aviso SDL2 si falta ROM) + `CTest`.
+- `[DONE]` **`T-04`**: Implementar `mjk_sha1.c` y `mjk_crc32` en C11 puro + `CTest` verificando vectores estándar y el hash de `mbj-us.nes` (`a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`).
+- `[DONE]` **`T-05`**: Implementar primera mitad de `mjk_rom_extractor.c`: validación iNES (`65.552` B + SHA-1) y extracción de `CHR-ROM` (32 KB), tablas/bytecodes de audio (`music-data.asm`) y cadenas de texto PPU (`$C244..$C500`) + `CTest`.
+- `[DONE]` **`T-06`**: Completar `mjk_rom_extractor.c`: extracción de tablas de las 257 salas (`RoomHalfScreens`, `HalfScreenLayouts`, `LayoutChunks`, `MetatileDefinitions`, `AdjacentRoomsTable`, `RoomData_01..FF`, paletas) y tablas de sprites/spawns/dificultad -> escritura de `assets/assets.dat` v2 + `CTest`.
+- `[DONE]` **`T-07`**: Implementar `mjk_assets.c` (carga/validación CRC-32 de `assets.dat` v2) e integrar auto-extracción al arranque en `main.c` (`--rom`, ruta local/exe y cuadro de aviso SDL2 si falta ROM) + `CTest`.
 
 ## Hito 3 — Renderizador PPU 2C02, 257 Salas y Debug Overlay
 

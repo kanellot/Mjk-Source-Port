@@ -11,8 +11,15 @@
 
 #include "mjk_platform.h"
 #include <SDL.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 
 #define MJK_AUDIO_PREBUFFER_BYTES    4096u
 #define MJK_AUDIO_MAX_LATENCY_BYTES  ((MJK_AUDIO_SAMPLE_RATE * (uint32_t)sizeof(int16_t) * 12u) / 100u)
@@ -350,6 +357,64 @@ bool MjkPlatform_GetExecutableDir(char* out_buf, size_t buf_size) {
     out_buf[copy_len] = '\0';
     SDL_free(base_path);
     return fits;
+}
+
+static bool platform_mkdir_single(const char* path) {
+    if (!path || path[0] == '\0' || strcmp(path, ".") == 0) {
+        return true;
+    }
+#ifdef _WIN32
+    if (_mkdir(path) == 0 || errno == EEXIST) {
+        return true;
+    }
+#else
+    if (mkdir(path, 0755) == 0 || errno == EEXIST) {
+        return true;
+    }
+#endif
+    return false;
+}
+
+bool MjkPlatform_EnsureDir(const char* dir_path) {
+    if (!dir_path || dir_path[0] == '\0' || strcmp(dir_path, ".") == 0) {
+        return true;
+    }
+
+    char buf[1024];
+    size_t len = strlen(dir_path);
+    if (len >= sizeof(buf)) {
+        return false;
+    }
+    memcpy(buf, dir_path, len + 1u);
+
+    while (len > 1u && (buf[len - 1u] == '/' || buf[len - 1u] == '\\')) {
+        if (len == 3u && buf[1] == ':') {
+            break;
+        }
+        buf[--len] = '\0';
+    }
+
+    size_t start = 0u;
+    if (len >= 2u && buf[1] == ':') {
+        start = 2u;
+        if (buf[start] == '/' || buf[start] == '\\') {
+            start = 3u;
+        }
+    } else if (buf[0] == '/' || buf[0] == '\\') {
+        start = 1u;
+    }
+
+    for (size_t i = start; i <= len; ++i) {
+        if (buf[i] == '/' || buf[i] == '\\' || buf[i] == '\0') {
+            char saved = buf[i];
+            buf[i] = '\0';
+            if (!platform_mkdir_single(buf)) {
+                return false;
+            }
+            buf[i] = saved;
+        }
+    }
+    return true;
 }
 
 void MjkPlatform_ShowMessageBox(const char* title, const char* message, bool is_error) {

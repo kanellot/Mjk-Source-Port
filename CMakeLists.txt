@@ -23,6 +23,7 @@ option(MJK_BUILD_SHARED_CORE "Build shared core library (mjk_core.dll / libmjk_c
 function(mjk_apply_warnings target_name)
     if(MSVC)
         target_compile_options(${target_name} PRIVATE /W4 /WX /utf-8)
+        target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
     elseif(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
@@ -39,6 +40,9 @@ find_package(SDL2 REQUIRED)
 # Fuentes puras del núcleo de simulación (cero dependencias de SDL o SO)
 set(MJK_CORE_SOURCES
     src/core/mjk_build_info.c
+    src/core/mjk_sha1.c
+    src/core/mjk_rom_extractor.c
+    src/core/mjk_assets.c
 )
 
 # Target 1: Núcleo estático C11 puro
@@ -99,6 +103,18 @@ if(BUILD_TESTING)
     target_link_libraries(test_types PRIVATE mjk_core)
     mjk_apply_warnings(test_types)
     add_test(NAME mjk_types COMMAND test_types)
+
+    add_executable(test_hash tests/c/test_hash.c)
+    target_link_libraries(test_hash PRIVATE mjk_core)
+    target_compile_definitions(test_hash PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_hash)
+    add_test(NAME mjk_hash COMMAND test_hash)
+
+    add_executable(test_assets tests/c/test_assets.c)
+    target_link_libraries(test_assets PRIVATE mjk_core)
+    target_compile_definitions(test_assets PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(test_assets)
+    add_test(NAME mjk_assets COMMAND test_assets)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
 endif()

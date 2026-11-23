@@ -13,14 +13,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mjk_assets.h"
 #include "mjk_build_info.h"
 #include "mjk_platform.h"
+#include "mjk_rom_extractor.h"
 
 #define MJK_SAMPLES_PER_NTSC_FRAME 735u
 
 typedef struct {
     const char* rom_path;
+    const char* assets_path;
     bool        headless;
+    bool        smoke_test;
     uint32_t    max_frames;
 } MjkCliOptions;
 
@@ -50,7 +54,9 @@ static void render_hal_test_pattern(MjkFrameOutput* out, uint32_t frame_index) {
 
 static bool parse_cli_options(int argc, char* argv[], MjkCliOptions* opts) {
     opts->rom_path = NULL;
+    opts->assets_path = NULL;
     opts->headless = false;
+    opts->smoke_test = false;
     opts->max_frames = 0u;
 
     for (int i = 1; i < argc; ++i) {
@@ -58,10 +64,25 @@ static bool parse_cli_options(int argc, char* argv[], MjkCliOptions* opts) {
             opts->headless = true;
         } else if (strcmp(argv[i], "--smoke-test") == 0) {
             opts->headless = true;
+            opts->smoke_test = true;
             opts->max_frames = 5u;
-        } else if (strcmp(argv[i], "--rom") == 0 && (i + 1) < argc) {
+        } else if (strcmp(argv[i], "--rom") == 0) {
+            if ((i + 1) >= argc) {
+                fprintf(stderr, "[ERROR CLI]: Falta ruta tras --rom.\n");
+                return false;
+            }
             opts->rom_path = argv[++i];
-        } else if (strcmp(argv[i], "--frames") == 0 && (i + 1) < argc) {
+        } else if (strcmp(argv[i], "--assets") == 0) {
+            if ((i + 1) >= argc) {
+                fprintf(stderr, "[ERROR CLI]: Falta ruta tras --assets.\n");
+                return false;
+            }
+            opts->assets_path = argv[++i];
+        } else if (strcmp(argv[i], "--frames") == 0) {
+            if ((i + 1) >= argc) {
+                fprintf(stderr, "[ERROR CLI]: Falta número tras --frames.\n");
+                return false;
+            }
             char* end = NULL;
             unsigned long parsed = strtoul(argv[++i], &end, 10);
             if (!end || *end != '\0') {
@@ -74,6 +95,151 @@ static bool parse_cli_options(int argc, char* argv[], MjkCliOptions* opts) {
             return false;
         }
     }
+    return true;
+}
+
+static bool join_path(char* out, size_t out_size, const char* dir, const char* rel) {
+    if (!out || out_size == 0u || !dir || !rel) {
+        return false;
+    }
+    size_t dir_len = strlen(dir);
+    bool has_sep = (dir_len > 0u && (dir[dir_len - 1u] == '/' || dir[dir_len - 1u] == '\\'));
+    int n = snprintf(out, out_size, has_sep ? "%s%s" : "%s/%s", dir, rel);
+    return n >= 0 && (size_t)n < out_size;
+}
+
+static bool file_exists(const char* path) {
+    if (!path || path[0] == '\0') {
+        return false;
+    }
+    FILE* f = fopen(path, "rb");
+    if (!f) {
+        return false;
+    }
+    fclose(f);
+    return true;
+}
+
+static bool ensure_parent_dir(const char* file_path) {
+    if (!file_path) {
+        return false;
+    }
+    const char* last_sep = NULL;
+    for (const char* p = file_path; *p != '\0'; ++p) {
+        if (*p == '/' || *p == '\\') {
+            last_sep = p;
+        }
+    }
+    if (!last_sep) {
+        return true;
+    }
+    size_t dir_len = (size_t)(last_sep - file_path);
+    if (dir_len == 0u) {
+        return true;
+    }
+    char dir_buf[1024];
+    if (dir_len >= sizeof(dir_buf)) {
+        return false;
+    }
+    memcpy(dir_buf, file_path, dir_len);
+    dir_buf[dir_len] = '\0';
+    return MjkPlatform_EnsureDir(dir_buf);
+}
+
+static bool load_or_extract_assets(const MjkCliOptions* opts,
+                                   const char* exe_dir,
+                                   MjkAssetPackage* out_assets) {
+    char exe_assets_path[1024];
+    MjkAssetError load_err = MJK_ASSET_ERR_IO;
+
+    if (opts->assets_path) {
+        load_err = MjkAssets_LoadFromFile(opts->assets_path, out_assets);
+        if (load_err == MJK_ASSET_OK) {
+            printf("  Assets   : %s (CRC-32 0x%08X)\n",
+                   opts->assets_path, (unsigned)out_assets->payload_crc32);
+            return true;
+        }
+    } else {
+        load_err = MjkAssets_LoadFromFile("assets/assets.dat", out_assets);
+        if (load_err == MJK_ASSET_OK) {
+            printf("  Assets   : assets/assets.dat (CRC-32 0x%08X)\n",
+                   (unsigned)out_assets->payload_crc32);
+            return true;
+        }
+        if (exe_dir && join_path(exe_assets_path, sizeof(exe_assets_path), exe_dir, "assets/assets.dat")) {
+            load_err = MjkAssets_LoadFromFile(exe_assets_path, out_assets);
+            if (load_err == MJK_ASSET_OK) {
+                printf("  Assets   : %s (CRC-32 0x%08X)\n",
+                       exe_assets_path, (unsigned)out_assets->payload_crc32);
+                return true;
+            }
+        }
+    }
+
+    const char* found_rom = NULL;
+    char exe_rom_path[1024];
+    if (opts->rom_path) {
+        if (file_exists(opts->rom_path)) {
+            found_rom = opts->rom_path;
+        }
+    } else if (file_exists("mbj-us.nes")) {
+        found_rom = "mbj-us.nes";
+    } else if (exe_dir && join_path(exe_rom_path, sizeof(exe_rom_path), exe_dir, "mbj-us.nes") &&
+               file_exists(exe_rom_path)) {
+        found_rom = exe_rom_path;
+    }
+
+    if (!found_rom) {
+        char msg[1024];
+        snprintf(msg, sizeof(msg),
+                 "No se encontró assets.dat válido (%s) ni la ROM mbj-us.nes.\n"
+                 "Proporciona --rom <ruta_mbj-us.nes> o coloca mbj-us.nes junto al ejecutable.\n"
+                 "SHA-1 esperado: %s",
+                 MjkAssets_ErrorString(load_err), MJK_ROM_EXPECTED_SHA1);
+        fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
+        MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Falta ROM", msg, true);
+        return false;
+    }
+
+    const char* target_assets = opts->assets_path ? opts->assets_path : "assets/assets.dat";
+    if (!ensure_parent_dir(target_assets)) {
+        char msg[512];
+        snprintf(msg, sizeof(msg), "No se pudo crear el directorio padre para '%s'.", target_assets);
+        fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
+        MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Error de Directorio", msg, true);
+        return false;
+    }
+
+    char sha1_hex[MJK_SHA1_HEX_LEN + 1u];
+    memset(sha1_hex, 0, sizeof(sha1_hex));
+    MjkAssetError ext_err = MjkRom_ExtractFileToAssetsDat(found_rom, target_assets, sha1_hex);
+    if (ext_err == MJK_ASSET_OK) {
+        ext_err = MjkAssets_LoadFromFile(target_assets, out_assets);
+    }
+
+    if (ext_err != MJK_ASSET_OK) {
+        char msg[1024];
+        if (sha1_hex[0] != '\0' && strcmp(sha1_hex, MJK_ROM_EXPECTED_SHA1) != 0) {
+            snprintf(msg, sizeof(msg),
+                     "Error al extraer '%s': %s.\n"
+                     "SHA-1 esperado: %s\n"
+                     "SHA-1 obtenido: %s",
+                     found_rom, MjkAssets_ErrorString(ext_err),
+                     MJK_ROM_EXPECTED_SHA1, sha1_hex);
+        } else {
+            snprintf(msg, sizeof(msg),
+                     "Error al extraer '%s' hacia '%s': %s.\n"
+                     "SHA-1 esperado: %s",
+                     found_rom, target_assets, MjkAssets_ErrorString(ext_err),
+                     MJK_ROM_EXPECTED_SHA1);
+        }
+        fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
+        MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Error BYOR", msg, true);
+        return false;
+    }
+
+    printf("  BYOR v2  : Extraído %s <- %s (SHA-1 %s)\n",
+           target_assets, found_rom, sha1_hex);
     return true;
 }
 
@@ -94,7 +260,8 @@ int main(int argc, char* argv[]) {
     }
 
     char exe_dir[512];
-    if (!MjkPlatform_GetExecutableDir(exe_dir, sizeof(exe_dir))) {
+    bool exe_dir_ok = MjkPlatform_GetExecutableDir(exe_dir, sizeof(exe_dir));
+    if (!exe_dir_ok) {
         snprintf(exe_dir, sizeof(exe_dir), "(desconocido)");
     }
 
@@ -104,6 +271,15 @@ int main(int argc, char* argv[]) {
     printf("  Modo     : %s | ROM CLI: %s\n",
            opts.headless ? "headless" : "SDL2",
            opts.rom_path ? opts.rom_path : "(auto)");
+
+    MjkAssetPackage assets;
+    memset(&assets, 0, sizeof(assets));
+    if (!opts.smoke_test) {
+        if (!load_or_extract_assets(&opts, exe_dir_ok ? exe_dir : NULL, &assets)) {
+            MjkPlatform_Shutdown();
+            return 1;
+        }
+    }
 
     static MjkFrameOutput frame_output;
     memset(&frame_output, 0, sizeof(frame_output));
@@ -153,6 +329,7 @@ int main(int argc, char* argv[]) {
         MjkPlatform_SleepMilliseconds(1u);
     }
 
+    MjkAssets_Unload(&assets);
     MjkPlatform_Shutdown();
     printf("[OK] %u frame(s) a %.4f Hz completados.\n", (unsigned)simulated_frames, MJK_NTSC_FPS);
     return 0;

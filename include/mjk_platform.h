@@ -100,6 +100,7 @@ void     MjkPlatform_PresentFramebuffer(const uint32_t* framebuffer);
 void     MjkPlatform_QueueAudioSamples(const int16_t* samples, uint32_t count);
 
 bool     MjkPlatform_GetExecutableDir(char* out_buf, size_t buf_size);
+bool     MjkPlatform_EnsureDir(const char* dir_path);
 void     MjkPlatform_ShowMessageBox(const char* title, const char* message, bool is_error);
 
 #endif /* MJK_PLATFORM_H */

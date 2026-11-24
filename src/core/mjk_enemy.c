@@ -330,15 +330,33 @@ void MjkEnemy_InitForRoom(MjkEnemyManager* mgr, const MjkAssetPackage* pkg,
     mgr->spawn_timer = mgr->spawn_reload;
 }
 
-static bool try_spawn_candidate(uint8_t yx, bool is_neighbor, bool is_horizontal,
+/* SpawnLocFunc1 + sub_9276 + SpawnLocFunc2 (prg.asm:8758-8824, 2988-3018). */
+static bool try_spawn_candidate(uint8_t yx, uint8_t room_flags, bool is_horizontal,
                                 int32_t scroll_x, int32_t scroll_y,
                                 uint8_t* out_sx, uint8_t* out_sy) {
     if (yx == 0x00u) { return false; }
-    int32_t screen_x = (int32_t)(((yx & 0x0Fu) << 4u) + 8u) + ((is_neighbor && is_horizontal) ? 256 : 0) - scroll_x;
-    int32_t screen_y = (int32_t)((yx & 0xF0u) + 8u) + ((is_neighbor && !is_horizontal) ? 240 : 0) - scroll_y;
-    if (screen_x < 0 || screen_x >= 256 || screen_y < 0 || screen_y >= 240) { return false; }
-    *out_sx = (uint8_t)screen_x;
-    *out_sy = (uint8_t)screen_y;
+
+    /* SpawnLocFunc1 (prg.asm:8762-8781): en scroll activo (ni SingleScreen ni AtScrollEdge),
+     * el bit 7 de la coordenada local del eje de scroll debe diferir del bit 7 del scroll. */
+    if ((room_flags & (MJK_RF_SINGLE_SCREEN | MJK_RF_AT_SCROLL_EDGE)) == 0u) {
+        uint8_t coord_hi = is_horizontal ? (uint8_t)((yx & 0x0Fu) << 4u) : (uint8_t)(yx & 0xF0u);
+        uint8_t scroll_hi = is_horizontal ? (uint8_t)(scroll_x & 0xFF) : (uint8_t)(scroll_y & 0xFF);
+        if (((coord_hi ^ scroll_hi) & 0x80u) == 0u) {
+            return false;
+        }
+    }
+
+    /* sub_9276 (prg.asm:2988-3018): conversión modular 8-bit a coordenadas de pantalla. */
+    uint8_t sy_scroll = (uint8_t)(scroll_y & 0xFF);
+    if (sy_scroll >= 0x78u) {
+        sy_scroll = (uint8_t)(sy_scroll + 0x10u);
+    }
+    uint8_t sy = (uint8_t)(((yx & 0xF0u) | 8u) - sy_scroll);
+    uint8_t sx = (uint8_t)((((yx & 0x0Fu) << 4u) | 8u) - (uint8_t)(scroll_x & 0xFF));
+
+    if (sx == 0u || sy == 0u || sy >= 240u) { return false; }
+    *out_sx = sx;
+    *out_sy = sy;
     return true;
 }
 
@@ -360,8 +378,8 @@ static void spawn_mummy(MjkEnemyManager* mgr, const MjkGame* game) {
     if (!sp || sp[(size_t)rid * 2u] == 0x00u) { return; }
 
     uint8_t sx0 = 0u, sy0 = 0u, sx1 = 0u, sy1 = 0u;
-    bool v0 = try_spawn_candidate(sp[(size_t)rid * 2u], is_neighbor, horiz, scroll_x, scroll_y, &sx0, &sy0);
-    bool v1 = try_spawn_candidate(sp[(size_t)rid * 2u + 1u], is_neighbor, horiz, scroll_x, scroll_y, &sx1, &sy1);
+    bool v0 = try_spawn_candidate(sp[(size_t)rid * 2u], game->camera.room_flags, horiz, scroll_x, scroll_y, &sx0, &sy0);
+    bool v1 = try_spawn_candidate(sp[(size_t)rid * 2u + 1u], game->camera.room_flags, horiz, scroll_x, scroll_y, &sx1, &sy1);
     if (!v0 && !v1) { return; }
 
     uint8_t sx = v0 ? sx0 : sx1, sy = v0 ? sy0 : sy1;

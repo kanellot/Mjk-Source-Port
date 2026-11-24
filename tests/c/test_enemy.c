@@ -276,6 +276,33 @@ int main(void) {
         g_failures++;
     }
 
+    /* 9. Paridad ASM: APressCounter persiste en MjkPlayer_Init y SpawnLocFunc1 filtra mitad de scroll */
+    g.player.a_press_counter = 4u;
+    MjkPlayer_Init(&g.player, 32u, 184u);
+    if (g.player.a_press_counter != 4u) {
+        fprintf(stderr, "[FAIL] MjkPlayer_Init borro a_press_counter (%u != 4)\n",
+                g.player.a_press_counter);
+        g_failures++;
+    }
+    MjkEnemy_InitForRoom(&g.enemies, &pkg, 0u, false);
+    g.current_room_id = 0x02u; /* Room 0x02: spawns $B1 (x=24,y=184) y $4A (x=168,y=72) */
+    g.room.is_horizontal = true;
+    g.camera.room_flags = MJK_RF_HORIZONTAL; /* scroll activo (sin RF_AtScrollEdge ni RF_SingleScreen) */
+    g.camera.scroll_x_fixed = (16 << 8);
+    g.camera.scroll_y_fixed = 0;
+    g.camera.neighbor_room_id = 0u;
+    g.jack_x = 16u;
+    g.jack_y = 184u;
+    g.enemies.spawn_timer = 1u;
+    MjkEnemy_UpdateAll(&g.enemies, &g);
+    if (!g.enemies.slots[0].active ||
+        MjkUQ8_Int(g.enemies.slots[0].pos_x) != 152u ||
+        MjkUQ8_Int(g.enemies.slots[0].pos_y) != 72u) {
+        fprintf(stderr, "[FAIL] SpawnLocFunc1 no filtro $B1 en scroll_x=16 (got x=%u y=%u, esperado 152,72)\n",
+                MjkUQ8_Int(g.enemies.slots[0].pos_x), MjkUQ8_Int(g.enemies.slots[0].pos_y));
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_enemy: %d fallo(s).\n", g_failures);

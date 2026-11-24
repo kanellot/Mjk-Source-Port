@@ -105,7 +105,10 @@ void MjkPlayer_Init(MjkPlayer* p, uint8_t x, uint8_t y) {
     if (!p) {
         return;
     }
+    /* APressCounter ($00FA) solo se limpia en RESET (prg.asm:47-60), nunca al cambiar de sala. */
+    uint8_t saved_a_press = p->a_press_counter;
     memset(p, 0, sizeof(*p));
+    p->a_press_counter = saved_a_press;
     p->pos_x = MjkUQ8_FromInt(x);
     p->pos_y = MjkUQ8_FromInt(y);
     p->facing_attr = 0x04u;

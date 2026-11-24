@@ -106,6 +106,10 @@ void MjkGame_LoseLife(MjkGame* game) {
         return;
     }
     game->timer_status = 0u;
+    game->mighty_level = 0u;
+    game->mighty_presses_left = 0u;
+    game->torture_scene_flag = 0u;
+    MjkPpu_SetJackMightyColor(&game->ppu, game->pkg, 0u);
     if (game->lives > 0u) {
         game->lives--;
     }
@@ -116,9 +120,6 @@ void MjkGame_LoseLife(MjkGame* game) {
     }
     game->current_room_id = game->checkpoint_room_id;
     game->entry_door_type = game->entry_door_backup;
-    game->mighty_level = 0u;
-    game->mighty_presses_left = 0u;
-    game->torture_scene_flag = 0u;
     game->state = MJK_GS_ROUND_INTRO;
     game->sub_state = 0u;
 }
@@ -176,6 +177,8 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             game->last_bomb_room_cleared = 0u;
             game->extra_lives_found = 0u;
             game->mighty_coins = 0u;
+            game->mighty_level = 0u;
+            game->mighty_presses_left = 0u;
             game->collected_1up = 0u;
             game->one_up_timer = 0u;
             game->score_multiplier = 0u;

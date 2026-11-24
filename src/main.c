@@ -206,7 +206,7 @@ static bool load_or_extract_assets(const MjkCliOptions* opts,
     const char* target_assets = opts->assets_path ? opts->assets_path : "assets/assets.dat";
     if (!ensure_parent_dir(target_assets)) {
         char msg[512];
-        snprintf(msg, sizeof(msg), "No se pudo crear el directorio padre para '%s'.", target_assets);
+        snprintf(msg, sizeof(msg), "No se pudo crear el directorio padre para '%.256s'.", target_assets);
         fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
         MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Error de Directorio", msg, true);
         return false;
@@ -223,14 +223,14 @@ static bool load_or_extract_assets(const MjkCliOptions* opts,
         char msg[1024];
         if (sha1_hex[0] != '\0' && strcmp(sha1_hex, MJK_ROM_EXPECTED_SHA1) != 0) {
             snprintf(msg, sizeof(msg),
-                     "Error al extraer '%s': %s.\n"
+                     "Error al extraer '%.256s': %.128s.\n"
                      "SHA-1 esperado: %s\n"
                      "SHA-1 obtenido: %s",
                      found_rom, MjkAssets_ErrorString(ext_err),
                      MJK_ROM_EXPECTED_SHA1, sha1_hex);
         } else {
             snprintf(msg, sizeof(msg),
-                     "Error al extraer '%s' hacia '%s': %s.\n"
+                     "Error al extraer '%.256s' hacia '%.256s': %.128s.\n"
                      "SHA-1 esperado: %s",
                      found_rom, target_assets, MjkAssets_ErrorString(ext_err),
                      MJK_ROM_EXPECTED_SHA1);

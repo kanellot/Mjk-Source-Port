@@ -316,7 +316,7 @@ bool MjkRoom_DecodeObjects(const MjkAssetPackage* pkg,
         return false;
     }
 
-    const MjkRoomPersistSlot* slot = find_persist_slot(persist, room_id);
+    MjkRoomPersistSlot* slot = (MjkRoomPersistSlot*)find_persist_slot(persist, room_id);
     size_t f = ((rdata[0] & 0xF0u) == 0xE0u) ? 3u : 0u;
     uint8_t bomb_rem = 0u;
     uint8_t ram_idx = 0u;
@@ -350,6 +350,9 @@ bool MjkRoom_DecodeObjects(const MjkAssetPackage* pkg,
             if (persist && (k_door_state_table_us[raw_arg & 7u] & 0x80u) != 0u &&
                 (obj.ram_state & 0x80u) != 0u) {
                 obj.ram_state = persist->sphinx_flags[raw_arg >> 3u];
+                if (slot && ram_idx < MJK_ROOM_SLOT_OBJ_BYTES) {
+                    slot->objects[ram_idx] = obj.ram_state;
+                }
             }
             uint8_t d_idx = (uint8_t)(obj.opcode & 0x0Fu);
             uint8_t y_off = ((obj.ram_state & 0x40u) != 0u) ? 2u : 0u;

@@ -423,6 +423,9 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             }
             if (game->player.just_jumped && game->torture_scene_flag != 0u) {
                 MjkGame_OnTortureJump(game);
+                if (game->state != MJK_GS_MAIN) {
+                    break;
+                }
             }
             if (p_res == MJK_ACTION_PLAYER_DIED) {
                 if (game->player.fire_tile_died_to == 0x5Du && game->current_room_id == 0xFCu) {

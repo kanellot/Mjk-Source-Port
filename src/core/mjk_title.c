@@ -23,10 +23,10 @@ static uint8_t draw_title_sprites(const MjkTitleSystem* ts,
     MjkPpu_ClearOam(ppu);
     uint8_t slot = 0u;
     slot = MjkPpu_DrawHudScore(ppu, score_bcd, slot);
-    slot = MjkPpu_DrawBcdByte(ppu, high_gdv_bcd, 0xCCu, 0x1Cu, false, slot);
+    slot = MjkPpu_DrawBcdByte(ppu, high_gdv_bcd, 0xCCu, 0x1Cu, true, slot);
     slot = MjkPpu_DrawBcdByte(ppu, 0x19u, 0xBCu, 0x93u, false, slot);
     slot = MjkPpu_DrawBcdByte(ppu, 0x87u, 0xCCu, 0x93u, false, slot);
-    uint8_t jack_attr = (ts->state == MJK_TS_JACK_FALLING) ? 0x21u : 0x05u;
+    uint8_t jack_attr = (ts->state == MJK_TS_JACK_FALLING) ? 0x21u : 0x01u;
     slot = MjkPpu_WriteMetasprite(ppu, pkg, ts->jack_sprite,
                                   MjkUQ8_Int(ts->jack_x),
                                   MjkUQ8_Int(ts->jack_y),

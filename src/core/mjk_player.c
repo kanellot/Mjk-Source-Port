@@ -80,10 +80,17 @@ static bool is_probe_solid(const MjkRoomState* cur_room,
     uint8_t cell_yx = (uint8_t)((my << 4u) | mx);
     for (uint8_t i = 0u; i < src->object_count; ++i) {
         const MjkRoomObject* ro = &src->objects[i];
+        uint8_t kind = (uint8_t)(ro->ram_state & 0x1Fu);
+        if (kind == 0x12u) {
+            /* P-09: Puertas cerradas visibles ($12/$92: bit 6=0 y bit 5=0) son sólidas. */
+            if ((ro->ram_state & 0x60u) == 0u && (ro->yx == cell_yx || ro->yx2 == cell_yx)) {
+                return true;
+            }
+            continue;
+        }
         if (ro->yx != cell_yx) {
             continue;
         }
-        uint8_t kind = (uint8_t)(ro->ram_state & 0x1Fu);
         if (kind == 0x10u || kind == 0x11u || kind == 0x13u) {
             if ((ro->ram_state & 0x20u) == 0u) {
                 return true;
@@ -126,9 +133,10 @@ static void step_death(MjkPlayer* p,
 
     int32_t cx = (int32_t)MjkUQ8_Int(p->pos_x) + (int32_t)scroll_x;
     int32_t cy = (int32_t)MjkUQ8_Int(p->pos_y) + (int32_t)scroll_y;
-    bool on_ground = (MjkUQ8_Int(p->pos_y) >= 0xE0u) ||
-                     is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, NULL) ||
-                     is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL);
+    uint8_t ft0 = 0u, ft1 = 0u;
+    bool g0 = is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, &ft0) || (ft0 != 0u);
+    bool g1 = is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, &ft1) || (ft1 != 0u);
+    bool on_ground = (MjkUQ8_Int(p->pos_y) >= 0xE0u) || g0 || g1;
     if (on_ground && p->vel_y >= 0) {
         p->death_grounded = true;
         p->death_timer = 0u;
@@ -227,12 +235,12 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
     const uint8_t pressed = input ? input->just_pressed : 0u;
     (void)mighty_coins;
 
-    /* 1. Movimiento horizontal instantáneo (±1.5 px/f = ±0x0180 Q8.8) */
+    /* 1. Movimiento horizontal instantáneo (±1.5 px/f = ±0x0180 Q8.8); prioridad Derecha (P-10). */
     p->vel_x = 0;
-    if ((held & MJK_BTN_RIGHT) != 0u && (held & MJK_BTN_LEFT) == 0u) {
+    if ((held & MJK_BTN_RIGHT) != 0u) {
         p->vel_x = (mjk_q8_8_t)0x0180;
         p->facing_attr = 0x04u;
-    } else if ((held & MJK_BTN_LEFT) != 0u && (held & MJK_BTN_RIGHT) == 0u) {
+    } else if ((held & MJK_BTN_LEFT) != 0u) {
         p->vel_x = (mjk_q8_8_t)(-0x0180);
         p->facing_attr = 0x00u;
     }

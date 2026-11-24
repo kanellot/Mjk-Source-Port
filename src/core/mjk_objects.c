@@ -506,8 +506,8 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
         ? (uint8_t)((jy & 0xF0u) | (((uint32_t)side_wx & 0xFFu) >> 4u))
         : 0xFFu;
     bool has_head = (game->player.vel_y < 0 || (game->player.collision_flags & MJK_CF_CEILING) != 0u) &&
-                    (jy >= 9u);
-    uint8_t head_yx = has_head ? (uint8_t)(((uint8_t)(jy - 9u) & 0xF0u) | (jx >> 4u)) : 0xFFu;
+                    (jy >= 8u);
+    uint8_t head_yx = has_head ? (uint8_t)(((uint8_t)(jy - 8u) & 0xF0u) | (jx >> 4u)) : 0xFFu;
 
     if (game->player.just_jumped && obj->chest_target_yx != 0u) {
         bool chest_in_right = (obj->chest_target_room_id == game->right_room.room_id &&

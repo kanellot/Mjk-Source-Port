@@ -168,7 +168,7 @@ static void init_archetype(MjkEnemy* e, const MjkGame* game, const MjkEnemyManag
         case MJK_ENEMY_HANEZO:     e->vel_x = spd; e->vel_y = spd; break;
         case MJK_ENEMY_GEJISHOGUN: e->vel_x = (game->jack_x < ex) ? (mjk_q8_8_t)(-spd) : spd;
                                    e->vel_y = (game->jack_y < ey) ? (mjk_q8_8_t)(-spd) : spd; break;
-        case MJK_ENEMY_GAMEIDO:    update_gameido_vel(e, game, mgr, 0u); break;
+        case MJK_ENEMY_GAMEIDO:    e->ai_dir = EF_LEFT; update_gameido_vel(e, game, mgr, 0u); break;
         case MJK_ENEMY_DOKURON:    e->vel_x = (game->jack_x < ex) ? (mjk_q8_8_t)(-spd) : spd; e->vel_y = spd; break;
         case MJK_ENEMY_DESUFA:     e->vel_x = spd; e->vel_y = (game->jack_y < ey) ? (mjk_q8_8_t)(-spd) : spd; break;
         case MJK_ENEMY_HORUS:      e->vel_x = spd; e->vel_y = 0; break;

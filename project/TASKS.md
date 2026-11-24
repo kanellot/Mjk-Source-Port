@@ -1,17 +1,17 @@
 # Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
 
-> **CHECKPOINT ACTIVO (Última actualización: 2026-11-23)**
-> - **Último subpaso completado**: **PROYECTO FINALIZADO — Hito 7 (`T-27`..`T-30`, 30/30 tareas `[DONE]`)** — `mjk_verify_api.h`/`.c` (`MjkVerify_*`), `tools/verify_scenarios.py` (`5/5` escenarios PASS frente a `cynes`), `tests/c/test_full_game.c` (`12/12` puntos de `GAME_COMPLETE_FLOW.md`), `research/CROSS_REFERENCE_INDEX.md` actualizado, `docs/EDUCATIONAL_ARCHITECTURE.md` creado, y certificación final (`16/16` CTests en 1.21 s, `0` warnings `/W4 /WX /utf-8`, BYOR CLI `0/0/1`, `0` includes SDL/OS en `src/core/`, `0` assets binarios en Git).
-> - **Protocolo tras fin de cuota**: Todos los hitos (`T-01`..`T-30`) están completados y certificados en verde.
+> **CHECKPOINT ACTIVO (Última actualización: 2026-11-24)**
+> - **Último subpaso completado**: **PROYECTO FINALIZADO Y PUBLICADO — Hitos 1–7 (`T-01`..`T-30`, 30/30 `[DONE]`) + Paridad Bloques 1–5 + CI/CD Release** — 19 módulos C11 puros en `src/core/`, `18/18` CTests en verde (`0` warnings MSVC `/W4 /WX` y GCC 15 `-Wall -Wextra -Wpedantic -Werror`), `5/5` escenarios Capa 2 frente a `cynes`, `README.md`, `LICENSE` (MIT + atribución ASM) y pipeline GitHub Actions (Windows x64 + Linux x64) en `main`.
+> - **Protocolo tras fin de cuota**: Todos los hitos (`T-01`..`T-30`) y el pulido final de publicación están completados y certificados en verde.
 > - **Siguiente micro-tarea**: **Ninguna (`30/30` completadas)**.
-> - **Política de commits**: Todos los hitos (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`) cerrados con commit limpio.
+> - **Política de commits**: Todos los hitos (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`), bloques de paridad y pipeline CI/CD cerrados con commits limpios en `main`.
 
 ---
 
 ## Hito 1 — Infraestructura Multiplataforma y Esqueleto Limpio
 
 - `[DONE]` **`T-01`**: Crear `CMakeLists.txt` unificado (Windows MSVC/MinGW + Linux GCC/Clang, `-Wall -Wextra`) con targets `mjk_core`, `mjk` (SDL2) y `mjk_tests` (`CTest`), y dejar `build.bat` / `Makefile` como wrappers finos. *(Gate: compila target dummy + `ctest` pasa.)*
-- `[DONE]` **`T-02`**: Retirar código heredado de `src/core/`, `src/platform/mjk_platform_win32.c` e `include/mjk_font.h`; definir `include/mjk_types.h` (Q8.8, `MjkActionResult`, enums) e `include/mjk_platform.h` educativos. *(Gate: compila limpio + `CTest` de macros Q8.8.)*
+- `[DONE]` **`T-02`**: Definir `include/mjk_types.h` (aritmética `Q8.8`/`BCD`, `MjkActionResult`, enums canónicos `REV_US`) e `include/mjk_platform.h` (contrato HAL limpio sin dependencias de SO). *(Gate: compila limpio + `CTest` de macros Q8.8.)*
 - `[DONE]` **`T-03`**: Adaptar `src/platform/mjk_platform_sdl.c` y `src/main.c` al contrato HAL limpio (bucle `60.0988 Hz`, gamepad/teclado, resolución de rutas vía `SDL_GetBasePath()`). *(Gate: ventana SDL2 arranca/cierra limpio en Windows y Linux.)*
 
 ## Hito 2 — Extractor BYOR v2 Integrado en C (Cero Python al Arrancar)

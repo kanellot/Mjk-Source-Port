@@ -1,326 +1,178 @@
 # Registro de Decisiones de Arquitectura e Ingeniería (ADR)
 
-Este registro documenta todas las decisiones arquitectónicas, metodológicas e invariantes técnicas del proyecto *Mighty Bomb Jack*.
+Este registro documenta las decisiones arquitectónicas, metodológicas e invariantes técnicas vigentes del source port C11 de *Mighty Bomb Jack* (`REV_US`), desarrollado con **Gemini 4 Neon + Hydrogen**.
 
 ---
 
-## Índice de Decisiones (Iteración 2)
+## Índice de Decisiones
 
-- [ADR-001: Adopción del Marco de Reconstrucción Funcional y Epistemología de Evidencia](#adr-001-adopción-del-marco-de-reconstrucción-funcional-y-epistemología-de-evidencia)
-- [ADR-002: Congelación Total de la Implementación hasta Superación de Auditoría (Fase 4)](#adr-002-congelación-total-de-la-implementación-hasta-superación-de-auditoría-fase-4) `[SUPERADA]`
-- [ADR-003: Organización Limpia del Workspace: Centralización en `project/`, `archive/` y Subcarpetas en `research/`](#adr-003-organización-limpia-del-workspace-centralización-en-project-archive-y-subcarpetas-en-research)
-- [ADR-004: Preservación de la Revisión USA / NTSC (`REV_US`) como Versión Base Canónica](#adr-004-preservación-de-la-revisión-usa--ntsc-rev_us-como-versión-base-canónica)
-- [ADR-005: Enfoque Tool-Assisted para Análisis Estático y Mitigación de Métricas de Vanidad](#adr-005-enfoque-tool-assisted-para-análisis-estático-y-mitigación-de-métricas-de-vanidad)
-- [ADR-006: Arquitectura del Source Port en C, Extracción Clean-Room de Assets y Estándar Educacional](#adr-006-arquitectura-del-source-port-en-c-extracción-clean-room-de-assets-y-estándar-educacional)
-- [ADR-007: Fidelidad de Paletas y Sprites Derivada del Ensamblador 6502 y PPU 2C02 (Anti-Heurística Visual)](#adr-007-fidelidad-de-paletas-y-sprites-derivada-del-ensamblador-6502-y-ppu-2c02-anti-heurística-visual)
-- [ADR-008: Prohibición Estricta de Suposiciones en Decisiones y Respaldo Obligatorio en Código y Emulador](#adr-008-prohibición-estricta-de-suposiciones-en-decisiones-y-respaldo-obligatorio-en-código-y-emulador)
-- [ADR-009: Capitalización Persistente del Análisis ASM en `research/` y Decisión Final en Código](#adr-009-capitalización-persistente-del-análisis-asm-en-research-y-decisión-final-en-código)
-- [ADR-010: Prohibición de Interacción Humana en Subagentes y Comunicación Estricta M2M (Ahorro de Tokens)](#adr-010-prohibición-de-interacción-humana-en-subagentes-y-comunicación-estricta-m2m-ahorro-de-tokens) `[SUPERADA]`
-- [ADR-011: Eliminación Obligatoria e Inmediata de Subagentes Finalizados (Cero Agentes Ociosos)](#adr-011-eliminación-obligatoria-e-inmediata-de-subagentes-finalizados-cero-agentes-ociosos) `[SUPERADA]`
-- [ADR-012: Arquitectura del Sistema de Puertas, Evaluación de 33 Condiciones y Transición Topológica de Salas](#adr-012-arquitectura-del-sistema-de-puertas-evaluación-de-33-condiciones-y-transición-topológica-de-salas)
-- [ADR-013: Metodología de Replay Diferencial de Golden Master y Empuje de Horizonte (Fase 7)](#adr-013-metodología-de-replay-diferencial-de-golden-master-y-empuje-de-horizonte-fase-7) `[SUPERADA]`
-- [ADR-014: Entorno Agéntico Antigravity 2.0 con Gemini 4 Neon + Hydrogen, Skills Progresivas y Hook de Protección](#adr-014-entorno-agéntico-antigravity-20-con-gemini-4-neon--hydrogen-skills-progresivas-y-hook-de-protección)
-- [ADR-015: Política Clean-Room BYOR v2 (Cero Datos Propietarios Embebidos en C)](#adr-015-política-clean-room-byor-v2-cero-datos-propietarios-embebidos-en-c)
-- [ADR-016: Suite Multi-TAS de 5 Niveles, Consulta ASM Determinista y Build Unificado Windows/Linux](#adr-016-suite-multi-tas-de-5-niveles-consulta-asm-determinista-y-build-unificado-windowslinux) `[SUPERADA]`
-- [ADR-017: Verificación Comportamental en 3 Capas (CTest + Micro-Escenarios Semánticos + Debug Overlay)](#adr-017-verificación-comportamental-en-3-capas-ctest--micro-escenarios-semánticos--debug-overlay)
-- [ADR-018: Reescritura Limpia de `src/core/` con Abstracciones Educativas y Extensibles](#adr-018-reescritura-limpia-de-srccore-con-abstracciones-educativas-y-extensibles)
-- [ADR-019: Extractor BYOR v2 Integrado en C en el Arranque del Port](#adr-019-extractor-byor-v2-integrado-en-c-en-el-arranque-del-port)
+- [ADR-001: Epistemología de Evidencia en 4 Estados y Ground Truth 6502](#adr-001-epistemología-de-evidencia-en-4-estados-y-ground-truth-6502)
+- [ADR-002: Revisión USA / NTSC (`REV_US`) como Versión Base Canónica](#adr-002-revisión-usa--ntsc-rev_us-como-versión-base-canónica)
+- [ADR-003: Consulta ASM Determinista (`tools/asm_query.py`) y Capitalización en `research/`](#adr-003-consulta-asm-determinista-toolsasm_querypy-y-capitalización-en-research)
+- [ADR-004: Orquestación Agéntica con Gemini 4 Neon + Hydrogen, Skills Progresivas y Hook de Protección](#adr-004-orquestación-agéntica-con-gemini-4-neon--hydrogen-skills-progresivas-y-hook-de-protección)
+- [ADR-005: Arquitectura C11 Clean-Room Desacoplada en 2 Capas (Windows + Linux)](#adr-005-arquitectura-c11-clean-room-desacoplada-en-2-capas-windows--linux)
+- [ADR-006: Política Clean-Room BYOR v2 con Extractor Integrado en C11](#adr-006-política-clean-room-byor-v2-con-extractor-integrado-en-c11)
+- [ADR-007: Fidelidad de Paletas 2C02, Sprites OAM y Audio 2A03 Derivada del ASM](#adr-007-fidelidad-de-paletas-2c02-sprites-oam-y-audio-2a03-derivada-del-asm)
+- [ADR-008: Abstracciones Educativas Limpias en C11 (`Q8.8`, `BCD`, `MjkActionResult`)](#adr-008-abstracciones-educativas-limpias-en-c11-q88-bcd-mjkactionresult)
+- [ADR-009: Sistema de Puertas `REV_US`, 33 Condiciones y Topología de 257 Salas](#adr-009-sistema-de-puertas-rev_us-33-condiciones-y-topología-de-257-salas)
+- [ADR-010: Verificación Comportamental en 3 Capas (`CTest` + `cynes` + Debug Overlay)](#adr-010-verificación-comportamental-en-3-capas-ctest--cynes--debug-overlay)
+- [ADR-011: Pipeline CI/CD Multiplataforma en GitHub Actions (Windows y Linux)](#adr-011-pipeline-cicd-multiplataforma-en-github-actions-windows-y-linux)
 
 ---
 
-## ADR-001: Adopción del Marco de Reconstrucción Funcional y Epistemología de Evidencia
+## ADR-001: Epistemología de Evidencia en 4 Estados y Ground Truth 6502
 
-- **Fecha**: 2026-10-24
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  La iteración 1 intentó implementar el juego simultáneamente al análisis, resultando en un prototipo incompleto con lógica aproximada, suelo hardcodeado y falsos positivos en las pruebas unitarias.
+  Para construir un port jugablemente fiel sin inventar constantes, hitboxes ni temporizaciones, toda decisión de diseño debe partir del desensamblado 6502 original (`asm/src/`) y/o telemetría verificable del emulador (`cynes`).
 - **Decisión**:
-  Se adopta formalmente la skill `nes-functional-reconstruction` estructurada en un ciclo de vida de fases estrictas (Fase 0 a Fase 4). Toda afirmación técnica debe categorizarse en uno de los 4 estados de evidencia:
-  - `[CONFIRMADA]`: Evidencia directa en el código 6502 (con citas de archivo y línea).
-  - `[INFERIDA]`: Hipótesis consistente pero pendiente de corroboración.
-  - `[DESCONOCIDA]`: Sin evidencia concluyente.
-  - `[CONTRADICTORIA]`: Discrepancia identificada entre fuentes que debe investigarse.
+  1. Toda afirmación técnica se clasifica en uno de 4 estados: `[CONFIRMADA]` (cita directa `asm/src/<archivo>:<líneas>` o traza de `nes_oracle.py`), `[INFERIDA]`, `[DESCONOCIDA]` o `[CONTRADICTORIA]`.
+  2. Queda prohibido adoptar constantes, fórmulas o tablas basadas en suposiciones no verificadas.
+  3. El directorio `asm/` es **solo lectura** (protegido de forma determinista).
 - **Consecuencias**:
-  Queda prohibido dar por cerrado un subsistema sin evidencia demostrable en el código fuente.
+  Eliminación de placeholders y garantía de trazabilidad directa entre el código C11 y la ROM original.
 
 ---
 
-## ADR-002: Congelación Total de la Implementación hasta Superación de Auditoría (Fase 4)
+## ADR-002: Revisión USA / NTSC (`REV_US`) como Versión Base Canónica
 
-- **Fecha**: 2026-10-24
-- **Estado**: `[SUPERADA]` *(Fase 4 completada; código antiguo movido a `archive/` y reemplazado por `src/`. Ver ADR-014.)*
-- **Contexto**:
-  Escribir código de implementación antes de tener la especificación completa distorsiona las conclusiones, fomenta la invención de mecánicas no contrastadas y consume ciclos de testing sobre componentes ficticios.
-- **Decisión**:
-  El directorio `port_native/` queda **congelado en modo solo lectura**. Ningún agente orquestador o subagente escribirá código de implementación hasta que la Fase 4 (Auditoría de Cobertura y Trazabilidad) haya sido completada y certificada con 0 incertidumbres críticas pendientes.
-- **Consecuencias**:
-  El 100% del esfuerzo del proyecto se concentra en la extracción, especificación formal y modelado de datos y control del código 6502.
-
----
-
-## ADR-003: Organización Limpia del Workspace: Centralización en `project/`, `archive/` y Subcarpetas en `research/`
-
-- **Fecha**: 2026-10-24
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  Los archivos de gestión y auditoría anteriores se encontraban dispersos en la raíz (`TASKS.md`, `PROJECT_STATUS.md`, `DECISIONS.md`, `SESSION_LOG.md`), saturando el espacio de trabajo.
+  *Mighty Bomb Jack* cuenta con revisiones `REV_JP` (Famicom 1986), `REV_JPA` y `REV_US` (NES USA 1987).
 - **Decisión**:
-  1. La totalidad de los archivos de la Iteración 1 se respaldan en `archive/iteration_01_c_port/`.
-  2. Los archivos activos de persistencia y seguimiento se trasladan a `project/` (`TASKS.md`, `PROJECT_STATUS.md`, `DECISIONS.md`, `SESSION_LOG.md`).
-  3. Los entregables de especificación se organizan en subcarpetas dentro de `research/`: `scope/`, `inventories/`, `control_flow/`, `contracts/` y `audit/`.
-  4. Los informes técnicos previos (`RES-001` a `RES-011`) se conservan en `research/` y se enriquecen con nuevos hallazgos.
-  5. La raíz `./` queda despejada, preservando únicamente `AGENTS.md` (como regla raíz del sistema) y los vídeos de referencia.
+  Adoptar `REV_US` (`mbj-us.nes`, `65 552` bytes, `SHA-1: a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`) como única línea canónica:
+  - Textos en inglés y pantalla de Copyright USA (`TitleScreen_US_0/1`).
+  - Penalización de la Sala de Tortura fijada en `50` saltos (`$50` BCD).
+  - Disposición de puertas, cofres y secretos específicos de `REV_US` (incluyendo las 33 condiciones de puerta y el caso especial de la sala `$61`).
 - **Consecuencias**:
-  Workspace limpio, modular, fácil de navegar e inmune a colisiones accidentales.
+  Contratos unívocos y verificación determinista contra una única ROM de referencia.
 
 ---
 
-## ADR-004: Preservación de la Revisión USA / NTSC (`REV_US`) como Versión Base Canónica
+## ADR-003: Consulta ASM Determinista (`tools/asm_query.py`) y Capitalización en `research/`
 
-- **Fecha**: 2026-10-24 (Ratificación de la decisión previa ADR-004 de Iteración 1)
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  El cartucho comercial de *Mighty Bomb Jack* tiene 3 revisiones ensamblables desde `asm/`: `REV_JP` (Famicom 1986), `REV_JPA` (Famicom Rev A) y `REV_US` (NES USA 1987).
+  Releer archivos ensamblador de miles de líneas en cada turno desperdicia contexto y favorece inconsistencias.
 - **Decisión**:
-  Se mantiene la revisión USA (`REV_US`) como línea canónica de referencia funcional:
-  - Textos y tipografía en inglés (Tecmo Inc. Los Angeles, CA).
-  - Penalización de la Sala de Tortura fijada en 50 saltos (`$50` BCD).
-  - Disposición de puertas, cofres y secretos específicos de la versión USA (incluyendo la puerta 0x0E con requisito de Mighty Level 3).
+  1. Indexar subrutinas, tablas ROM, JumpTables y uso de RAM en `tools/asm_inventory.json` consultable instantáneamente mediante `tools/asm_query.py`.
+  2. Documentar todo hallazgo en `research/` (`GAME_COMPLETE_FLOW.md`, `CROSS_REFERENCE_INDEX.md`, `contracts/`, `inventories/`, `control_flow/`, `RES-012..036`) con contraste final contra `asm/src/`.
 - **Consecuencias**:
-  Cualquier discrepancia con las versiones japonesas se registrará como nota regional comparativa, pero no afectará a los contratos de comportamiento base.
+  Mínimo consumo de tokens, conocimiento persistente navegable y rigor matemático en la cobertura del código 6502.
 
 ---
 
-## ADR-005: Enfoque Tool-Assisted para Análisis Estático y Mitigación de Métricas de Vanidad
+## ADR-004: Orquestación Agéntica con Gemini 4 Neon + Hydrogen, Skills Progresivas y Hook de Protección
 
-- **Fecha**: 2026-10-24
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  En la iteración 1 se cometió el error de considerar 100% cubierta una subrutina si su nombre aparecía en un archivo markdown, lo que generó una falsa sensación de progreso.
+  El proyecto requiere mantener reglas claras (< 6 KB en `AGENTS.md`), ejecución modular resiliente a cuota (1 micro-tarea = 1 estado verde) y protección automática de invariantes.
 - **Decisión**:
-  Todo inventario, grafo de llamadas, matriz de uso de RAM (lectores/escritores) y resolución de saltos indirectos debe ser procesado o validado mediante herramientas programáticas en `tools/`. La auditoría de cobertura debe comprobar el mapeo de bloques de código reales, no meras coincidencias de texto.
+  1. Mantener `AGENTS.md` conciso como constitución raíz del workspace.
+  2. Usar el flujo nativo **Plan/Execute** con **Gemini 4 Neon** (planificación, diagnóstico ASM/oráculo) y **Gemini 4 Hydrogen** (implementación C11 y verificación `CTest`).
+  3. Externalizar guías extensas en 3 skills bajo demanda (`.agents/skills/mjk-asm-ground-truth`, `mjk-educational-c-port`, `mjk-verification-workflow`).
+  4. Instalar el hook determinista `PreToolUse` (`.agents/hooks.json` + `.agents/hooks/guard_workspace.py`) que bloquea escrituras en `asm/` y scripts temporales `scratch/*.py`.
 - **Consecuencias**:
-  Eliminación de falsos positivos en los reportes de progreso y garantía de rigor matemático en la cobertura de instrucciones.
+  Ciclos de trabajo predecibles, cero truncamiento de contexto y cumplimiento automático de las reglas del repositorio.
 
 ---
 
-## ADR-006: Arquitectura del Source Port en C, Extracción Clean-Room de Assets y Estándar Educacional
+## ADR-005: Arquitectura C11 Clean-Room Desacoplada en 2 Capas (Windows + Linux)
 
-- **Fecha**: 2026-10-24
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  Tras superar y certificar formalmente la Fase 4 (Auditoría), se autoriza el paso a la Fase 5 (Diseño de Arquitectura). El usuario ha especificado requisitos fundamentales: implementación en lenguaje C, política estricta de cero assets con copyright en el repositorio (estrategia BYOR: *Bring Your Own ROM* con extractor), base en la versión USA (`REV_US`), compatibilidad nativa con Windows, mandos de Xbox Series y teclado, y un estándar explícito de código limpio, modular y de valor educacional.
-- **Decisiones Técnicas**:
-  1. **Lenguaje y Estándar**: C99 / C11 estricto con enteros de ancho fijo (`<stdint.h>`, `<stdbool.h>`).
-  2. **Arquitectura Desacoplada en Dos Capas**:
-     - `src/core/`: Núcleo de simulación del juego en C puro, determinista, sin dependencias de sistemas de ventanas, bibliotecas externas ni APIs del SO.
-     - `src/platform/`: Capa de abstracción de hardware (HAL) para Windows mediante SDL2/SDL3 (DirectX 11, XInput para mandos de Xbox Series, teclado y audio a baja latencia).
-  3. **Política Clean-Room de Assets (BYOR)**:
-     - El repositorio no distribuirá ningún archivo de audio, gráfico o tipografía con derechos de autor.
-     - Se creará una herramienta extractora (`tools/asset_extractor`) que verificará el hash SHA-1 de `mbj-us.nes` y empaquetará los tiles CHR-ROM (32 KB) y secuencias sonoras en `assets.dat`.
-  4. **Estándar de Código Limpio y Educacional**:
-     - Prohibición de variables crípticas (`byte_E`, `$0048`, offsets anónimos). Toda entidad se representará mediante estructuras de datos semánticas (`JackPlayer`, `RoomObject`, `EnemyEntity`) y enumeraciones legibles.
-     - Trazabilidad didáctica dual: Cada función y subsistema documentará en sus cabeceras el concepto de diseño de juegos subyacente y la referencia exacta a las líneas del ensamblador original (`asm/src/prg.asm`).
-     - Creación de documentación didáctica complementaria (`docs/EDUCATIONAL_ARCHITECTURE.md`) explicando cómo funcionan los videojuegos clásicos en su interior (física en punto fijo, compresión de metatiles, máquinas de estados sin SO).
+  El port debe compilar sin warnings en Windows (MSVC) y Linux (GCC/Clang), servir como referencia educativa y ser fácil de mantener y extender.
+- **Decisión**:
+  1. **Lenguaje**: C11 estricto (`-std=c11`, `-Wall -Wextra -Wpedantic -Werror` en GCC/Clang; `/W4 /WX /utf-8` en MSVC).
+  2. **Separación estricta en 2 capas**:
+     - `src/core/`: 19 módulos puros de simulación (cero includes de SDL2 y cero APIs Win32/POSIX), cada uno acotado y enfocado a un subsistema.
+     - `src/platform/` + `src/main.c`: HAL SDL2 (ventana 256×240 escalable, audio PCM 44.1 kHz, teclado/mando con hotplug, bucle NTSC `60.0988 Hz` y Debug Overlay `F1`–`F6`).
+  3. **Build unificado**: `CMakeLists.txt` con `CTest` integrado y wrappers finos (`build.bat` en Windows, `Makefile` en Linux).
 - **Consecuencias**:
-  El proyecto trasciende un simple port para convertirse en un recurso educativo de código abierto de referencia para estudiantes y desarrolladores de emulación y videojuegos retro.
+  Portabilidad nativa Windows/Linux, código didáctico y facilidad para compilar el núcleo en modo headless para pruebas.
 
 ---
 
-## ADR-007: Fidelidad de Paletas y Sprites Derivada del Ensamblador 6502 y PPU 2C02 (Anti-Heurística Visual)
+## ADR-006: Política Clean-Room BYOR v2 con Extractor Integrado en C11
 
-- **Fecha**: 2026-10-24
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  La comparación visual con capturas de vídeo es propensa a errores si se utiliza para "adivinar" colores RGB o posiciones aproximadas de sprites (debido a compresión de vídeo, filtros de emulador o corrección gamma). Además, la NES genera colores a través de una paleta maestra de 64 índices en la PPU 2C02 y registros de hardware específicos ($3F00-$3F1F).
+  El repositorio debe estar 100 % libre de bytes con copyright de Tecmo (gráficos, música, textos, mapas) y el usuario final no debe depender de Python para arrancar el juego.
 - **Decisión**:
-  1. **Origen de la Verdad en Paletas**: Toda asignación de color en el juego debe provenir exclusivamente de los índices de color de la PPU 2C02 cargados desde las tablas originales de `asm/src/data.asm` (`MainPalette`, `BackgroundPaletteSets`) y volcados en la RAM de paletas ($3F00-$3F1F) según las subrutinas de `asm/src/prg.asm`.
-  2. **Origen de la Verdad en Sprites**: El mapeo de tiles de Jack, enemigos, bombas y HUD debe obtenerse de los datos reales del Banco 1 de CHR-ROM y de las tablas de animación/OAM del ensamblador original (bytes de atributos de OAM con bits de paleta y flip horizontal/vertical).
-  3. **Rol de la Comparación Visual**: La comparación visual contra `Mighty-Bomb-Jack-original.mp4` se establece estrictamente como un mecanismo de **auditoría, validación y certificación de paridad**, pero **nunca** como fuente para inventar o aproximar valores a ojo.
+  1. Integrar en `src/core/` el validador criptográfico (`mjk_sha1.c`) y el extractor (`mjk_rom_extractor.c`).
+  2. Al arrancar, `mjk` carga `assets/assets.dat` v2 (con verificación **CRC-32**). Si no existe, localiza `mbj-us.nes` (o la ruta `--rom`), verifica cabecera iNES (`65 552` B) y **SHA-1**, y extrae automáticamente `CHR-ROM`, tablas/bytecodes APU, 32 cadenas PPU, 257 salas, paletas y tablas de juego.
+  3. Los módulos del núcleo acceden a los datos por dirección CPU original mediante `MjkAssets_ResolveCpuPtr`.
 - **Consecuencias**:
-  Garantía de fidelidad matemática y cromática 1:1 con el hardware original de la NES, evitando cualquier discrepancia estética o fallo de emulación.
+  Distribución 100 % Clean-Room autocontenida en Windows y Linux, sin scripts externos ni assets propietarios en Git.
 
 ---
 
-## ADR-008: Prohibición Estricta de Suposiciones en Decisiones y Respaldo Obligatorio en Código y Emulador
+## ADR-007: Fidelidad de Paletas 2C02, Sprites OAM y Audio 2A03 Derivada del ASM
 
-- **Fecha**: 2026-10-25
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  Las conjeturas o suposiciones sobre el funcionamiento del juego (posicionamiento de sprites, dimensiones de cajas de colisión, temporizaciones, tablas de velocidad) pueden conducir a atajos sintéticos o placeholders que desvirtúan la paridad 1:1 con la NES original.
+  Adivinar colores RGB, sprites o efectos sonoros a ojo introduce desviaciones y artefactos respecto al hardware NES.
 - **Decisión**:
-  1. **Uso Exclusivo de Suposiciones como Teorías**: Las suposiciones o hipótesis son lícitas únicamente durante la fase preliminar de formulación teórica.
-  2. **Prohibición Total en Resultados y Decisiones**: Queda terminantemente prohibido adoptar decisiones de diseño, contratos funcionales, estructuras de datos, valores de constantes o código en C basados en suposiciones.
-  3. **Respaldo Obligatorio**: Todo resultado técnico, decisión e implementación debe estar obligatoriamente respaldado por:
-     - El código fuente ensamblador original (`asm/src/prg.asm`, `asm/src/data.asm`) con cita de archivo y línea.
-     - Datos directos y telemetría del emulador (`cynes`, volcados de RAM, OAM o PPU).
+  1. **Vídeo (`mjk_ppu.c`)**: paleta maestra NTSC 2C02 de 64 colores, decodificación planar 2bpp desde `CHR-ROM` y atributos OAM (paleta + flip H/V) directamente de `SpritesTable` y `SpriteAnimationTable`.
+  2. **Audio (`mjk_apu_synth.c` + `mjk_apu.c`)**: síntesis hardware 2A03 a `44.1 kHz` (Pulse 1/2 con sweep, Triangle 32 pasos y Noise LFSR) controlada por el intérprete de bytecode original de 8 canales (4 BGM + 4 SFX).
 - **Consecuencias**:
-  Eliminación absoluta de placeholders y discrepancias empíricas. Cualquier divergencia debe resolverse inspeccionando el código o las trazas del emulador.
+  Estética y sonido fieles a la NES de 1987 sin tablas aproximadas.
 
 ---
 
-## ADR-009: Capitalización Persistente del Análisis ASM en `research/` y Decisión Final en Código
+## ADR-008: Abstracciones Educativas Limpias en C11 (`Q8.8`, `BCD`, `MjkActionResult`)
 
-- **Fecha**: 2026-10-25
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  Re-analizar las mismas subrutinas o tablas del ensamblador 6502 en múltiples sesiones o entre distintos agentes genera un gasto innecesario de tokens, tiempo y riesgo de inconsistencias.
+  El port busca una experiencia jugable fiel y legible, evitando reproducir hacks de hardware 6502 que oscurecen el código sin aportar valor jugable.
 - **Decisión**:
-  1. **Documentación Obligatoria en `research/`**: Todo análisis, extracción de tablas, constantes, desensamblado lógico o fórmulas ejecutado por `asm_researcher` debe plasmarse o ampliarse en los artefactos correspondientes de `research/` (`contracts/`, `inventories/`, `control_flow/` o nuevos `RES-*.md`).
-  2. **Uso Como Acelerador**: Cualquier agente puede y debe consultar la documentación acumulada en `research/` para evitar re-investigaciones redundantes.
-  3. **Decisión Final en el Código Ensamblador**: Aunque la documentación en `research/` sirve de guía y acelerador, toda conclusión crítica, contrato e implementación debe ser siempre contrastada y ratificada directamente con las líneas exactas de `asm/src/prg.asm` o `asm/src/data.asm`.
+  1. Expresar física en punto fijo `Q8.8` (`mjk_q8_8_t` / `mjk_uq8_8_t`) y marcadores en `BCD` little-endian (`MjkBcd_*`) mediante helpers seguros sin UB en `include/mjk_types.h`.
+  2. Reemplazar los saltos destructivos de pila `PLA; PLA` por el retorno explícito `MjkActionResult`.
+  3. Omitir quirks puramente de hardware sin beneficio jugable (límite artificial de 8 sprites/scanline con flicker, stalls de PPU apagada).
+  4. Documentar el diseño en [`docs/EDUCATIONAL_ARCHITECTURE.md`](../docs/EDUCATIONAL_ARCHITECTURE.md).
 - **Consecuencias**:
-  Aceleración incremental del proyecto, preservación del conocimiento y garantía inquebrantable de fidelidad con el Golden Ground Truth.
+  Código claro para estudiar arquitectura de videojuegos retro y base limpia para mods o extensiones.
 
 ---
 
-## ADR-010: Prohibición de Interacción Humana en Subagentes y Comunicación Estricta M2M (Ahorro de Tokens)
+## ADR-009: Sistema de Puertas `REV_US`, 33 Condiciones y Topología de 257 Salas
 
-- **Fecha**: 2026-10-25
-- **Estado**: `[SUPERADA]` *(Cadena de 4 niveles de la era Gemini 3.8 reemplazada por flujo nativo Plan/Execute Neon + Hydrogen en ADR-014.)*
-- **Contexto**:
-  La generación de saludos, frases de cortesía, explicaciones conversacionales o introducciones amables por parte de subagentes y task runners consume tokens innecesarios de contexto y ralentiza la ejecución automatizada de tareas.
-- **Decisión**:
-  1. **Monopolio de Interacción en el Chat Principal (Nivel 0)**: El usuario humano únicamente conversa e interactúa con el Chat Principal.
-  2. **Silencio Conversacional en Niveles 1, 2 y 3**: El Orquestador de Tareas y todos los subagentes especialistas (`asm_researcher`, `c_implementer`, `emulator_verifier`) tienen prohibido emitir textos conversacionales o de cortesía orientados a humanos.
-  3. **Comunicación Estricta M2M**: Los subagentes se comunican exclusivamente con llamadas a herramientas, código limpio, diffs, estructuras de datos y reportes de estado técnicos secos y concisos.
-- **Consecuencias**:
-  Ahorro drástico de tokens de contexto, mayor velocidad de procesamiento y prevención de distracciones conversacionales en agentes de fondo.
-
----
-
-## ADR-011: Eliminación Obligatoria e Inmediata de Subagentes Finalizados (Cero Agentes Ociosos)
-
-- **Fecha**: 2026-10-25
-- **Estado**: `[SUPERADA]` *(Reemplazada por Plan/Execute Neon + Hydrogen y paralelismo puntual mediante `swarm`/`run_workflow` en ADR-014.)*
-- **Contexto**:
-  Dejar subagentes completados en estado detenido (`idle`) mantiene referencias huérfanas en memoria y workspaces efímeros, desdibujando la visibilidad del estado real de ejecución y arriesgando reutilizaciones accidentales de contexto contaminado.
-- **Decisión**:
-  1. **Eliminación Mandatoria con `manage_subagents kill`**: Tan pronto como un subagente de Nivel 3 concluya y reporte su subtarea al Nivel 2, el Nivel 2 debe eliminarlo inmediatamente con `manage_subagents kill`.
-  2. **Eliminación del Nivel 2**: Tan pronto como el Orquestador Secundario (Nivel 2) concluya y reporte la tarea verificada al Nivel 1, el Nivel 1 debe eliminar inmediatamente al Orquestador Secundario con `manage_subagents kill`.
-  3. **Prohibición de Estados Ociosos**: Queda prohibido dejar agentes en estado `idle` o simplemente detenidos al finalizar una tarea.
-- **Consecuencias**:
-  Entorno de trabajo siempre limpio, liberación inmediata de recursos y garantía de que cada nuevo subagente arranque con contexto virgen.
-
-
----
-
-## ADR-012: Arquitectura del Sistema de Puertas, Evaluación de 33 Condiciones y Transición Topológica de Salas
-
-- **Fecha**: 2026-10-25
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  Las puertas de salida en *Mighty Bomb Jack* representan la transición fundamental de progresión entre las 257 salas del juego. Cada sala posee un tipo de puerta (0..7), una condición de apertura codificada en la cabecera del `RoomData`, una posición canónica en la cuadrícula de metatiles, un algoritmo de mutación gráfica al abrirse, y una regla de conmutación topológica al atravesarla (`EntryDoorType = ExitDoorType ^ 4`).
+  La progresión por las 17 rondas y 257 salas depende de la decodificación 4-tier (`RoomHalfScreens` → `HalfScreenLayouts` → `LayoutChunks` → `MetatileDefinitions`), las 33 condiciones de puerta y el grafo de adyacencias.
 - **Decisión**:
-  1. **Decodificación de Cabecera y Caso Especial Room $61**:
-     - El byte de cabecera de sala codifica `%UUUU UMMM` (bits 7..3 = Condición de Puerta, bits 2..0 = Metatiles de Sala).
-     - Se preserva el quirk original del 6502 (`prg.asm:6757`): Si la sala es `$61`, el índice de condición se forza incondicionalmente a `0x19`.
-  2. **Evaluación Canónica de las 33 Condiciones (`prg.asm:6741-6925`)**:
-     - Se implementa el despachador completo de las 33 condiciones USA (`MjkRoom_CheckDoorCondition`), cubriendo requisitos de salto (`DoorCond_02_JumpedOn`), cofres, bombas, vidas, niveles Mighty (`DoorCond_XX_Mighty3`) y condiciones inactivas (`DoorCond_0A_StubRet0`).
-  3. **Mutación Gráfica de Puerta (`prg.asm:3823-3870`, `prg.asm:5488-5555`)**:
-     - Cuando se cumple la condición, el juego pasa temporalmente a `GAME_STATE_B` para ejecutar el SFX de apertura y mutar los 4 metatiles de la puerta de cerrado (`$87`, `$8B..$8E`) a abierto (`$8A`, `$95..$98`) en la cuadrícula activa de 240 metatiles.
-  4. **Transición Topológica e Inversión de Orientación (`AdjacentRoomsTable`, `prg.asm:3790-3822`)**:
-     - Al entrar Jack en la caja de colisión de la puerta abierta (`JTPickup_Door`), se transita a `GAME_STATE_9_EXIT_ROOM` (desactivación de control, animación de marcha).
-     - La siguiente sala se consulta en `AdjacentRoomsTable[current_room * 4 + door_orientation]`.
-     - El tipo de puerta de entrada en la sala destino se conmuta mediante `EntryDoorType = door_orientation ^ 4` (ej. salida por puerta derecha tipo 4 conduce a entrada por puerta izquierda tipo 0).
-     - El ciclo de carga (`GAME_STATE_2` -> `3` -> `4` -> `5`) posiciona a Jack en las coordenadas exactas de `DoorEntryXYPositionTable[entry_door_type]` y ejecuta la marcha de entrada automática hasta librar el umbral.
+  1. Preservar el caso especial de la sala `$61` (`prg.asm:6757`, condición forzada a `0x19`).
+  2. Evaluar las 33 condiciones USA en `src/core/mjk_doors.c` y mutar los 4 metatiles de puerta en `MjkRoomState` y `MjkRoomPersist`.
+  3. Resolver transiciones mediante `AdjacentRoomsTable` e inversión de orientación `EntryDoorType = ExitDoorType ^ 4`.
 - **Consecuencias**:
-  Paridad 1:1 verificada en navegación y progresión entre salas en el source port C99, garantizando soporte determinista para las 257 salas del cartucho original.
+  Navegación completa y determinista desde la Sala `0x01` hasta los 4 finales del juego.
 
 ---
 
-## ADR-013: Metodología de Replay Diferencial de Golden Master y Empuje de Horizonte (Fase 7)
+## ADR-010: Verificación Comportamental en 3 Capas (`CTest` + `cynes` + Debug Overlay)
 
-- **Fecha**: 2026-11-01
-- **Estado**: `[SUPERADA]` *(Reemplazada por Verificación Comportamental en 3 Capas en ADR-017; los TAS largos impiden abstracciones limpias y provocan efecto mariposa.)*
-- **Contexto**:
-  La fase de refinamiento y paridad exacta 1:1 (Fase 7) requiere detectar discrepancias sutiles en la experiencia de juego, físicas y comportamiento de entidades. La co-simulación síncrona manual desincroniza al jugador ante el primer fallo de 1 píxel. Además, la inspección manual por LLM de miles de fotogramas consume cantidades excesivas de tokens.
-- **Decisión**:
-  1. **Paradigma Golden Master Anchor**: El jugador humano interactúa únicamente con la ROM original (`cynes`), registrando simultáneamente la secuencia de botones (`.tas`) y la telemetría canónica de la consola (`golden_telemetry.json`).
-  2. **Detección Automática Desatendida**: El arnés de Python (`replay_differential.py`) ejecuta el port en C en modo headless, identifica el primer fotograma de divergencia ($T_{\text{div}}$) y emite un micro-reporte estructurado en JSON (`scratch/divergence_report.json`).
-  3. **Algoritmo de Empuje de Horizonte**: El agente efímero *Parity Solver* (Gemini Flash) interviene de forma quirúrgica sobre las líneas de código indicadas hasta que la sesión sobrepasa $T_{\text{div}}$, repitiendo el proceso hasta cubrir el 100% de la grabación.
-  4. **Suite de Regresión Persistente**: Cada sesión grabada se almacena en `tests/tas/` como prueba de no-regresión permanente.
-- **Consecuencias**:
-  Eliminación de la frustración por bugs del port durante la prueba humana, diagnóstico a coste cero de tokens mediante scripts deterministas, y reducción superior al 80% en el consumo de tokens de los subagentes durante la resolución iterativa de bugs.
-
----
-
-## ADR-014: Entorno Agéntico Antigravity 2.0 con Gemini 4 Neon + Hydrogen, Skills Progresivas y Hook de Protección
-
-- **Fecha**: 2026-11-23
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  La arquitectura jerárquica anterior de 4 niveles diseñada para Gemini 3.8 Flash introducía sobrecarga artificial de coordinación y dejaba un `AGENTS.md` de > 26 KB (truncado al superar 24 KB).
+  Validar un port completo requiere pruebas rápidas de regresión, contraste objetivo frente a la ROM original y diagnóstico interactivo en vivo.
 - **Decisión**:
-  1. Reducir `AGENTS.md` a < 6 KB con reglas invariantes esenciales.
-  2. Adoptar el flujo nativo **Plan/Execute** con **Gemini 4 Neon** (planificación, diagnóstico y validación contra ASM/emulador) + **Gemini 4 Hydrogen** (ejecución C/tooling y verificación), reservando `swarm` (`gemini-4-hydrogen-medium`) y `run_workflow` únicamente para trabajo paralelizable real.
-  3. Externalizar procedimientos extensos en 3 skills bajo demanda (`.agents/skills/mjk-parity-workflow`, `mjk-asm-ground-truth`, `mjk-educational-c-port`).
-  4. Instalar un hook determinista `PreToolUse` (`.agents/hooks.json` + `.agents/hooks/guard_workspace.py`) que bloquea escrituras en `asm/`, `archive/` y `scratch/*.py`.
+  Adoptar 3 capas desacopladas (detalladas en [`research/architecture/verification_strategy.md`](../research/architecture/verification_strategy.md)):
+  1. **Capa 1 (`CTest` C11)**: 18 ejecutables unitarios deterministas (< 1.5 s) sobre contratos puros, BYOR v2, 257 salas y flujo completo.
+  2. **Capa 2 (Micro-escenarios semánticos, 60–240 frames)**: `tools/nes_oracle.py` (`cynes`) + `tools/verify_scenarios.py` vía `mjk_verify_api.c`.
+  3. **Capa 3 (Debug Overlay SDL2)**: `F1` telemetría/hitboxes 9-probe, `F2`/`[`/`]`/`F6` warp a salas `0..256`, `F3` cheats, `F4`/`F5` pausa y frame-step.
 - **Consecuencias**:
-  Menor consumo de tokens por turno, cero truncamiento de reglas y cumplimiento determinista de la inmutabilidad del Ground Truth.
+  Detección rápida de regresiones, validación directa contra la ROM real y depuración visual en vivo.
 
 ---
 
-## ADR-015: Política Clean-Room BYOR v2 (Cero Datos Propietarios Embebidos en C)
+## ADR-011: Pipeline CI/CD Multiplataforma en GitHub Actions (Windows y Linux)
 
-- **Fecha**: 2026-11-23
 - **Estado**: `[ACEPTADA]`
 - **Contexto**:
-  Una auditoría del port reveló que, aunque `CHR-ROM` se carga desde `assets/assets.dat`, los bytecodes musicales/SFX (`src/core/mjk_apu.c`), tablas de 257 salas/paletas/metatiles (`src/core/mjk_room_data.c`) y fuente bitmap (`include/mjk_font.h`) seguían embebidos en C.
+  Los usuarios deben poder descargar ejecutables listos para usar en Windows y Linux sin compilar manualmente, manteniendo la política Clean-Room BYOR.
 - **Decisión**:
-  Evolucionar a `assets.dat` v2 extraído íntegramente desde la ROM `mbj-us.nes` del usuario (validada por SHA-1) para externalizar gráficos, audio, textos, tablas de salas/paletas y animaciones de sprites, manteniendo el código C11 100% libre de bytes con copyright y limpio para fines educativos y de modificación.
+  Configurar [`.github/workflows/release.yml`](../.github/workflows/release.yml) disparado en `push` a `main` (y `workflow_dispatch`) para:
+  1. Compilar en `Release` y ejecutar `CTest` en `windows-latest` (MSVC + SDL2 2.30.8 cacheado) y `ubuntu-latest` (GCC + `libsdl2-dev` + Ninja).
+  2. Empaquetar `mighty-bomb-jack-<tag>-windows-x64.zip` (`mjk.exe` + `SDL2.dll` + `README.txt`) y `mighty-bomb-jack-<tag>-linux-x64.tar.gz` (`mjk` + `README.txt`), más `SHA256SUMS.txt`.
+  3. Publicar automáticamente la GitHub Release con aviso BYOR.
 - **Consecuencias**:
-  El ejecutable compilado requiere `assets.dat` generado por el usuario y cumple íntegramente con los requisitos legales y didácticos del proyecto.
-
----
-
-## ADR-016: Suite Multi-TAS de 5 Niveles, Consulta ASM Determinista y Build Unificado Windows/Linux
-
-- **Fecha**: 2026-11-23
-- **Estado**: `[SUPERADA]` *(Se conservan `asm_query.py` y el build CMake Windows/Linux; el enfoque multi-TAS largo queda reemplazado por ADR-017.)*
-- **Contexto**:
-  Los scripts previos de verificación tenían lecturas RAM erróneas (`$0316` en lugar de `$00B1` para enemigos vivos), dependencias de PySide6 en modo headless, compuertas Nivel 3/Nivel 5 inactivas y 14 scripts temporales dispersos en `scratch/`. Además, la compilación en Linux estaba rota (`<windows.h>` en `mjk_assets.c` y `Makefile` desactualizado).
-- **Decisión**:
-  1. Consolidar `tools/hierarchical_parity_oracle.py` v2, `tools/inspect_parity.py` v2 (Pillow headless, `--watch-ram`, `--dump-oam`, `--dump-slot`, `--compact`, `--no-guard`), `tools/parity_suite.py` (anti-regresión multi-TAS) y `tools/asm_query.py` (consulta instantánea de `asm_inventory.json` y `data_inventory.csv`).
-  2. Unificar la compilación en Windows y Linux mediante CMake + SDL2 (Hito 1), desacoplando `src/core/` de cualquier API de sistema operativo.
-- **Consecuencias**:
-  Diagnóstico diferencial de bajo coste de tokens, prevención automática de regresiones entre múltiples escenarios TAS y portabilidad nativa Windows/Linux.
-
----
-
-## ADR-017: Verificación Comportamental en 3 Capas (CTest + Micro-Escenarios Semánticos + Debug Overlay)
-
-- **Fecha**: 2026-11-23
-- **Estado**: `[ACEPTADA]`
-- **Contexto**:
-  El usuario prioriza una experiencia jugable muy fiel con abstracciones limpias y educativas en C11, sin requerir emulación exacta ciclo-a-ciclo. El replay TAS largo sufre efecto mariposa ante cualquier diferencia de 1 frame e induce hacks artificiales y bucles infinitos de relectura ASM.
-- **Decisión**:
-  Adoptar 3 capas desacopladas: (1) `CTest` en C11 sobre contratos puros y las 257 salas, (2) Micro-escenarios cortos (60–240 frames) semánticos contra `cynes` vía `tools/nes_oracle.py` y futuro `verify_scenarios.py`, y (3) Debug Overlay SDL2 (`F1`–`F4`).
-- **Consecuencias**:
-  Eliminación de falsos negativos en cascada y falsos positivos de paleta RGB, validación directa de audio/OAM/reglas y progreso modular.
-
----
-
-## ADR-018: Reescritura Limpia de `src/core/` con Abstracciones Educativas y Extensibles
-
-- **Fecha**: 2026-11-23
-- **Estado**: `[ACEPTADA]`
-- **Contexto**:
-  El código previo en `src/core/` arrastra monolitos (`mjk_game.c` 1.646 líneas), estructuras duplicadas, errores BCD y deuda de parches de paridad TAS.
-- **Decisión**:
-  Reescribir `src/core/` desde cero en C11 limpio y modular (< 600 líneas por módulo), apoyándose en la especificación `research/` ya completada y reutilizando la base HAL SDL2 (`mjk_platform_sdl.c`). Se preservan fielmente mecánicas, estética PPU y síntesis 2A03, abstrayendo quirks de hardware sin valor jugable (stalls PPU-off, hack `PLA;PLA`, límite de 8 sprites/scanline).
-- **Consecuencias**:
-  Código claro para aprender C y arquitectura NES retro, fácil de ampliar y libre de deuda técnica heredada.
-
----
-
-## ADR-019: Extractor BYOR v2 Integrado en C en el Arranque del Port
-
-- **Fecha**: 2026-11-23
-- **Estado**: `[ACEPTADA]`
-- **Contexto**:
-  Exigir un script Python independiente dificulta la experiencia de usuario y mantiene una brecha si el núcleo C sigue embebiendo tablas con copyright.
-- **Decisión**:
-  Integrar en el ejecutable C (`mjk_sha1.c` + `mjk_rom_extractor.c`) la detección, validación SHA-1 de `mbj-us.nes` y generación automática de `assets/assets.dat` v2 (CHR, audio, textos, 257 salas/paletas/sprites) al arrancar, eliminando cualquier extractor Python externo.
-- **Consecuencias**:
-  Distribución 100% Clean-Room autocontenida en Windows y Linux sin requerir Python al usuario final.
+  Releases reproducibles, verificadas por `CTest` y 100 % libres de assets con copyright.

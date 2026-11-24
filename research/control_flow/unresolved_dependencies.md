@@ -2,7 +2,7 @@
 
 - **ID de Entregable**: `research/control_flow/unresolved_dependencies.md`
 - **Fase**: Fase 2 — Flujo de Control, Datos y Modelo de Hardware
-- **Fuente de Verdad**: `tools/deep_asm_analyzer.py` y `research/control_flow/control_flow.md`
+- **Fuente de Verdad**: `tools/asm_inventory.json` (`tools/asm_query.py`) y `research/control_flow/control_flow.md`
 - **Estado**: `[CONFIRMADA]` — Cero Dependencias Huérfanas
 
 ---

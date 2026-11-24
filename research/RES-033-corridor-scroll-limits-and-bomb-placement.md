@@ -22,7 +22,7 @@ El propósito de esta investigación es determinar el comportamiento canónico e
    - ¿Cuál es la coordenada máxima de scroll y la posición de la pared derecha en la última sala (`Room 6` en el Round 1)?
 2. **Generación y Posicionamiento de Bombas**:
    - ¿Cómo se calculan y proyectan las coordenadas $(X, Y)$ de las bombas en cada sub-sala (`RoomData_01..06`)?
-   - ¿Por qué en `src/core/mjk_game.c`, `src/core/mjk_room_decoder.c` y `src/core/mjk_state_machine.c` aparecen bombas incrustadas en el muro derecho?
+   - ¿Por qué en `src/core/mjk_camera.c`, `src/core/mjk_room_decoder.c` y `src/core/mjk_state_machine.c` aparecen bombas incrustadas en el muro derecho?
    - ¿Se están renderizando bombas de la sala adyacente derecha fuera del área visible? ¿Es Sala `$90` un vecino de scroll o una puerta de transición?
 
 ---
@@ -339,7 +339,7 @@ Al contrastar la arquitectura original contra el código fuente C de `src/core/`
   Al no tener esta guarda, cuando el scroll desbordó de Sala 5 a Sala 6 y activó `MJK_RF_HORIZONTAL`, en los fotogramas siguientes la cámara **continuó desplazándose a lo largo de la Sala 6** (`cam->scroll_x_fixed` creció de $0$ a $255$), mientras Jack permanecía anclado erróneamente en $X=128$.
 
 ### Defecto 3: Blitteo indebido del nametable de la Sala `$90` sobre la Sala 6
-- **Ubicación**: [`src/core/mjk_game.c:654-672`](../src/core/mjk_game.c#L654-L672):
+- **Ubicación**: [`src/core/mjk_camera.c`](../src/core/mjk_camera.c):
   ```c
   if (game->camera_x > 0 && adj->right != 0) {
       uint8_t right_nametable[30][32];

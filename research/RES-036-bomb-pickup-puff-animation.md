@@ -18,7 +18,7 @@ En la versión original para NES (6502), al recoger cualquier bomba (ya sea apag
 1. **Fase 1 (Frames 0..31 - 32 frames)**: Muestra una nube de humo / explosión (*smoke puff*) en las coordenadas exactas de la bomba recogida. Esta nube de humo utiliza exactamente el mismo metasprite (`$25`) y los mismos tiles CHR (`$8C`) que el efecto de humo generado durante el spawn y materialización de los enemigos.
 2. **Fase 2 (Frames 32..63 - 32 frames)**: La nube de humo desaparece y es reemplazada en el mismo lugar por el marcador de puntuación flotante (`100` o `200` puntos) antes de extinguirse y liberar los slots OAM.
 
-En la implementación actual del port en C (`src/core/mjk_room_decoder.c` y `src/core/mjk_game.c`), la recolección de bombas invoca de inmediato `LocalSpawnFloatingScore` en el frame 0 sin reproducir la animación previa del humo, provocando una discrepancia visual evidente respecto al cartucho original.
+En la implementación actual del port en C (`src/core/mjk_room_decoder.c` y `src/core/mjk_objects.c`), la recolección de bombas invoca de inmediato `LocalSpawnFloatingScore` en el frame 0 sin reproducir la animación previa del humo, provocando una discrepancia visual evidente respecto al cartucho original.
 
 ### 1.2 Preguntas Clave Respondidas
 1. **Mecánica Original 6502**: ¿Dónde se inicia este efecto visual y qué rutinas gestionan su ciclo de vida?
@@ -54,7 +54,7 @@ En la implementación actual del port en C (`src/core/mjk_room_decoder.c` y `src
 ### 2.3 Archivos del Port en C
 - [`src/core/mjk_room_decoder.c:423-461`](../src/core/mjk_room_decoder.c#L423-L461): `MjkRoom_CollectBombCanonical` (Falta instanciación de efecto de humo; puntuación flotante generada prematuramente).
 - [`src/core/mjk_state_machine.c:445-453`](../src/core/mjk_state_machine.c#L445-L453): Detección de colisión Jack-Bomba y llamada a recolección.
-- [`src/core/mjk_game.c:841-889`](../src/core/mjk_game.c#L841-L889): Canalización OAM de sprites en `RenderInGameScreen`.
+- [`src/core/mjk_objects.c`](../src/core/mjk_objects.c): Canalización OAM de sprites en `RenderInGameScreen`.
 - [`src/core/mjk_player.c:90`](../src/core/mjk_player.c#L90): Entrada `0x25` en `s_sprites_table` (`{ 0xE4, 0x8C, 0x8C, 0x8C, 0x8C }`).
 
 ---
@@ -415,7 +415,7 @@ uint16_t MjkRoom_CollectBombCanonical(MjkGameState* game, uint8_t bomb_index) {
 
 ### 8.3 Simulación Frame a Frame (`MjkGame_UpdateBombPickupEffect`)
 
-En `src/core/mjk_game.c`:
+En `src/core/mjk_objects.c`:
 
 ```c
 static void MjkGame_UpdateBombPickupEffect(MjkGameState* game) {
@@ -448,7 +448,7 @@ static void MjkGame_UpdateBombPickupEffect(MjkGameState* game) {
 
 ### 8.4 Renderizado OAM del Humo en `RenderInGameScreen`
 
-En `src/core/mjk_game.c` (dentro del pipeline de renderizado de sprites OAM, entre el paso 7 de la chispa y el paso 8 de enemigos):
+En `src/core/mjk_objects.c` (dentro del pipeline de renderizado de sprites OAM, entre el paso 7 de la chispa y el paso 8 de enemigos):
 
 ```c
     // 7.5 Efecto Canónico de Humo al Recoger Bombas (TASK-F7-009 / RES-036)

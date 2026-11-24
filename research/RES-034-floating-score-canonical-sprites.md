@@ -19,7 +19,7 @@
 2. **Identificación de Metasprites y Glifos CHR**: ¿Cuáles son los IDs de tile reales en `mbj-us.chr` (Pattern Table 0, Banco de Sprites) y cómo se estructuran las tablas `SpritesTable` y `ScoreAddTable`?
 3. **Confirmación de la Sospecha del Usuario**: ¿Eran los tiles `0x30..0x3F` que aparecían por error en los enemigos precisamente la tipografía auténtica de la puntuación flotante?
 4. **Composición Geométrica**: ¿Son 1 sprite de 8×8, 2 sprites horizontales de 8×8 (16×8 px), o un metasprite 2×2 (16×16 px)? ¿Qué paleta OAM y atributos utilizan?
-5. **Diagnóstico del Port en C**: ¿Por qué `src/core/mjk_game.c` dibujaba dígitos gigantescos de HUD de fondo? ¿Cómo corregirlo para lograr paridad 1:1 conservando compatibilidad con los tests unitarios (`test_floating_scores.c`)?
+5. **Diagnóstico del Port en C**: ¿Por qué `src/core/mjk_hud.c` dibujaba dígitos gigantescos de HUD de fondo? ¿Cómo corregirlo para lograr paridad 1:1 conservando compatibilidad con los tests unitarios (`test_floating_scores.c`)?
 
 ---
 
@@ -43,10 +43,10 @@
 - **Datos Gráficos CHR**:
   - [`asm/src/mbj-us.chr`](../asm/src/mbj-us.chr): Banco 1 (`offset 8192`), Pattern Table 0 (`$0000-$0FFF`), tiles `0x30..0x3F` y tile transparente `0x0F`.
 - **Código Fuente C**:
-  - [`src/core/mjk_game.c:891-904`](../src/core/mjk_game.c#L891-L904): `RenderInGameScreen` (Paso 9: Marcadores de puntuación flotante erróneos con fuente de HUD).
-  - [`src/core/mjk_game.c:867-888`](../src/core/mjk_game.c#L867-L888): Paso 8 (Asignación incorrecta de tiles `0x31, 0x35, 0x39, 0x3D` a enemigos).
+  - [`src/core/mjk_hud.c`](../src/core/mjk_hud.c): `RenderInGameScreen` (Paso 9: Marcadores de puntuación flotante erróneos con fuente de HUD).
+  - [`src/core/mjk_hud.c`](../src/core/mjk_hud.c): Paso 8 (Asignación incorrecta de tiles `0x31, 0x35, 0x39, 0x3D` a enemigos).
   - [`src/core/mjk_ppu.c:59-88`](../src/core/mjk_ppu.c#L59-L88): `MjkPPU_BlitTile`.
-  - [`tests/test_floating_scores.c`](../tests/test_floating_scores.c): Suite de pruebas de regresión.
+  - [`tests/test_floating_scores.c`](../tests/c/test_hud.c): Suite de pruebas de regresión.
 
 ---
 
@@ -176,7 +176,7 @@ Todos los glifos residen en **Pattern Table 0** (`$0000-$0FFF`) del Banco 1 (`ch
 | **`0x3F`** | `"x5"` | `........`<br>`    ###.`<br>`    #...`<br>`# # ###.`<br>` #    #.`<br>`# # ###.`<br>`........`<br>`........` | **Multiplicador "x5"**: Letra 'x' y dígito '5'. |
 
 ### 4.1 Confirmación de la Sospecha del Usuario sobre los Enemigos
-En [`src/core/mjk_game.c:877-882`](../src/core/mjk_game.c#L877-L882) se leía:
+En [`src/core/mjk_hud.c`](../src/core/mjk_hud.c) se leía:
 ```c
 case ENEMY_TYPE_GAMEIDO:     tile_id = 0x31; break; // ¡Tile " 1"!
 case ENEMY_TYPE_DOKURON:     tile_id = 0x35; break; // ¡Tile " 8"!
@@ -224,7 +224,7 @@ A partir de `ScoreAddTable` ([`data.asm:848-875`](../asm/src/data.asm#L848-L875)
 
 ## 6. Diagnóstico del Port en C y Divergencias
 
-### 6.1 Código Actual en `src/core/mjk_game.c:891-904`
+### 6.1 Código Actual en `src/core/mjk_hud.c`
 
 ```c
     // 9. Marcadores de puntuación flotante (TASK-F6-026)
@@ -319,7 +319,7 @@ static inline MjkFloatingScoreTiles MjkGame_GetScoreTiles(uint16_t value) {
 }
 ```
 
-### 7.2 Reemplazo en `RenderInGameScreen` (`src/core/mjk_game.c:891-904`)
+### 7.2 Reemplazo en `RenderInGameScreen` (`src/core/mjk_hud.c`)
 
 ```c
     // 9. Marcadores de puntuación flotante auténticos (TASK-F7-007, RES-034)

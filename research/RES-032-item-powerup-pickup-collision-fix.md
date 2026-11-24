@@ -10,7 +10,7 @@
   - `asm/src/data.asm` (`byte_92D1` / `ItemToTileTable`: L904–920)
   - `asm/src/roomdata-us.asm` (`RoomData_01..FF`: L1–486)
   - `src/core/mjk_player.c` (`mjk_player_is_tile_solid`: L335–366, `mjk_player_update_collision`: L388–560, `Jack_CheckBombCollision`: L642–718)
-  - `src/core/mjk_game.c` (`g_item_to_tile_table`: L63–66, `MjkGame_OpenChest`: L76–136, `MjkGame_CollectChestItem`: L196–254, `MjkGame_UpdateChestsAndSecrets`: L256–329, `MjkGame_UpdateBombs`: L331–354)
+  - `src/core/mjk_objects.c` (`g_item_to_tile_table`: L63–66, `MjkGame_OpenChest`: L76–136, `MjkGame_CollectChestItem`: L196–254, `MjkGame_UpdateChestsAndSecrets`: L256–329, `MjkGame_UpdateBombs`: L331–354)
   - `src/core/mjk_state_machine.c` (`AppendRoomObjects`: L95–228, `State_5_MainLoop`: L406–626)
   - `src/core/mjk_room_decoder.c` (`MjkRoom_HandleOpenDoorMaybe`: L236–269, `MjkRoom_BlitObjects`: L306–415, `MjkRoom_CollectBombCanonical`: L417–492)
   - `src/core/mjk_enemy.c` (`MjkEnemy_UpdateAll`: L202–245)
@@ -27,7 +27,7 @@
 El síntoma de **"chocar con un cofre fantasma que ya no está"** al acercarse lateralmente (o desde arriba/abajo) a un ítem o token de Power-Up revelado tras abrir un cofre es producido por la interacción de **tres defectos directos en el port en C**:
 
 1. **`mjk_player_is_tile_solid()` trata a TODOS los metatiles de ítems/power-ups (excepto `0x27` Extra Bomb) como bloques sólidos en `game->room_metatiles[]`**:
-   - Cuando Jack abre un cofre en `MjkGame_OpenChest` (`src/core/mjk_game.c:132-135`), el port en C sobrescribe la celda del cofre en `game->room_metatiles[ch->tile_y * MJK_ROOM_TILES_W + ch->tile_x]` con el Metatile ID del ítem revelado usando `g_item_to_tile_table[ch->item_id & 0x1F]` (`src/core/mjk_game.c:63-66`, espejo de `byte_92D1` en `asm/src/data.asm:904-920`):
+   - Cuando Jack abre un cofre en `MjkGame_OpenChest` (`src/core/mjk_objects.c`), el port en C sobrescribe la celda del cofre en `game->room_metatiles[ch->tile_y * MJK_ROOM_TILES_W + ch->tile_x]` con el Metatile ID del ítem revelado usando `g_item_to_tile_table[ch->item_id & 0x1F]` (`src/core/mjk_objects.c`, espejo de `byte_92D1` en `asm/src/data.asm:904-920`):
      - `item_id = 8` (**Mighty Coin / Power-Up Token `[P]`**) $\rightarrow$ escribe el metatile **`0x8F`**.
      - `item_id = 0..2` (**Bolsas de 100 / 300 / 1000 pts**) $\rightarrow$ escribe los metatiles **`0x4D`, `0x4E`, `0x4F`**.
      - `item_id = 3` (**Gold Coin**) $\rightarrow$ escribe el metatile **`0x47`**.
@@ -64,11 +64,11 @@ El síntoma de **"chocar con un cofre fantasma que ya no está"** al acercarse l
      jack->pos_x = (uint8_t)(world_right - 16 - (int)jack->scroll_x); // jx = screen_cx - 16
      ```
    - De igual forma, si Jack se acerca desde la derecha (`vel_x < 0`), los probes 5 y 6 (`cx - 8 = jx + scroll_x`) activan `CF_LEFT_WALL` y **expulsan `jack->pos_x` a `screen_cx + 16`** (`src/core/mjk_player.c:494-503`).
-   - Cuando milisegundos después en el mismo frame se ejecuta `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_game.c:274-281`), Jack ya fue expulsado a `jx = screen_cx - 16` (donde `jx + 12 = screen_cx - 4 < screen_cx`) o a `jx = screen_cx + 16` (donde `jx + 4 = screen_cx + 20 > screen_cx + 16`).
+   - Cuando milisegundos después en el mismo frame se ejecuta `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_objects.c`), Jack ya fue expulsado a `jx = screen_cx - 16` (donde `jx + 12 = screen_cx - 4 < screen_cx`) o a `jx = screen_cx + 16` (donde `jx + 4 = screen_cx + 20 > screen_cx + 16`).
    - **Consecuencia**: La condición `h_overlap` (`jx + 12 >= screen_cx && jx + 4 <= screen_cx + 16`) —y a fortiori el probe central canónico `byte_A` (`jx + 8 >= screen_cx && jx + 8 < screen_cx + 16`)— **es matemáticamente inalcanzable**. Jack choca contra una pared sólida invisible del tamaño exacto del cofre de 16×16 píxeles que contenía el token.
 
 3. **Cofres de Power Coin (`lo == 9`, `EnemyType_9_ExtraCoin`) cuando `collected_1up_this_round != 0`**:
-   - Además, en `MjkGame_OpenChest` (`src/core/mjk_game.c:125-131`), si un cofre tiene `item_id == 9` (`EnemyType_9_ExtraCoin`), el código en C hace `if (ch->item_id >= 9) { ch->collected = true; room_metatiles[...] = 0x2F; }` sin comprobar la regla canónica de `loc_A259` (`asm/src/prg.asm:5463-5470`): si `Collected1UPThisRoundFlag != 0` (`game->collected_1up_this_round != 0`), el NES **convierte `item_id = 9` en `item_id = 8` (Mighty Coin `0x8F`)** y lo deja en el cofre como metatile recolectable.
+   - Además, en `MjkGame_OpenChest` (`src/core/mjk_objects.c`), si un cofre tiene `item_id == 9` (`EnemyType_9_ExtraCoin`), el código en C hace `if (ch->item_id >= 9) { ch->collected = true; room_metatiles[...] = 0x2F; }` sin comprobar la regla canónica de `loc_A259` (`asm/src/prg.asm:5463-5470`): si `Collected1UPThisRoundFlag != 0` (`game->collected_1up_this_round != 0`), el NES **convierte `item_id = 9` en `item_id = 8` (Mighty Coin `0x8F`)** y lo deja en el cofre como metatile recolectable.
 
 ---
 
@@ -151,7 +151,7 @@ En el hardware original de NES (`asm/src/prg.asm`), la colisión con el escenari
 
 ## 3. Auditoría Completa de Metatiles: Pasables vs Sólidos en `game->room_metatiles`
 
-A diferencia del NES (donde `LayoutChunks` en ROM y `RoomDataRAM` están separados), el port en C mantiene un único buffer mutable `game->room_metatiles[240]` por habitación (`src/core/mjk_Room_decoder.c:306-415`, `src/core/mjk_game.c:134, 152, 249, 319`), donde se "blitean" tanto los bloques estáticos del cuarto como los metatiles visuales de bombas, cofres cerrados, ítems revelados, ítems expuestos y puertas abiertas/cerradas.
+A diferencia del NES (donde `LayoutChunks` en ROM y `RoomDataRAM` están separados), el port en C mantiene un único buffer mutable `game->room_metatiles[240]` por habitación (`src/core/mjk_Room_decoder.c:306-415`, `src/core/mjk_objects.c, 152, 249, 319`), donde se "blitean" tanto los bloques estáticos del cuarto como los metatiles visuales de bombas, cofres cerrados, ítems revelados, ítems expuestos y puertas abiertas/cerradas.
 
 Por lo tanto, cuando `mjk_player_is_tile_solid(uint8_t tile_id, int px, int py)` (`src/core/mjk_player.c:335-366`) o `MjkEnemy_UpdateAll` (`src/core/mjk_enemy.c:214-235`) consultan `game->room_metatiles`, **deben distinguir qué metatiles corresponden a objetos pasables (aire, ítems, bombas, puertas abiertas) y cuáles a bloques sólidos**.
 
@@ -193,8 +193,8 @@ Por lo tanto, cuando `mjk_player_is_tile_solid(uint8_t tile_id, int px, int py)`
 
 - En el ROM original (`asm/src/prg.asm:5873-5883`, `byte_A3EA`), los índices `0x47`, `0x48` y `0x49` existen dentro del rango `0x38..0x4B` con máscaras de cuadrante `0x50`, `0xA0` y `0xC0` respectivamente, pero **`byte_92D1` (`asm/src/data.asm:905-906`) también reutiliza esos mismos IDs `0x47` (Gold Coin), `0x48` (Tecmo Plate) y `0x49` (Mighty Drink)** para dibujar el metatile del ítem en la PPU cuando se abre un cofre.
 - ¿Por qué no colisionan en el NES? Porque en el NES `sub_9B6A` lee el metatile desde `LayoutChunks` en ROM (donde la celda del cofre tiene **`0x2F`**), ¡no desde el nametable de la PPU!
-- En cambio, en el port en C, `MjkGame_OpenChest` (`src/core/mjk_game.c:134`) escribe `0x47`, `0x48` o `0x49` directamente en `game->room_metatiles[]`, que es el mismo array que lee `mjk_player_is_tile_solid()`.
-- **Verificación en todas las habitaciones del ROM (`src/core/mjk_room_data.c`) y en la suite de tests (`tests/test_player_physics.c`)**:
+- En cambio, en el port en C, `MjkGame_OpenChest` (`src/core/mjk_objects.c`) escribe `0x47`, `0x48` o `0x49` directamente en `game->room_metatiles[]`, que es el mismo array que lee `mjk_player_is_tile_solid()`.
+- **Verificación en todas las habitaciones del ROM (`src/core/mjk_room_decoder.c`) y en la suite de tests (`tests/test_player_physics.c`)**:
   - En `tests/test_player_physics.c:111-147`, el test `test_partial_solidity_quadrants` prueba explícitamente `0x38` (máscara `0xC0`, mitad superior sólida) y `0x39` (máscara `0x30`, mitad inferior sólida). Ningún test de física usa `0x47`, `0x48` ni `0x49` como pared.
   - Más aún: si tratamos todos los metatiles de ítems recolectables (`0x34`, `0x47`, `0x48`, `0x49`, `0x4C`, `0x4D`, `0x4E`, `0x4F`, `0x50`, `0x63`, `0x8F`, `0x90`, `0x91`) y puertas abiertas (`0x89`, `0x8A`, `0x8D`, `0x8E`, `0x95..0x98`) como **no sólidos (`return false`)** en `mjk_player_is_tile_solid()`, cualquier ítem revelado al abrir un cofre (incluyendo Gold Coin `0x47`, Tecmo Plate `0x48`, Mighty Drink `0x49` y Mighty Coin `0x8F`) será **100% pasable desde cualquier dirección (izquierda, derecha, arriba y abajo)**, idéntico al 6502 ASM.
 
@@ -208,22 +208,22 @@ La inspección exhaustiva reveló **cuatro bugs reales de scroll y transición d
 
 ### 4.1. Bug de Scroll Vertical (`camera_y` omitido en `screen_cy`) (`[CONFIRMADA]`)
 
-- En `RenderInGameScreen` (`src/core/mjk_game.c:641, 696`), tanto los tiles del fondo (`room_metatiles`) como los sprites se renderizan restando `game->camera_y`:
+- En `RenderInGameScreen` (`src/core/mjk_objects.c, 696`), tanto los tiles del fondo (`room_metatiles`) como los sprites se renderizan restando `game->camera_y`:
   ```c
-  // src/core/mjk_game.c:641
+  // src/core/mjk_objects.c
   int py = ty * 8 - (int)game->camera_y;
   ```
 - Y en `State_5_MainLoop` (`src/core/mjk_state_machine.c:434-435`), `game->jack.scroll_y = game->camera_y;`, por lo que `jack->pos_y` (`jy`) está expresado en **coordenadas de pantalla (relativas a `camera_y`)**, mientras que `mjk_player_update_collision` suma `jack->scroll_y` (`src/core/mjk_player.c:383`).
 - **Sin embargo**, en **tres funciones críticas de recolección y colisión de objetos**, `screen_cy` se calculaba como `tile_y * 16` **sin restar `game->camera_y`** ni considerar `adj->down` / `adj->up`:
-  1. `MjkGame_CollectChestItem` (`src/core/mjk_game.c:208`):
+  1. `MjkGame_CollectChestItem` (`src/core/mjk_objects.c`):
      ```c
      int screen_cy = ch->tile_y * 16; // <-- ¡FALTA - (int)game->camera_y!
      ```
-  2. `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_game.c:272`):
+  2. `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_objects.c`):
      ```c
      int screen_cy = ch->tile_y * 16; // <-- ¡FALTA - (int)game->camera_y y adj->down/up!
      ```
-  3. `MjkGame_UpdateBombs` (`src/core/mjk_game.c:340`) y `Jack_CheckBombCollision` (`src/core/mjk_player.c:669`):
+  3. `MjkGame_UpdateBombs` (`src/core/mjk_objects.c`) y `Jack_CheckBombCollision` (`src/core/mjk_player.c:669`):
      ```c
      int screen_by = b->tile_y * 16;  // <-- ¡FALTA - (int)jack->scroll_y!
      ```
@@ -231,7 +231,7 @@ La inspección exhaustiva reveló **cuatro bugs reales de scroll y transición d
 
 ### 4.2. Bug de Asimetría `adj->left` en `MjkGame_CollectChestItem` (`[CONFIRMADA]`)
 
-- En `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_game.c:262-271`), `screen_cx` contempla tres salas horizontales (`current_room_id`, `adj->right` y `adj->left`):
+- En `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_objects.c`), `screen_cx` contempla tres salas horizontales (`current_room_id`, `adj->right` y `adj->left`):
   ```c
   if (ch->room_id == game->current_room_id) {
       screen_cx = (ch->tile_x * 16) - game->camera_x;
@@ -241,7 +241,7 @@ La inspección exhaustiva reveló **cuatro bugs reales de scroll y transición d
       screen_cx = (-256 - game->camera_x) + (ch->tile_x * 16);
   }
   ```
-- Pero en `MjkGame_CollectChestItem` (`src/core/mjk_game.c:200-207`), **faltaba la rama `else if (adj && ch->room_id == adj->left)`**, haciendo que `screen_cx` quedara en `-1000` y el popup de puntos `+1000` se creara en coordenadas corruptas si el cofre pertenecía a `adj->left`.
+- Pero en `MjkGame_CollectChestItem` (`src/core/mjk_objects.c`), **faltaba la rama `else if (adj && ch->room_id == adj->left)`**, haciendo que `screen_cx` quedara en `-1000` y el popup de puntos `+1000` se creara en coordenadas corruptas si el cofre pertenecía a `adj->left`.
 
 ### 4.3. Bug de Saturación de `game->bombs[24]` y `has_new_room_bombs` en Pasillos Largos (`[CONFIRMADA]`)
 
@@ -252,10 +252,10 @@ La inspección exhaustiva reveló **cuatro bugs reales de scroll y transición d
 
 ### 4.4. Bug de Auto-Recolección Instantánea en 1 Frame al Rebotar sobre un Cofre (`[CONFIRMADA]`)
 
-- Como documentó preliminarmente `RES-031`, cuando Jack cae sobre un cofre cerrado (`ch->is_open == false`), la rama de apertura (`src/core/mjk_game.c:291-302`) se dispara cuando `jy + 16 >= screen_cy && jy + 16 <= screen_cy + 8`, abre el cofre (`ch->is_open = true`) e impone `game->jack.vel_y = -3`.
+- Como documentó preliminarmente `RES-031`, cuando Jack cae sobre un cofre cerrado (`ch->is_open == false`), la rama de apertura (`src/core/mjk_objects.c`) se dispara cuando `jy + 16 >= screen_cy && jy + 16 <= screen_cy + 8`, abre el cofre (`ch->is_open = true`) e impone `game->jack.vel_y = -3`.
 - Si no se ajusta `game->jack.pos_y = (uint8_t)(screen_cy - 16)` al rebotar y si la rama de recolección (`ch->is_open == true`) usa solapamiento de caja completa (`jy + 16 >= screen_cy && jy <= screen_cy + 16`), en el **frame siguiente (`Frame N+1`, 16.6 ms después)** los pies de Jack (`jy + 16`) siguen dentro de `[screen_cy, screen_cy + 5]`, por lo que **el ítem recién revelado se recolecta instantáneamente en el aire antes de que el jugador pueda verlo**.
 - **Solución Canónica 6502**:
-  1. Al abrir un cofre por rebote superior (`src/core/mjk_game.c:295-301`), alinear los pies de Jack a la cara superior del cofre (`if (screen_cy >= 16) game->jack.pos_y = (uint8_t)(screen_cy - 16);`) junto con `vel_y = -3; subpixel_vy = 0;`.
+  1. Al abrir un cofre por rebote superior (`src/core/mjk_objects.c`), alinear los pies de Jack a la cara superior del cofre (`if (screen_cy >= 16) game->jack.pos_y = (uint8_t)(screen_cy - 16);`) junto con `vel_y = -3; subpixel_vy = 0;`.
   2. Evaluar la recolección del ítem (`ch->is_open == true`) usando el **probe central canónico `byte_A`** (`asm/src/prg.asm:4616-4625, 4814-4821`):
      ```c
      int center_x = jx + 8;
@@ -273,11 +273,11 @@ La inspección exhaustiva reveló **cuatro bugs reales de scroll y transición d
 
 ## 5. Auditoría Completa de Todos los Ítems, Power-Ups, Spawns Dinámicos y Power Coins (6502 ASM vs C)
 
-El requerimiento 3 solicita auditar **todos los tipos de ítems y power-ups del juego** (Mighty Coins, Mighty Drinks, Money Bags, Gold Coins, Extra Bombs, Sphinx, Tecmo Plate, Crystal Balls, Royal Family, Beelzebub, Power Coins, Secret Coins y Extra Coins) comparando el desensamblado 6502 (`asm/src/prg.asm`) contra la implementación actual en C (`src/core/mjk_game.c`, `src/core/mjk_room_decoder.c`, `src/core/mjk_state_machine.c`).
+El requerimiento 3 solicita auditar **todos los tipos de ítems y power-ups del juego** (Mighty Coins, Mighty Drinks, Money Bags, Gold Coins, Extra Bombs, Sphinx, Tecmo Plate, Crystal Balls, Royal Family, Beelzebub, Power Coins, Secret Coins y Extra Coins) comparando el desensamblado 6502 (`asm/src/prg.asm`) contra la implementación actual en C (`src/core/mjk_objects.c`, `src/core/mjk_room_decoder.c`, `src/core/mjk_state_machine.c`).
 
 ### 5.1. Tabla Comparativa Exhaustiva: 6502 ASM vs Implementación C
 
-| ID / Tipo | Nombre del Ítem / Power-Up | Metatile ID (`byte_92D1`) | Comportamiento Canónico en 6502 ASM (`asm/src/prg.asm`) | Comportamiento Actual en C (`src/core/mjk_game.c`) | Discrepancias / Bugs Detectados en C |
+| ID / Tipo | Nombre del Ítem / Power-Up | Metatile ID (`byte_92D1`) | Comportamiento Canónico en 6502 ASM (`asm/src/prg.asm`) | Comportamiento Actual en C (`src/core/mjk_objects.c`) | Discrepancias / Bugs Detectados en C |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`0x00`** | **Money Bag (100 pts)** | `0x4D` (`data.asm:904`) | `JTPickup_Bag100` (`prg.asm:4860-4893`): +100 pts BCD (`A=$01`), popup `$01`, `Sound_BombCollectedLit` (`$08`), borra tile a `$2F`. Pasable (`< $10`). | `case 0`: +100 pts, popup `SCORE_POPUP_100`, `MJK_SND_BOMB_LIT`, borra tile a `0x2F` (`mjk_game.c:212`). | **Bug colisión**: `0x4D` era sólido en `mjk_player_is_tile_solid`. |
 | **`0x01`** | **Money Bag (300 pts)** | `0x4E` (`data.asm:904`) | `JTPickup_Bag300` (`prg.asm:4864-4893`): +300 pts BCD (`A=$03`), popup `$02`, `Sound_BombCollectedLit` (`$08`), borra tile a `$2F`. Pasable (`< $10`). | `case 1`: +300 pts, popup `SCORE_POPUP_300`, `MJK_SND_BOMB_LIT`, borra tile a `0x2F` (`mjk_game.c:213`). | **Bug colisión**: `0x4E` era sólido en `mjk_player_is_tile_solid`. |
@@ -373,12 +373,12 @@ A continuación se detallan los cambios exactos, archivo por archivo y línea po
    int screen_by = (int)(b->tile_y * 16) - (int)jack->scroll_y;
    ```
 
-### 6.2. Fix 2: `src/core/mjk_game.c` — Probe Central Canónico `byte_A`, Coordenadas de Scroll, Paridad de Ítems `0..14` y Power Coin Timers
+### 6.2. Fix 2: `src/core/mjk_objects.c` — Probe Central Canónico `byte_A`, Coordenadas de Scroll, Paridad de Ítems `0..14` y Power Coin Timers
 
-1. **En `MjkGame_OpenChest` (`src/core/mjk_game.c:107-135`)**:
+1. **En `MjkGame_OpenChest` (`src/core/mjk_objects.c`)**:
    - Cuando `game->power_coin_trigger_flag` pasa a `3` (`mjk_game.c:119-121`), sincronizar los tres timers de transmutación (`game->transmute_timer = 320; game->enemy_coin_timer = 320; game->jack.enemy_coin_timer = 320;`).
    - Implementar la regla canónica de `loc_A259` (`asm/src/prg.asm:5463-5470`): si `ch->item_id == 9` (`EnemyType_9_ExtraCoin`) y `game->collected_1up_this_round != 0`, reemplazar `ch->item_id = 8` (Mighty Coin `0x8F`) **antes** del bloque `if (ch->item_id >= 9)`, para que el cofre revele un Mighty Coin recolectable tal como en el NES.
-2. **En `MjkGame_CollectChestItem` (`src/core/mjk_game.c:196-254`)**:
+2. **En `MjkGame_CollectChestItem` (`src/core/mjk_objects.c`)**:
    - Añadir la rama `else if (adj && ch->room_id == adj->left)` en el cálculo de `screen_cx` (`mjk_game.c:200-207`) y restar `(int)game->camera_y` (con soporte `adj->down` / `adj->up`) en `screen_cy` (`mjk_game.c:208`).
    - En `case 3` (Gold Coin, `mjk_game.c:215`): añadir `game->gold_coins_collected++;`.
    - En `case 5` (Extra Bomb, `mjk_game.c:221`): añadir `game->total_bombs_collected++;` y el incremento de `game->power_coin_bomb_counter` (si llega a `>= 20`, reiniciar a `0` y poner `if (game->power_coin_trigger_flag == 0) game->power_coin_trigger_flag = 1;`).
@@ -386,7 +386,7 @@ A continuación se detallan los cambios exactos, archivo por archivo y línea po
    - En `case 9` y `case 10` (Crystal Balls 1 & 2, `mjk_game.c:239-242`): distinguir si proviene de un ítem expuesto (`$79`/`$7A`) actualizando `if (ch->item_id == 9) game->crystal_balls_collected |= 0x01; else game->crystal_balls_collected |= 0x02;` y sumando `game->gdv_value = (uint8_t)mjk_bcd_add(game->gdv_value, 1);` en ambos casos (`prg.asm:5205-5223`).
    - En `case 11, 12, 13` (King, Queen, Princess, `prg.asm:5227-5237`): llamar a `MjkRoom_HandleOpenDoorMaybe(game);`.
    - En `case 14` (Beelzebub Mask, `prg.asm:5241-5249`): sumar `mjk_score_add(game, 1000000);` y llamar a `MjkRoom_HandleOpenDoorMaybe(game);`.
-3. **En `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_game.c:256-329`)**:
+3. **En `MjkGame_UpdateChestsAndSecrets` (`src/core/mjk_objects.c`)**:
    - Calcular `screen_cy` considerando `game->camera_y` y las salas adyacentes verticales (`adj->down`, `adj->up`):
      ```c
      int screen_cy = -1000;
@@ -401,7 +401,7 @@ A continuación se detallan los cambios exactos, archivo por archivo y línea po
          screen_cy = (-240 - (int)game->camera_y) + (ch->tile_y * 16);
      }
      ```
-   - En la rama `if (ch->is_open)` (`src/core/mjk_game.c:276-281`), evaluar la recolección con el **probe central canónico `byte_A`** (`asm/src/prg.asm:4616-4625, 4814-4821`):
+   - En la rama `if (ch->is_open)` (`src/core/mjk_objects.c`), evaluar la recolección con el **probe central canónico `byte_A`** (`asm/src/prg.asm:4616-4625, 4814-4821`):
      ```c
      if (ch->is_open) {
          // Canonical 6502 center probe (byte_A == byte_70, prg.asm:4814-4821):
@@ -414,8 +414,8 @@ A continuación se detallan los cambios exactos, archivo por archivo y línea po
          }
      }
      ```
-   - En la rama `else` (cofre cerrado, `src/core/mjk_game.c:295-301`), al abrir un cofre saltando encima (`vel_y >= 0`), alinear `pos_y` a la parte superior del cofre (`if (screen_cy >= 16) game->jack.pos_y = (uint8_t)(screen_cy - 16);`) y limpiar `game->jack.subpixel_vy = 0;` para evitar penetración.
-4. **En `MjkGame_UpdateBombs` (`src/core/mjk_game.c:331-354`)**:
+   - En la rama `else` (cofre cerrado, `src/core/mjk_objects.c`), al abrir un cofre saltando encima (`vel_y >= 0`), alinear `pos_y` a la parte superior del cofre (`if (screen_cy >= 16) game->jack.pos_y = (uint8_t)(screen_cy - 16);`) y limpiar `game->jack.subpixel_vy = 0;` para evitar penetración.
+4. **En `MjkGame_UpdateBombs` (`src/core/mjk_objects.c`)**:
    - Incluir soporte para `adj->down` y `adj->up` en `screen_by` (además de `Jack_CheckBombCollision`).
 
 ### 6.3. Fix 3: `src/core/mjk_room_decoder.c` — Sincronizar `enemy_coin_timer` al activar Power Coin por Bomba

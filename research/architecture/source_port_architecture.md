@@ -48,7 +48,7 @@ El sistema se divide estrictamente en dos capas ortogonales:
 
 ## 2. La Capa de Abstracción de Hardware (HAL Interface)
 
-El núcleo no conoce la existencia de SDL ni de Windows. La comunicación se realiza mediante una interfaz formal en `src/core/mjk_platform.h`:
+El núcleo no conoce la existencia de SDL ni de Windows. La comunicación se realiza mediante una interfaz formal en `include/mjk_platform.h`:
 
 ```c
 #ifndef MJK_PLATFORM_H

@@ -463,7 +463,7 @@ uint16_t MjkRoom_CollectBomb(MjkRoomContext* room, uint8_t bomb_index) {
 
 ## 5. Especificación de Implementación y Criterios de Paridad
 
-Para alcanzar paridad estricta 1:1 con el hardware NES en `src/core/mjk_room_decoder.c` y `src/core/mjk_game.c`:
+Para alcanzar paridad estricta 1:1 con el hardware NES en `src/core/mjk_room_decoder.c` y `src/core/mjk_objects.c`:
 
 ### 5.1. Definiciones de Constantes y Máscaras
 ```c

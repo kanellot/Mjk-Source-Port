@@ -3,7 +3,7 @@
 - **ID de Entregable**: `research/control_flow/control_flow.md`
 - **Fase**: Fase 2 — Flujo de Control, Datos y Modelo de Hardware
 - **Tarea**: `TASK-F2-001`
-- **Fuente de Verdad**: `asm/src/prg.asm` y `asm/src/music-engine.asm` (verificado con `tools/deep_asm_analyzer.py`)
+- **Fuente de Verdad**: `asm/src/prg.asm` y `asm/src/music-engine.asm` (indexado en `tools/asm_inventory.json` / `tools/asm_query.py`)
 - **Estado**: `[CONFIRMADA]`
 
 ---

@@ -48,7 +48,7 @@ loc_8FD3:
 
 ---
 
-## 3. Implementación Arquitectónica en C99 (`src/core/mjk_game.c`)
+## 3. Implementación Arquitectónica en C11 (`src/core/mjk_hud.c`)
 - **Estructura `MjkFloatingScore`**:
   ```c
   typedef struct {

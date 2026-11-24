@@ -313,7 +313,7 @@ Donde:
 
 ## 7. Fórmulas Canónicas y Pseudocódigo C99 Determinista
 
-A continuación se detalla el pseudocódigo C99 formal para la integración en `src/core/camera.c`:
+A continuación se detalla el pseudocódigo C11 formal para la integración en `src/core/mjk_camera.c`:
 
 ```c
 #include <stdint.h>

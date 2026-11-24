@@ -8,8 +8,8 @@
 - **Agente Autor**: `asm_researcher` (Nivel 3)
 - **Fuentes de Verdad Analizadas**:
   - Desensamblado 6502: [`asm/src/prg.asm`](../asm/src/prg.asm), [`asm/src/data.asm`](../asm/src/data.asm), [`asm/src/defs.asm`](../asm/src/defs.asm), [`asm/src/ram.asm`](../asm/src/ram.asm), [`asm/src/mbj-us.chr`](../asm/src/mbj-us.chr).
-  - Código C del Port: [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c), [`include/mjk_enemy.h`](../include/mjk_enemy.h), [`src/core/mjk_game.c`](../src/core/mjk_game.c), [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c), [`src/core/mjk_player.c`](../src/core/mjk_player.c).
-  - Suite de Pruebas: [`tests/test_enemy_ai.c`](../tests/test_enemy_ai.c), [`tests/test_enemy_spawns.c`](../tests/test_enemy_spawns.c), [`tests/test_state_machine.c`](../tests/test_state_machine.c), [`tests/test_powerups_mighty.c`](../tests/test_powerups_mighty.c).
+  - Código C del Port: [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c), [`include/mjk_enemy.h`](../include/mjk_enemy.h), [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c), [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c), [`src/core/mjk_player.c`](../src/core/mjk_player.c).
+  - Suite de Pruebas: [`tests/test_enemy_ai.c`](../tests/c/test_enemy.c), [`tests/test_enemy_spawns.c`](../tests/c/test_enemy.c), [`tests/test_state_machine.c`](../tests/c/test_state_machine.c), [`tests/test_powerups_mighty.c`](../tests/c/test_items_mighty.c).
 
 ---
 
@@ -19,21 +19,21 @@
 
 | Archivo | Líneas | Función Contenedora | Operación Realizada | Impacto en Runtime / Tests |
 | :--- | :--- | :--- | :--- | :--- |
-| [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c#L356-L361) | `356-361` | `State_2_LoadRoom` | Llama a `MjkEnemy_Init(&game->enemy_mgr, game->current_round, room_id, game->is_bomb_room)`, pone `game->active_enemies_count = 0` y desactiva `game->enemies[0..7].active = false`. | **DEBE CONSERVARSE**: Garantiza estado limpio al cargar sala y satisface [`tests/test_state_machine.c:153`](../tests/test_state_machine.c#L153) (`assert(game.active_enemies_count == 0)`). |
+| [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c#L356-L361) | `356-361` | `State_2_LoadRoom` | Llama a `MjkEnemy_Init(&game->enemy_mgr, game->current_round, room_id, game->is_bomb_room)`, pone `game->active_enemies_count = 0` y desactiva `game->enemies[0..7].active = false`. | **DEBE CONSERVARSE**: Garantiza estado limpio al cargar sala y satisface [`tests/test_state_machine.c:153`](../tests/c/test_state_machine.c) (`assert(game.active_enemies_count == 0)`). |
 | [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c#L370-L374) | `370-374` | `State_3_DrawScreen` | Purga `game->active_enemies_count = 0` y `game->enemies[0..7].active = false`. | **DEBE CONSERVARSE**: Limpia el espejo de entidades de `MjkGameState`. |
 | [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c#L492-L510) | `492-510` | `State_5_MainLoop` (Paso 8) | Sincroniza `transmute_timer`/`transmute_streak`, ejecuta `MjkEnemy_UpdateAll`, evalúa `MjkEnemy_CheckJackCollisions`, mata a Jack si `col == -1` y copia `enemy_mgr.enemies` a `game->enemies`. | **PUNTO DE DESACTIVACIÓN 1**: Es el único lugar donde se generan y actualizan enemigos durante la partida activa (`GAME_STATE_5_MAIN_LOOP`). |
 | [`src/core/mjk_state_machine.c`](../src/core/mjk_state_machine.c#L586-L590) | `586-590` | `State_5_MainLoop` (Paso 10) | Aplica `camera_apply_entity_delta_fixed` sobre `game->enemies[i].pos_x` y `pos_y`. | **PUNTO DE DESACTIVACIÓN 2**: Si no hay enemigos activos, el bucle es no-op, pero conviene protegerlo junto con el Paso 8. |
-| [`src/core/mjk_game.c`](../src/core/mjk_game.c#L859-L889) | `859-889` | `RenderInGameScreen` (Paso 8) | Itera `game->enemies[0..7]` y llama a `MjkPPU_BlitSprite` para dibujar monedas transmutadas (`0x21`) o enemigos (`0x25..0x3D`). | **PUNTO DE DESACTIVACIÓN 3**: Blitter de sprites OAM de enemigos en el framebuffer. |
+| [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c) | `859-889` | `RenderInGameScreen` (Paso 8) | Itera `game->enemies[0..7]` y llama a `MjkPPU_BlitSprite` para dibujar monedas transmutadas (`0x21`) o enemigos (`0x25..0x3D`). | **PUNTO DE DESACTIVACIÓN 3**: Blitter de sprites OAM de enemigos en el framebuffer. |
 
 ### 1.2 Análisis de Dependencias con la Suite de Tests Unitarios
 
-1. **[`tests/test_enemy_ai.c`](../tests/test_enemy_ai.c#L11-L74)** (`líneas 11-74`) y **[`tests/test_enemy_spawns.c`](../tests/test_enemy_spawns.c#L15-L164)** (`líneas 15-164`):
+1. **[`tests/test_enemy_ai.c`](../tests/c/test_enemy.c)** (`líneas 11-74`) y **[`tests/test_enemy_spawns.c`](../tests/c/test_enemy.c)** (`líneas 15-164`):
    - Instancian localmente `MjkEnemyManager mgr` y `JackPlayer jack` y llaman **directamente** a `MjkEnemy_GetDifficulty`, `MjkEnemy_Init`, `MjkEnemy_InitAll`, `MjkEnemy_Spawn`, `MjkEnemy_TickSpawning`, `MjkEnemy_MutateMummy`, `MjkEnemy_ActivatePowerCoin`, `MjkEnemy_UpdateAll` y `MjkEnemy_CheckJackCollisions` definidos en [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c).
    - **No invocan** `MjkGame_SimulateFrame` ni `MjkGame_ExecuteState`.
    - Por consiguiente, **no se debe desactivar ni vaciar ninguna función dentro de [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c)**.
-2. **[`tests/test_state_machine.c`](../tests/test_state_machine.c#L153)** (`línea 153`):
+2. **[`tests/test_state_machine.c`](../tests/c/test_state_machine.c)** (`línea 153`):
    - Verifica `assert(game.active_enemies_count == 0 && "Enemigos de sala anterior deben purgarse");` tras transicionar de Sala 1 a Sala 2.
-3. **[`tests/test_powerups_mighty.c`](../tests/test_powerups_mighty.c#L186-L219)** (`líneas 186-219`):
+3. **[`tests/test_powerups_mighty.c`](../tests/c/test_items_mighty.c)** (`líneas 186-219`):
    - Verifica `mjk_game_activate_power_coin`, `mjk_game_tick_power_coin` y `mjk_game_collect_transmuted_coin`.
    - Nota crítica: En [`src/core/mjk_state_machine.c:442`](../src/core/mjk_state_machine.c#L442), `State_5_MainLoop` ya llama a `mjk_game_tick_power_coin(game)` en el Paso 4. Cuando el Paso 8 (`líneas 493-497`) ejecutaba además `MjkEnemy_UpdateAll` (`mjk_enemy.c:171-173`), `transmute_timer` sufría un **doble decremento por frame** en `State_5_MainLoop`. Al desactivar el Paso 8 en `State_5_MainLoop`, `mjk_game_tick_power_coin(game)` en la línea 442 mantiene el decremento exacto de 1 tick por frame.
 
@@ -43,16 +43,16 @@ Para desactivar por completo el spawneo, actualización, colisión y renderizado
 1. **Mantener intacto [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c)** para que `test_enemy_ai.c` y `test_enemy_spawns.c` sigan ejecutando el 100% de sus aserciones.
 2. En **[`src/core/mjk_state_machine.c:492-510`](../src/core/mjk_state_machine.c#L492-L510)** (`State_5_MainLoop`, Paso 8):
    - Desactivar el bloque que invoca `MjkEnemy_UpdateAll` y `MjkEnemy_CheckJackCollisions` (p. ej. comentándolo o envolviéndolo en `#if 0 ... #endif` o bajo un flag `if (game->enemies_enabled)` inicializado a `false`), asegurando que `game->active_enemies_count = 0;`.
-3. En **[`src/core/mjk_state_machine.c:586-590`](../src/core/mjk_state_machine.c#L586-L590)** (`State_5_MainLoop`, Paso 10) y **[`src/core/mjk_game.c:859-889`](../src/core/mjk_game.c#L859-L889)** (`RenderInGameScreen`, Paso 8):
+3. En **[`src/core/mjk_state_machine.c:586-590`](../src/core/mjk_state_machine.c#L586-L590)** (`State_5_MainLoop`, Paso 10) y **[`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c)** (`RenderInGameScreen`, Paso 8):
    - Desactivar con la misma guarda el bucle de desplazamiento de cámara de enemigos y el bucle de renderizado de sprites de enemigos.
 
 ---
 
 ## 2. Punto B: Diagnóstico y Ground-Truth del Bug de Sprites de Números en Enemigos (`TASK-F7-010`)
 
-### 2.1 Causa Raíz Exacta: Por qué `src/core/mjk_game.c` dibuja números en lugar de enemigos
+### 2.1 Causa Raíz Exacta: Por qué `src/core/mjk_enemy.c` dibuja números en lugar de enemigos
 
-En [`src/core/mjk_game.c:867-888`](../src/core/mjk_game.c#L867-L888), el renderizador actual ejecuta:
+En [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c), el renderizador actual ejecuta:
 
 ```c
         if (game->transmute_timer > 0) {
@@ -288,4 +288,4 @@ El contraste exhaustivo entre [`src/core/mjk_enemy.c`](../src/core/mjk_enemy.c),
 
 ### 3.7 Discrepancia 7: Caja de Colisión Jugador-Enemigo y Comportamiento con Mighty Nivel 3 (`CheckObjectCollision`, `prg.asm:3959-4028` vs `mjk_enemy.c:313-368`)
 - En [`asm/src/prg.asm:3959-3970, 4136-4148`](../asm/src/prg.asm#L3959-L3970) (`CheckObjectCollision` / `CheckIfPlayerWithin8Pixels`), hay colisión si y solo si `|PlayerXPosHi - EnemyXPosHi| < 8` **y** `|PlayerYPosHi - EnemyYPosHi| < 8` (distancias entre centros `< 8` px), siempre que `EnemyStruct_12 == 0` (no esté en los 32 frames de humo/parpadeo de aparición).
-- En [`asm/src/prg.asm:3975-3990`](../asm/src/prg.asm#L3975-L3990), cuando Jack alcanza el Nivel Mighty 3 mediante monedas Mighty (`UseMightyCoin`, [`prg.asm:1761-1765`](../asm/src/prg.asm#L1761-L1765)), llama a `TurnEnemiesIntoCoins` (`EnemyCoinTimer = 320`). Una vez que esos 320 frames expiran, aunque `PlayerMightyLevel` siga siendo `3`, **tocar un enemigo no transmutado (`status & $30 == 0`) ES LETAL para Jack** (`PlayerStruct |= $80`, [`prg.asm:3985-3987`](../asm/src/prg.asm#L3985-L3987)). (Nota: dado que [`tests/test_enemy_spawns.c:152-160`](../tests/test_enemy_spawns.c#L152-L160) prueba explícitamente `MjkEnemy_CheckJackCollisions` con `jack.power_level = MIGHTY_POWER_GREEN` esperando `500`, `MjkEnemy_CheckJackCollisions` debe conservar esa rama para compatibilidad con el test unitario).
+- En [`asm/src/prg.asm:3975-3990`](../asm/src/prg.asm#L3975-L3990), cuando Jack alcanza el Nivel Mighty 3 mediante monedas Mighty (`UseMightyCoin`, [`prg.asm:1761-1765`](../asm/src/prg.asm#L1761-L1765)), llama a `TurnEnemiesIntoCoins` (`EnemyCoinTimer = 320`). Una vez que esos 320 frames expiran, aunque `PlayerMightyLevel` siga siendo `3`, **tocar un enemigo no transmutado (`status & $30 == 0`) ES LETAL para Jack** (`PlayerStruct |= $80`, [`prg.asm:3985-3987`](../asm/src/prg.asm#L3985-L3987)). (Nota: dado que [`tests/test_enemy_spawns.c:152-160`](../tests/c/test_enemy.c) prueba explícitamente `MjkEnemy_CheckJackCollisions` con `jack.power_level = MIGHTY_POWER_GREEN` esperando `500`, `MjkEnemy_CheckJackCollisions` debe conservar esa rama para compatibilidad con el test unitario).

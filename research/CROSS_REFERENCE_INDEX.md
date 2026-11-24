@@ -17,7 +17,7 @@
 | **`$00A0..$00A3`** | `PlayerScore` (`ram.asm:240-244`) | Puntuación BCD little-endian (4 bytes, 8 dígitos) | `game->score_bcd[4]` | `include/mjk_game.h:62` |
 | **`$00A4`** | `StageTimer` (`ram.asm:245-247`) | Temporizador de fase en BCD (inicia `$60`) | `game->stage_timer_bcd` | `include/mjk_game.h:64` |
 | **`$00A5`** | `TimerFrames` (`ram.asm:248-250`) | Divisor de reloj de 256 frames | `game->timer_frames` (`uint16_t`) | `include/mjk_game.h:65` |
-| **`$00AE`/`$00AF`** | `FireBombsCollected` / `2` (`ram.asm:264-266`) | Bombas encendidas y total en Bomb Room (23) | `game->fire_bombs_collected` / `objects.fire_bombs_total` | `include/mjk_game.h:73`, `include/mjk_objects.h` |
+| **`$00AE`/`$00AF`** | `FireBombsCollected` / `2` (`ram.asm:264-266`) | Bombas encendidas y total en Bomb Room (24) | `game->fire_bombs_collected` / `objects.fire_bombs_total` | `include/mjk_game.h:73`, `include/mjk_objects.h` |
 | **`$00B1`** | `AliveEnemyCount` (`ram.asm:268-269`) | Monstruos vivos simultáneos (máx. 4) | `game->enemies.alive_count` | `include/mjk_enemy.h` |
 | **`$00BC`** | `RoomStatusFlags` (`ram.asm:283`) | Flags `RF_*` (Horizontal, SingleScreen, BombRoom, ScrollEdge) | `game->camera.room_flags` | `include/mjk_camera.h`, `include/mjk_types.h:189-198` |
 | **`$00F7`/`$00F8`** | `byte_F7` / `MaybeBombThing` (`ram.asm:379-381`) | Cadena de bombas y bonus perfecto 10.000 pts | `game->objects.first_bomb_picked` / `maybe_bomb_thing` | `include/mjk_objects.h` |
@@ -74,7 +74,7 @@
 | `JTPickup_Bomb` / `sub_A270` / `sub_A29C` | `prg.asm:4970-5165, 5647-5747` | `collect_bomb` / `MjkObjects_Update` / `MjkObjects_RenderOam` | `src/core/mjk_objects.c` |
 | `JTPickup_Chest` / `MaybeOpenHiddenBlock` / `UseMightyCoin` | `prg.asm:1745-1782, 4860-5461` | `open_chest` / `pickup_item` / `MjkObjects_UseMightyCoin` | `src/core/mjk_objects.c` |
 | `MaybeHandleDoorOpening` / `CheckAndMaybeOpenDoor` / `JTPickup_Door` | `prg.asm:5312-5368, 6696-7091` | `MjkDoors_EvaluateCondition` / `MjkDoors_OpenRoomDoor` / `MjkDoors_CheckPlayerEntry` | `src/core/mjk_doors.c` |
-| `HandleEnemySpawnTimer` / `RunEnemyLogic` / `TransformMummy` / `TurnEnemiesIntoCoins` | `prg.asm:8171-9575` | `MjkEnemy_InitForRoom` / `MjkEnemy_UpdateAll` / `MjkEnemy_ActivatePowerCoin` / `MjkEnemy_RenderOam` | `src/core/mjk_enemy.c` |
+| `HandleEnemySpawnTimer` / `RunEnemyLogic` / `TransformMummy` / `TurnEnemiesIntoCoins` | `prg.asm:8171-9575` | `MjkEnemy_InitForRoom` / `MjkEnemy_UpdateAll` / `MjkEnemy_ActivatePowerCoin` / `MjkEnemy_RenderOam` | `src/core/mjk_enemy.c`, `src/core/mjk_enemy_collectibles.c` |
 | `AddScore` / `HandleStageTimer` / `DrawScoreAndCoinCount` / `sub_8FB1` | `prg.asm:1191-1237, 1783-1933, 2436-2573` | `MjkHud_AddScore` / `MjkHud_TickStageTimer` / `MjkHud_SpawnFloatingScore` / `MjkHud_RenderOam` | `src/core/mjk_hud.c` |
 
 ### 2.5. Audio APU 2A03 y Verificación Externa (Capa 2)
@@ -97,7 +97,7 @@ Ninguna tabla con datos propietarios de Tecmo se incluye en el código fuente C.
 | `DifficultyTable` (`data.asm:116`) | `$BF58` | `MJK_ADDR_DIFFICULTY_TABLE` | `src/core/mjk_enemy.c` |
 | `word_C0E3` / `word_C163` (`data.asm:187-256`) | `$BFB0` / `$C030` | `MJK_ADDR_JUMP_TABLE_C0E3` / `MJK_ADDR_VEL_X_TABLE_C163` | `src/core/mjk_player.c`, `mjk_title.c` |
 | `MainPalette` / `BackgroundPaletteSets` (`data.asm:258-305`) | `$C038` / `$C058` | `MJK_ADDR_MAIN_PALETTE` / `MJK_ADDR_BG_PALETTE_SETS` | `src/core/mjk_ppu.c` |
-| `MightyLevelColors` / `MightyLevelAPressesTable` (`data.asm:306-310`) | `$C0C4` / `$C0C8` | `MJK_ADDR_MIGHTY_COLORS` / `MJK_ADDR_MIGHTY_A_PRESSES` | `src/core/mjk_objects.c`, `mjk_player.c` |
+| `MightyLevelColors` / `MightyLevelAPressesTable` (`data.asm:306-310`) | `$C0C4` / `$C0C8` | `MJK_ADDR_MIGHTY_COLORS` / `MJK_ADDR_MIGHTY_A_PRESSES` | `src/core/mjk_ppu.c`, `mjk_objects.c`, `mjk_player.c` |
 | `MusicOptionsTable` / `DoorEntryXYPositionTable` / `VectorTable` | `$C0CC` / `$C0D4` / `$C0F4` | `MJK_ADDR_MUSIC_OPTIONS` / `MJK_ADDR_DOOR_ENTRY_XY` / `MJK_ADDR_VECTOR_TABLE` | `src/core/mjk_state_machine.c` |
 | `SpritesTable` / `SpriteAttributeTable` (`data.asm:364, 588`) | `$C11C` / `$C4D9` | `MJK_ADDR_SPRITES_TABLE` / `MJK_ADDR_SPRITE_ATTR_TABLE` | `src/core/mjk_ppu.c` |
 | `StringPointerTable` (`data.asm:414`) | `$C202` | `MJK_ADDR_STRING_PTR_TABLE` | `src/core/mjk_assets.c`, `mjk_ppu.c` |

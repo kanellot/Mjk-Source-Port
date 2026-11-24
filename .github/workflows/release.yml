@@ -1,0 +1,272 @@
+name: Release (Windows & Linux)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag de release opcional (ej. v0.2.0). Vacío = automático desde CMakeLists.txt"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Determinar versión y tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calcular tag de release
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=$(grep -E 'project\(mighty_bomb_jack VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt \
+            | sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+          if [ -z "${VERSION}" ]; then
+            echo "No se pudo extraer VERSION de CMakeLists.txt" >&2
+            exit 1
+          fi
+
+          INPUT_TAG="${{ inputs.tag }}"
+          if [ -n "${INPUT_TAG}" ]; then
+            TAG="${INPUT_TAG}"
+          else
+            BASE_TAG="v${VERSION}"
+            if git rev-parse "refs/tags/${BASE_TAG}" >/dev/null 2>&1; then
+              SHORT_SHA=$(git rev-parse --short=7 HEAD)
+              TAG="${BASE_TAG}-${SHORT_SHA}"
+            else
+              TAG="${BASE_TAG}"
+            fi
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Versión detectada: ${VERSION} -> Tag: ${TAG}"
+
+  build:
+    name: Build & Test (${{ matrix.platform }})
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            archive_ext: zip
+          - os: ubuntu-latest
+            platform: linux-x64
+            archive_ext: tar.gz
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Dependencias por plataforma
+      # -----------------------------------------------------------------------
+      - name: Instalar dependencias (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev cmake ninja-build
+
+      - name: Cachear SDL2 VC (Windows)
+        if: runner.os == 'Windows'
+        id: cache-sdl2
+        uses: actions/cache@v4
+        with:
+          path: third_party/sdl2
+          key: sdl2-2.30.8-vc-windows-x64
+
+      - name: Descargar SDL2 2.30.8 VC (Windows)
+        if: runner.os == 'Windows' && steps.cache-sdl2.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path "third_party/sdl2" | Out-Null
+          $zipPath = "third_party/sdl2_temp.zip"
+          curl.exe -fsSL "https://github.com/libsdl-org/SDL/releases/download/release-2.30.8/SDL2-devel-2.30.8-VC.zip" -o $zipPath
+          Expand-Archive -Path $zipPath -DestinationPath "third_party/sdl2" -Force
+          Remove-Item -Force $zipPath
+          if (-not (Test-Path "third_party/sdl2/SDL2-2.30.8/cmake/sdl2-config.cmake")) {
+            throw "No se encontró sdl2-config.cmake tras extraer SDL2."
+          }
+
+      # -----------------------------------------------------------------------
+      # Compilación Release y CTest
+      # -----------------------------------------------------------------------
+      - name: Configurar y compilar (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DMJK_BUILD_SHARED_CORE=OFF
+          cmake --build build --config Release --parallel
+
+      - name: Ejecutar CTest (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          ctest --test-dir build -C Release --output-on-failure
+
+      - name: Configurar y compilar (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DMJK_BUILD_SHARED_CORE=OFF
+          cmake --build build --parallel
+
+      - name: Ejecutar CTest (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ctest --test-dir build --output-on-failure
+
+      # -----------------------------------------------------------------------
+      # Empaquetado de artefactos Clean-Room (sin ROM ni assets con copyright)
+      # -----------------------------------------------------------------------
+      - name: Empaquetar release (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $pkgName = "mighty-bomb-jack-$env:RELEASE_TAG-windows-x64"
+          $stageDir = "dist/$pkgName"
+          New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+
+          Copy-Item "build/bin/Release/mjk.exe" "$stageDir/mjk.exe"
+          Copy-Item "build/bin/Release/SDL2.dll" "$stageDir/SDL2.dll"
+
+          @"
+          Mighty Bomb Jack (NES 1987) - Source Port C11 ($env:RELEASE_TAG)
+          ================================================================
+
+          REQUISITO BYOR (Bring Your Own ROM):
+          Este paquete no incluye datos con copyright de Tecmo.
+          Para jugar, copia tu archivo legal 'mbj-us.nes' (REV_US,
+          SHA-1: a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7) en la misma
+          carpeta que mjk.exe (o pásalo con --rom ruta/a/mbj-us.nes).
+          Al arrancar se validará la ROM y se generará assets/assets.dat.
+
+          Uso:
+            mjk.exe
+            mjk.exe --rom ruta\a\mbj-us.nes
+          "@ | Set-Content -Path "$stageDir/README.txt" -Encoding UTF8
+
+          Compress-Archive -Path $stageDir -DestinationPath "dist/$pkgName.zip" -Force
+
+      - name: Empaquetar release (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          PKG_NAME="mighty-bomb-jack-${RELEASE_TAG}-linux-x64"
+          STAGE_DIR="dist/${PKG_NAME}"
+          mkdir -p "${STAGE_DIR}"
+
+          cp build/bin/mjk "${STAGE_DIR}/mjk"
+          chmod +x "${STAGE_DIR}/mjk"
+
+          cat <<EOF > "${STAGE_DIR}/README.txt"
+          Mighty Bomb Jack (NES 1987) - Source Port C11 (${RELEASE_TAG})
+          ================================================================
+
+          REQUISITO RUNTIME (Linux):
+          Instala SDL2 en tu sistema si no lo tienes (ej. Debian/Ubuntu):
+            sudo apt install libsdl2-2.0-0
+
+          REQUISITO BYOR (Bring Your Own ROM):
+          Este paquete no incluye datos con copyright de Tecmo.
+          Para jugar, copia tu archivo legal 'mbj-us.nes' (REV_US,
+          SHA-1: a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7) en la misma
+          carpeta que ./mjk (o pásalo con --rom ruta/a/mbj-us.nes).
+          Al arrancar se validará la ROM y se generará assets/assets.dat.
+
+          Uso:
+            ./mjk
+            ./mjk --rom /ruta/a/mbj-us.nes
+          EOF
+
+          tar -czf "dist/${PKG_NAME}.tar.gz" -C dist "${PKG_NAME}"
+
+      - name: Subir artefacto de plataforma
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/mighty-bomb-jack-${{ needs.prepare.outputs.tag }}-${{ matrix.platform }}.${{ matrix.archive_ext }}
+          if-no-files-found: error
+
+  release:
+    name: Publicar GitHub Release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Generar SHA256SUMS.txt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-artifacts
+          sha256sum mighty-bomb-jack-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Crear GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          NOTES=$(cat <<'EOF'
+          ## Mighty Bomb Jack (NES 1987) — Source Port C11
+
+          ### Descargas
+          - **Windows (x64)**: `mighty-bomb-jack-*-windows-x64.zip` (incluye `mjk.exe` + `SDL2.dll`)
+          - **Linux (x64)**: `mighty-bomb-jack-*-linux-x64.tar.gz` (requiere `libsdl2-2.0-0` instalado en el sistema)
+          - **Verificación**: `SHA256SUMS.txt`
+
+          ### Clean-Room BYOR
+          Estas builds no contienen ROMs ni assets con copyright. Coloca tu copia legal de `mbj-us.nes` (`REV_US`, SHA-1 `a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`) junto al ejecutable o indícala con `--rom`.
+          EOF
+          )
+
+          gh release create "${RELEASE_TAG}" \
+            release-artifacts/* \
+            --target "${GITHUB_SHA}" \
+            --title "Mighty Bomb Jack ${RELEASE_TAG}" \
+            --notes "${NOTES}" \
+            --generate-notes

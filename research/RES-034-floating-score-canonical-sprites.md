@@ -26,27 +26,27 @@
 ## 2. Fuentes de Verdad Analizadas (`asm/` y `src/`)
 
 - **Código Ensamblador 6502**:
-  - [`asm/src/prg.asm:2267-2374`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2267-L2374): `WriteSprite` y `_WriteNormalSprite` (manejo de `BasePointer_RAM_30A` cuando `TempSpriteTile >= $80`).
-  - [`asm/src/prg.asm:2551-2573`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2551-L2573): `sub_8FB1` (composición de tiles de puntuación flotante y multiplicadores en RAM `$030B..$030E`).
-  - [`asm/src/prg.asm:5647-5667`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5647-L5667): `sub_A270` (disparo e inicialización de popup de bomba en RAM `$0786..$078D`).
-  - [`asm/src/prg.asm:5671-5747`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5671-L5747): `sub_A29C` (máquina de estados de popup: Fase 1 humo 32 frames, Fase 2 puntuación 32 frames).
-  - [`asm/src/prg.asm:5751-5793`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5751-L5793): `sub_A32B` y `sub_A33E` (desplazamiento de coordenadas del popup con el scroll de pasillos).
-  - [`asm/src/prg.asm:3761`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3761) y [`asm/src/prg.asm:5012`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5012): Llamadas a `sub_A270` al recolectar bombas.
-  - [`asm/src/prg.asm:3861`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3861): `HandleSpawnsAndMore` (ejecución cíclica por frame de `sub_A29C`).
+  - [`asm/src/prg.asm:2267-2374`](../asm/src/prg.asm#L2267-L2374): `WriteSprite` y `_WriteNormalSprite` (manejo de `BasePointer_RAM_30A` cuando `TempSpriteTile >= $80`).
+  - [`asm/src/prg.asm:2551-2573`](../asm/src/prg.asm#L2551-L2573): `sub_8FB1` (composición de tiles de puntuación flotante y multiplicadores en RAM `$030B..$030E`).
+  - [`asm/src/prg.asm:5647-5667`](../asm/src/prg.asm#L5647-L5667): `sub_A270` (disparo e inicialización de popup de bomba en RAM `$0786..$078D`).
+  - [`asm/src/prg.asm:5671-5747`](../asm/src/prg.asm#L5671-L5747): `sub_A29C` (máquina de estados de popup: Fase 1 humo 32 frames, Fase 2 puntuación 32 frames).
+  - [`asm/src/prg.asm:5751-5793`](../asm/src/prg.asm#L5751-L5793): `sub_A32B` y `sub_A33E` (desplazamiento de coordenadas del popup con el scroll de pasillos).
+  - [`asm/src/prg.asm:3761`](../asm/src/prg.asm#L3761) y [`asm/src/prg.asm:5012`](../asm/src/prg.asm#L5012): Llamadas a `sub_A270` al recolectar bombas.
+  - [`asm/src/prg.asm:3861`](../asm/src/prg.asm#L3861): `HandleSpawnsAndMore` (ejecución cíclica por frame de `sub_A29C`).
 - **Tablas de Datos**:
-  - [`asm/src/data.asm:258-268`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L258-L268): `MainPalette` (Sprite Palette 0 = `$21, $16, $16, $30`).
-  - [`asm/src/data.asm:364-411`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L364-L411): `SpritesTable` (Entrada `$25` = humo de recolección).
-  - [`asm/src/data.asm:588-596`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L588-L596): `SpriteAttributeTable` (Offset 0 = `{ byte_4E: $00, byte_4F: $27 }`).
-  - [`asm/src/data.asm:837-846`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L837-L846): `MultipliedScoreTable`.
-  - [`asm/src/data.asm:848-875`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L848-L875): `ScoreAddTable`.
-  - [`asm/src/defs.asm:125-157`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm#L125-L157): Constantes canónicas `Score_*`.
+  - [`asm/src/data.asm:258-268`](../asm/src/data.asm#L258-L268): `MainPalette` (Sprite Palette 0 = `$21, $16, $16, $30`).
+  - [`asm/src/data.asm:364-411`](../asm/src/data.asm#L364-L411): `SpritesTable` (Entrada `$25` = humo de recolección).
+  - [`asm/src/data.asm:588-596`](../asm/src/data.asm#L588-L596): `SpriteAttributeTable` (Offset 0 = `{ byte_4E: $00, byte_4F: $27 }`).
+  - [`asm/src/data.asm:837-846`](../asm/src/data.asm#L837-L846): `MultipliedScoreTable`.
+  - [`asm/src/data.asm:848-875`](../asm/src/data.asm#L848-L875): `ScoreAddTable`.
+  - [`asm/src/defs.asm:125-157`](../asm/src/defs.asm#L125-L157): Constantes canónicas `Score_*`.
 - **Datos Gráficos CHR**:
-  - [`asm/src/mbj-us.chr`](file:///c:/Users/kanel/Documents/mjk/asm/src/mbj-us.chr): Banco 1 (`offset 8192`), Pattern Table 0 (`$0000-$0FFF`), tiles `0x30..0x3F` y tile transparente `0x0F`.
+  - [`asm/src/mbj-us.chr`](../asm/src/mbj-us.chr): Banco 1 (`offset 8192`), Pattern Table 0 (`$0000-$0FFF`), tiles `0x30..0x3F` y tile transparente `0x0F`.
 - **Código Fuente C**:
-  - [`src/core/mjk_game.c:891-904`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_game.c#L891-L904): `RenderInGameScreen` (Paso 9: Marcadores de puntuación flotante erróneos con fuente de HUD).
-  - [`src/core/mjk_game.c:867-888`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_game.c#L867-L888): Paso 8 (Asignación incorrecta de tiles `0x31, 0x35, 0x39, 0x3D` a enemigos).
-  - [`src/core/mjk_ppu.c:59-88`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_ppu.c#L59-L88): `MjkPPU_BlitTile`.
-  - [`tests/test_floating_scores.c`](file:///c:/Users/kanel/Documents/mjk/tests/test_floating_scores.c): Suite de pruebas de regresión.
+  - [`src/core/mjk_game.c:891-904`](../src/core/mjk_game.c#L891-L904): `RenderInGameScreen` (Paso 9: Marcadores de puntuación flotante erróneos con fuente de HUD).
+  - [`src/core/mjk_game.c:867-888`](../src/core/mjk_game.c#L867-L888): Paso 8 (Asignación incorrecta de tiles `0x31, 0x35, 0x39, 0x3D` a enemigos).
+  - [`src/core/mjk_ppu.c:59-88`](../src/core/mjk_ppu.c#L59-L88): `MjkPPU_BlitTile`.
+  - [`tests/test_floating_scores.c`](../tests/test_floating_scores.c): Suite de pruebas de regresión.
 
 ---
 
@@ -65,7 +65,7 @@ flowchart TD
     E --> F["Expira Timer (byte_78C=0):<br/>ClearFourSpritesInY en OAM offset $14"]
 ```
 
-### 3.2 La Rutina de Composición `sub_8FB1` ([`prg.asm:2551-2573`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2551-L2573))
+### 3.2 La Rutina de Composición `sub_8FB1` ([`prg.asm:2551-2573`](../asm/src/prg.asm#L2551-L2573))
 
 ```assembly
 sub_8FB1:
@@ -94,7 +94,7 @@ loc_8FD3:
 
 ### 3.3 Metasprites Dinámicos en RAM: `WriteSprite` y `BasePointer_RAM_30A`
 
-En `WriteSprite` ([`asm/src/prg.asm:2302-2313`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2302-L2313)):
+En `WriteSprite` ([`asm/src/prg.asm:2302-2313`](../asm/src/prg.asm#L2302-L2313)):
 ```assembly
 	LDA #BasePointer_SpritesTable
 	LDX TempSpriteTile
@@ -176,7 +176,7 @@ Todos los glifos residen en **Pattern Table 0** (`$0000-$0FFF`) del Banco 1 (`ch
 | **`0x3F`** | `"x5"` | `........`<br>`    ###.`<br>`    #...`<br>`# # ###.`<br>` #    #.`<br>`# # ###.`<br>`........`<br>`........` | **Multiplicador "x5"**: Letra 'x' y dígito '5'. |
 
 ### 4.1 Confirmación de la Sospecha del Usuario sobre los Enemigos
-En [`src/core/mjk_game.c:877-882`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_game.c#L877-L882) se leía:
+En [`src/core/mjk_game.c:877-882`](../src/core/mjk_game.c#L877-L882) se leía:
 ```c
 case ENEMY_TYPE_GAMEIDO:     tile_id = 0x31; break; // ¡Tile " 1"!
 case ENEMY_TYPE_DOKURON:     tile_id = 0x35; break; // ¡Tile " 8"!
@@ -196,7 +196,7 @@ case ENEMY_TYPE_HORUS:       tile_id = 0x3D; break; // ¡Tile "x3"!
 
 ## 5. Tabla Canónica de Puntuaciones y Metasprites
 
-A partir de `ScoreAddTable` ([`data.asm:848-875`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L848-L875)) y los tiles CHR extraídos:
+A partir de `ScoreAddTable` ([`data.asm:848-875`](../asm/src/data.asm#L848-L875)) y los tiles CHR extraídos:
 
 | Valor Numérico | Tile Superior Izq (TL) | Tile Superior Der (TR) | Tile Inferior Der (BR) | Ancho × Alto | Representación Visual |
 | :---: | :---: | :---: | :---: | :---: | :--- |

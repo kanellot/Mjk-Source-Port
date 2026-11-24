@@ -4,7 +4,7 @@
 - **Subsistema**: Cámara, Scroll Horizontal/Vertical, Proyección de Seam y Colisiones Multi-Sala
 - **Fase del Proyecto**: Fase 6 (Implementación de Source Port en C99)
 - **Tarea**: `TASK-F6-024B`
-- **Documento Relacionado**: [RES-019](file:///c:/Users/kanel\Documents\mjk\research\RES-019-scroll-engine-and-camera.md), [RES-016](file:///c:/Users/kanel\Documents\mjk\research\RES-016-collision-system-9probe.md)
+- **Documento Relacionado**: [RES-019](./RES-019-scroll-engine-and-camera.md), [RES-016](./RES-016-collision-system-9probe.md)
 - **Estado de Epistemología**: `[CONFIRMADA]` (Verificada exhaustivamente contra `asm/src/prg.asm`, `asm/src/data.asm`, `asm/src/ram.asm` y `asm/src/defs.asm`)
 - **Autores**: `asm_researcher` (Nivel 3)
 

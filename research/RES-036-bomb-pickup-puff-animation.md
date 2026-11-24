@@ -32,30 +32,30 @@ En la implementación actual del port en C (`src/core/mjk_room_decoder.c` y `src
 ## 2. Fuentes de Verdad Analizadas (`asm/` y `src/`)
 
 ### 2.1 Código Ensamblador 6502
-- [`asm/src/prg.asm:4834-4856`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4834-L4856): `BigBeefySubHandlesBGColliding` (JumpTable de recolección de ítems de fondo, entrada 5 = `JTPickup_Bomb`).
-- [`asm/src/prg.asm:4970-5164`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4970-L5164): `JTPickup_Bomb` (Lógica de recolección de bomba apagada/encendida, puntuación y llamada a `sub_A270` en línea 5012).
-- [`asm/src/prg.asm:3746-3769`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3746-L3769): `sub_96F5` (Ruta secundaria de colisión con bombas que invoca `sub_A270` en línea 3761).
-- [`asm/src/prg.asm:4860-4893`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4860-L4893): `MaybePickupItem` (Reemplazo del tile en nametable por `$2F` y limpieza en `RoomDataRAM`).
-- [`asm/src/prg.asm:5647-5667`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5647-L5667): `sub_A270` (Constructor e inicializador de la entidad visual en RAM `$0786..$078D`).
-- [`asm/src/prg.asm:5671-5747`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5671-L5747): `sub_A29C` (Máquina de estados de actualización, alternancia de mecha, renderizado de Fase 1 Humo y Fase 2 Puntuación).
-- [`asm/src/prg.asm:5751-5793`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5751-L5793): `sub_A32B` y `sub_A33E` (Compensación de coordenadas X/Y frente al scroll de pasillos).
-- [`asm/src/prg.asm:2988-3017`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2988-L3017): `sub_9276` (Conversión canónica de coordenada tile a coordenadas de pantalla en píxeles).
-- [`asm/src/prg.asm:2267-2374`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2267-L2374): `WriteSprite` y `_WriteNormalSprite` (Ensamblador OAM para metasprites de 16×16).
-- [`asm/src/prg.asm:3858-3868`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3858-L3868): `HandleSpawnsAndMore` (Invocación cíclica por frame de `sub_A29C`).
-- [`asm/src/prg.asm:8224-8240`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8224-L8240): `InitEnemy` (Inicialización de sprite de spawn con metasprite `$25`).
-- [`asm/src/prg.asm:8313-8321`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8313-L8321): `OrEnemyStatusWith08` (Activación del flag de humo `Status |= 0x08` y timer `EnemyStruct_12 = $20`).
-- [`asm/src/prg.asm:8864-8887`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8864-L8887): `_DrawEnemy` (Lógica de renderizado del humo `$25` durante los primeros 16 frames de vida del enemigo).
+- [`asm/src/prg.asm:4834-4856`](../asm/src/prg.asm#L4834-L4856): `BigBeefySubHandlesBGColliding` (JumpTable de recolección de ítems de fondo, entrada 5 = `JTPickup_Bomb`).
+- [`asm/src/prg.asm:4970-5164`](../asm/src/prg.asm#L4970-L5164): `JTPickup_Bomb` (Lógica de recolección de bomba apagada/encendida, puntuación y llamada a `sub_A270` en línea 5012).
+- [`asm/src/prg.asm:3746-3769`](../asm/src/prg.asm#L3746-L3769): `sub_96F5` (Ruta secundaria de colisión con bombas que invoca `sub_A270` en línea 3761).
+- [`asm/src/prg.asm:4860-4893`](../asm/src/prg.asm#L4860-L4893): `MaybePickupItem` (Reemplazo del tile en nametable por `$2F` y limpieza en `RoomDataRAM`).
+- [`asm/src/prg.asm:5647-5667`](../asm/src/prg.asm#L5647-L5667): `sub_A270` (Constructor e inicializador de la entidad visual en RAM `$0786..$078D`).
+- [`asm/src/prg.asm:5671-5747`](../asm/src/prg.asm#L5671-L5747): `sub_A29C` (Máquina de estados de actualización, alternancia de mecha, renderizado de Fase 1 Humo y Fase 2 Puntuación).
+- [`asm/src/prg.asm:5751-5793`](../asm/src/prg.asm#L5751-L5793): `sub_A32B` y `sub_A33E` (Compensación de coordenadas X/Y frente al scroll de pasillos).
+- [`asm/src/prg.asm:2988-3017`](../asm/src/prg.asm#L2988-L3017): `sub_9276` (Conversión canónica de coordenada tile a coordenadas de pantalla en píxeles).
+- [`asm/src/prg.asm:2267-2374`](../asm/src/prg.asm#L2267-L2374): `WriteSprite` y `_WriteNormalSprite` (Ensamblador OAM para metasprites de 16×16).
+- [`asm/src/prg.asm:3858-3868`](../asm/src/prg.asm#L3858-L3868): `HandleSpawnsAndMore` (Invocación cíclica por frame de `sub_A29C`).
+- [`asm/src/prg.asm:8224-8240`](../asm/src/prg.asm#L8224-L8240): `InitEnemy` (Inicialización de sprite de spawn con metasprite `$25`).
+- [`asm/src/prg.asm:8313-8321`](../asm/src/prg.asm#L8313-L8321): `OrEnemyStatusWith08` (Activación del flag de humo `Status |= 0x08` y timer `EnemyStruct_12 = $20`).
+- [`asm/src/prg.asm:8864-8887`](../asm/src/prg.asm#L8864-L8887): `_DrawEnemy` (Lógica de renderizado del humo `$25` durante los primeros 16 frames de vida del enemigo).
 
 ### 2.2 Tablas de Datos Ensamblador
-- [`asm/src/data.asm:402`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L402): Entrada `$25` de `SpritesTable` (`.BYTE $E4, $8C, $8C, $8C, $8C`).
-- [`asm/src/data.asm:588-596`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L588-L596): `SpriteAttributeTable` (Offset 0 = `{ byte_4E: $00, byte_4F: $27 }`).
-- [`asm/src/defs.asm:239`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm#L239): `BasePointer_RAM_786 = $C`.
+- [`asm/src/data.asm:402`](../asm/src/data.asm#L402): Entrada `$25` de `SpritesTable` (`.BYTE $E4, $8C, $8C, $8C, $8C`).
+- [`asm/src/data.asm:588-596`](../asm/src/data.asm#L588-L596): `SpriteAttributeTable` (Offset 0 = `{ byte_4E: $00, byte_4F: $27 }`).
+- [`asm/src/defs.asm:239`](../asm/src/defs.asm#L239): `BasePointer_RAM_786 = $C`.
 
 ### 2.3 Archivos del Port en C
-- [`src/core/mjk_room_decoder.c:423-461`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_room_decoder.c#L423-L461): `MjkRoom_CollectBombCanonical` (Falta instanciación de efecto de humo; puntuación flotante generada prematuramente).
-- [`src/core/mjk_state_machine.c:445-453`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_state_machine.c#L445-L453): Detección de colisión Jack-Bomba y llamada a recolección.
-- [`src/core/mjk_game.c:841-889`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_game.c#L841-L889): Canalización OAM de sprites en `RenderInGameScreen`.
-- [`src/core/mjk_player.c:90`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_player.c#L90): Entrada `0x25` en `s_sprites_table` (`{ 0xE4, 0x8C, 0x8C, 0x8C, 0x8C }`).
+- [`src/core/mjk_room_decoder.c:423-461`](../src/core/mjk_room_decoder.c#L423-L461): `MjkRoom_CollectBombCanonical` (Falta instanciación de efecto de humo; puntuación flotante generada prematuramente).
+- [`src/core/mjk_state_machine.c:445-453`](../src/core/mjk_state_machine.c#L445-L453): Detección de colisión Jack-Bomba y llamada a recolección.
+- [`src/core/mjk_game.c:841-889`](../src/core/mjk_game.c#L841-L889): Canalización OAM de sprites en `RenderInGameScreen`.
+- [`src/core/mjk_player.c:90`](../src/core/mjk_player.c#L90): Entrada `0x25` en `s_sprites_table` (`{ 0xE4, 0x8C, 0x8C, 0x8C, 0x8C }`).
 
 ---
 
@@ -63,7 +63,7 @@ En la implementación actual del port en C (`src/core/mjk_room_decoder.c` y `src
 
 ### 3.1 Detección e Inicialización del Efecto de Humo (`sub_A270`)
 
-Cuando Jack colisiona con una bomba, la máquina de estados ejecuta `JTPickup_Bomb` ([`asm/src/prg.asm:4970`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4970)). Tras actualizar el puntaje BCD y el sonido, ejecuta:
+Cuando Jack colisiona con una bomba, la máquina de estados ejecuta `JTPickup_Bomb` ([`asm/src/prg.asm:4970`](../asm/src/prg.asm#L4970)). Tras actualizar el puntaje BCD y el sonido, ejecuta:
 
 ```assembly
 loc_9E9D:                               ; asm/src/prg.asm:5008
@@ -77,7 +77,7 @@ loc_9E9D:                               ; asm/src/prg.asm:5008
 	JMP loc_9F4B
 ```
 
-La subrutina `sub_A270` ([`asm/src/prg.asm:5647-5667`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5647-L5667)) inicializa la estructura de entidad de pickup en la dirección fija de RAM `$0786`:
+La subrutina `sub_A270` ([`asm/src/prg.asm:5647-5667`](../asm/src/prg.asm#L5647-L5667)) inicializa la estructura de entidad de pickup en la dirección fija de RAM `$0786`:
 
 ```assembly
 sub_A270:                               ; asm/src/prg.asm:5647
@@ -120,7 +120,7 @@ loc_A282:                               ; asm/src/prg.asm:5657
 
 ## 4. Máquina de Estados del Efecto y Renderizado (`sub_A29C`)
 
-La rutina `sub_A29C` ([`asm/src/prg.asm:5671-5747`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5671-L5747)) es invocada en cada cuadro desde el bucle principal dentro de `HandleSpawnsAndMore` ([`asm/src/prg.asm:3861`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3861)):
+La rutina `sub_A29C` ([`asm/src/prg.asm:5671-5747`](../asm/src/prg.asm#L5671-L5747)) es invocada en cada cuadro desde el bucle principal dentro de `HandleSpawnsAndMore` ([`asm/src/prg.asm:3861`](../asm/src/prg.asm#L3861)):
 
 ```assembly
 HandleSpawnsAndMore:                    ; asm/src/prg.asm:3858
@@ -147,7 +147,7 @@ stateDiagram-v2
 ```
 
 ### 4.1 Análisis Detallado de Fase 1: Efecto Humo (Frames 0..31)
-1. Al entrar en `sub_A29C` ([`asm/src/prg.asm:5673-5705`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5673-L5705)), comprueba el estado:
+1. Al entrar en `sub_A29C` ([`asm/src/prg.asm:5673-5705`](../asm/src/prg.asm#L5673-L5705)), comprueba el estado:
    - Detecta si el bit 2 (`0x04`) está apagado, en cuyo caso fija `byte_78D = 4` y `byte_786 |= 0x05`.
    - Si la entidad acaba de nacer (`byte_786` recién inicializada con `$80`), salta a `loc_A2CE`, donde carga `byte_78C = $20` (32 frames decimales).
 2. Comprobación del selector de fase (`loc_A2D8`):
@@ -165,7 +165,7 @@ stateDiagram-v2
    	LDA #$20                     ; Recarga 32 frames para Fase 2
    	STA byte_78C
    ```
-3. Ensamblado y Blit del Sprite ([`asm/src/prg.asm:5734-5746`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5734-L5746)):
+3. Ensamblado y Blit del Sprite ([`asm/src/prg.asm:5734-5746`](../asm/src/prg.asm#L5734-L5746)):
    ```assembly
    loc_A30B:
    	STAc TempSpriteTile          ; TempSpriteTile = $25
@@ -208,7 +208,7 @@ stateDiagram-v2
 
 ### 5.1 Evidencia en Ensamblador del Spawn de Enemigos
 
-En el subsistema de enemigos, la rutina `InitEnemy` ([`asm/src/prg.asm:8224-8240`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8224-L8240)) inicializa el sprite predeterminado de un nuevo enemigo con el metasprite `$25`:
+En el subsistema de enemigos, la rutina `InitEnemy` ([`asm/src/prg.asm:8224-8240`](../asm/src/prg.asm#L8224-L8240)) inicializa el sprite predeterminado de un nuevo enemigo con el metasprite `$25`:
 
 ```assembly
 InitEnemy:                              ; asm/src/prg.asm:8224
@@ -219,7 +219,7 @@ InitEnemy:                              ; asm/src/prg.asm:8224
 	...
 ```
 
-Inmediatamente después, `OrEnemyStatusWith08` ([`asm/src/prg.asm:8313-8321`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8313-L8321)) activa el flag de spawn/humo y programa un temporizador de `$20` (32 frames):
+Inmediatamente después, `OrEnemyStatusWith08` ([`asm/src/prg.asm:8313-8321`](../asm/src/prg.asm#L8313-L8321)) activa el flag de spawn/humo y programa un temporizador de `$20` (32 frames):
 
 ```assembly
 OrEnemyStatusWith08:                    ; asm/src/prg.asm:8313
@@ -233,7 +233,7 @@ OrEnemyStatusWith08:                    ; asm/src/prg.asm:8313
 	RTS
 ```
 
-Y en el ciclo de renderizado de enemigos `_DrawEnemy` ([`asm/src/prg.asm:8864-8887`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8864-L8887)):
+Y en el ciclo de renderizado de enemigos `_DrawEnemy` ([`asm/src/prg.asm:8864-8887`](../asm/src/prg.asm#L8864-L8887)):
 
 ```assembly
 _DrawEnemy:                             ; asm/src/prg.asm:8864
@@ -269,7 +269,7 @@ _DrawEnemy:                             ; asm/src/prg.asm:8864
 
 ## 6. Anatomía y Geometría del Metasprite `$25`
 
-### 6.1 Desglose de `SpritesTable[$25]` ([`asm/src/data.asm:402`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L402))
+### 6.1 Desglose de `SpritesTable[$25]` ([`asm/src/data.asm:402`](../asm/src/data.asm#L402))
 
 ```assembly
 SpritesTable:                           ; asm/src/data.asm:364
@@ -286,7 +286,7 @@ Cada entrada de metasprite normal en `SpritesTable` se compone de 5 bytes:
 
 ### 6.2 Decodificación de Atributos OAM por `WriteSprite`
 
-En `WriteSprite` ([`asm/src/prg.asm:2325-2355`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2325-L2355)), el byte de configuración `$E4` (`11 10 01 00` en binario) se procesa extrayendo pares de bits para cada sprite mediante rotaciones lógicas (`LSR; ROR; LSR; ROR`):
+En `WriteSprite` ([`asm/src/prg.asm:2325-2355`](../asm/src/prg.asm#L2325-L2355)), el byte de configuración `$E4` (`11 10 01 00` en binario) se procesa extrayendo pares de bits para cada sprite mediante rotaciones lógicas (`LSR; ROR; LSR; ROR`):
 
 $$\text{Byte } 0 = \mathtt{0xE4} = \mathbf{11}\ \mathbf{10}\ \mathbf{01}\ \mathbf{00}_2$$
 
@@ -310,7 +310,7 @@ El metasprite `$25` utiliza `TempSpriteAttributesish = 0`, lo que selecciona la 
 
 ## 7. Diagnóstico de la Discrepancia en el Source Port en C
 
-Al auditar `src/core/mjk_room_decoder.c` ([`L423-L461`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_room_decoder.c#L423-L461)):
+Al auditar `src/core/mjk_room_decoder.c` ([`L423-L461`](../src/core/mjk_room_decoder.c#L423-L461)):
 
 ```c
 uint16_t MjkRoom_CollectBombCanonical(MjkGameState* game, uint8_t bomb_index) {

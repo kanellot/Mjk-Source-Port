@@ -1,0 +1,74 @@
+MIT License
+
+Copyright (c) 2026 Mighty Bomb Jack C11 Educational Source Port Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+UPSTREAM DISASSEMBLY ATTRIBUTION (6502 ASM REFERENCE)
+================================================================================
+
+This educational C11 source port and its reverse-engineering documentation
+were developed using the 6502 assembly disassembly of Mighty Bomb Jack as the
+technical reference:
+
+  Repository: https://github.com/Xkeeper0/mighty-bomb-jack
+  Author:     Xkeeper (and other contributors)
+  License:    MIT License
+
+Original copyright notice and license text from the upstream disassembly
+repository (`LICENSE.txt`), preserved in full compliance with the MIT License:
+
+  MIT License
+
+  Copyright (c) 2025 Xkeeper (and other contributors)
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+================================================================================
+TRADEMARK & CLEAN-ROOM DISCLAIMER
+================================================================================
+
+"Mighty Bomb Jack" (NES, 1986/1987) is a registered trademark and copyrighted
+work of Tecmo / Koei Tecmo Games Co., Ltd.
+
+This repository is an independent, non-commercial educational project and is
+not affiliated with, endorsed by, or sponsored by Koei Tecmo Games Co., Ltd.
+or Nintendo Co., Ltd.
+
+This repository contains NO copyrighted ROM images, graphics (CHR-ROM),
+sound/music data, text tables, or level data from the original game. To run
+the port, you must supply your own legally obtained copy of the USA NES ROM
+(`mbj-us.nes`, REV_US), from which assets are extracted locally at runtime.

@@ -5,28 +5,28 @@
 - **Estado**: `[COMPLETADA]`
 - **Fecha**: 2026-10-25
 - **Agente Autor**: asm_researcher (Nivel 3)
-- **Fuentes Analizadas**: [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm), [`asm/src/music-engine.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm), [`asm/src/music-data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm), [`asm/src/defs.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm), [`asm/src/ram.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm), [`asm/src/registers.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/registers.asm), [`asm/src/data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm), [`asm/src/roomdata-us.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/roomdata-us.asm).
+- **Fuentes Analizadas**: [`asm/src/prg.asm`](../asm/src/prg.asm), [`asm/src/music-engine.asm`](../asm/src/music-engine.asm), [`asm/src/music-data.asm`](../asm/src/music-data.asm), [`asm/src/defs.asm`](../asm/src/defs.asm), [`asm/src/ram.asm`](../asm/src/ram.asm), [`asm/src/registers.asm`](../asm/src/registers.asm), [`asm/src/data.asm`](../asm/src/data.asm), [`asm/src/roomdata-us.asm`](../asm/src/roomdata-us.asm).
 
 ---
 
 ## 1. Resumen Ejecutivo y Hallazgos Principales
 
 1. **Inicialización de Hardware APU ($4000-$4017)**:
-   - En el arranque (`RESET`, [`asm/src/prg.asm:8`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8)), el código ejecuta `SEI` ([`prg.asm:9`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L9)), inicializa la pila e inicializa a cero la RAM completa de `$0000` a `$07FF` ([`prg.asm:47-60`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L47-L60)).
-   - Inicializa el registro de muestra directa DMC (`$4011`) con `#0`: `LDA #0; STA DMC_RAW` ([`prg.asm:65-66`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L65-L66)).
-   - Habilita los 4 canales estándar (Pulse 1, Pulse 2, Triangle, Noise) y deshabilita DMC escribiendo `#$0F` en `$4015`: `LDA #$F; STA SND_CHN` ([`prg.asm:67-68`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L67-L68)).
+   - En el arranque (`RESET`, [`asm/src/prg.asm:8`](../asm/src/prg.asm#L8)), el código ejecuta `SEI` ([`prg.asm:9`](../asm/src/prg.asm#L9)), inicializa la pila e inicializa a cero la RAM completa de `$0000` a `$07FF` ([`prg.asm:47-60`](../asm/src/prg.asm#L47-L60)).
+   - Inicializa el registro de muestra directa DMC (`$4011`) con `#0`: `LDA #0; STA DMC_RAW` ([`prg.asm:65-66`](../asm/src/prg.asm#L65-L66)).
+   - Habilita los 4 canales estándar (Pulse 1, Pulse 2, Triangle, Noise) y deshabilita DMC escribiendo `#$0F` en `$4015`: `LDA #$F; STA SND_CHN` ([`prg.asm:67-68`](../asm/src/prg.asm#L67-L68)).
    - **Registro `$4017` (Frame Counter)**: **NUNCA se escribe en todo el código del juego**. La interrupción APU Frame IRQ queda inhibida de forma canónica por el flag `I` de la CPU (`SEI`).
 2. **Ciclo del Driver de Sonido (`HandleSound`)**:
-   - Se invoca una vez por frame a 60 Hz en la interrupción NMI ([`asm/src/prg.asm:112`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L112)), inmediatamente después de `MainLogicHandler`.
-   - La cola de sonido se ubica en RAM: contador `SoundsQueued` en `$0432` ([`asm/src/ram.asm:1352`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1352)) y buffer `SoundQueue` en `$0433..$0451` ([`asm/src/ram.asm:1354`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1354)).
-   - La subrutina `QueueSound` ([`asm/src/prg.asm:2198-2202`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2198-L2202)) incrementa `SoundsQueued` y encola el byte recibido en `SoundQueue-1,X`.
+   - Se invoca una vez por frame a 60 Hz en la interrupción NMI ([`asm/src/prg.asm:112`](../asm/src/prg.asm#L112)), inmediatamente después de `MainLogicHandler`.
+   - La cola de sonido se ubica en RAM: contador `SoundsQueued` en `$0432` ([`asm/src/ram.asm:1352`](../asm/src/ram.asm#L1352)) y buffer `SoundQueue` en `$0433..$0451` ([`asm/src/ram.asm:1354`](../asm/src/ram.asm#L1354)).
+   - La subrutina `QueueSound` ([`asm/src/prg.asm:2198-2202`](../asm/src/prg.asm#L2198-L2202)) incrementa `SoundsQueued` y encola el byte recibido en `SoundQueue-1,X`.
 3. **Secuencia Temporal de Audio en Pantallas Iniciales**:
-   - **Copyright Screen** (`TitleScreen_US_0`/`1`, [`asm/src/prg.asm:7496-7531`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7496-L7531)): **SILENCIO TOTAL**. No se encola ningún comando.
-   - **Title Screen** (`TitleScreen_0` a `TitleScreen_3`, [`asm/src/prg.asm:7533-7659`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7533-L7659)): **SILENCIO TOTAL**. No hay música de título.
-   - **Transición Start -> Inicio**: Al pulsar Start, Jack cae de la pantalla. Al entrar en `GameState_0_Init` ([`asm/src/prg.asm:341`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L341)), se ejecuta `JSR QueueSound` con `A=0` (`Sound_Silence`), forzando el silenciamiento y puesta a cero de los 8 canales.
-   - **Round Intro** (`GameState_1_RoundIntro`, [`asm/src/prg.asm:7663-7700`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7663-L7700)): Pantalla "Jack x 3" durante 96 frames (`$60`). **SILENCIO TOTAL**.
-   - **Carga y Dibujo de Sala** (`GameState_2_LoadRoom` y `GameState_3_DrawScreen`, [`asm/src/prg.asm:3130`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3130) y [`379`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L379)): **SILENCIO TOTAL**. `GameState_2` lee el tipo de música del encabezado de sala (`RoomData_01` byte 1 = `0`, guardado en `RoomMusic = 0` en [`prg.asm:3156`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3156)), pero no arranca sonido alguno.
-   - **Inicio de Música de Sala (Round 1 Enter Room)**: Ocurre al finalizar la animación de entrada por puerta en `GameState_4_EnterRoom` en la etiqueta `loc_83E6` ([`asm/src/prg.asm:609`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L609)).
+   - **Copyright Screen** (`TitleScreen_US_0`/`1`, [`asm/src/prg.asm:7496-7531`](../asm/src/prg.asm#L7496-L7531)): **SILENCIO TOTAL**. No se encola ningún comando.
+   - **Title Screen** (`TitleScreen_0` a `TitleScreen_3`, [`asm/src/prg.asm:7533-7659`](../asm/src/prg.asm#L7533-L7659)): **SILENCIO TOTAL**. No hay música de título.
+   - **Transición Start -> Inicio**: Al pulsar Start, Jack cae de la pantalla. Al entrar en `GameState_0_Init` ([`asm/src/prg.asm:341`](../asm/src/prg.asm#L341)), se ejecuta `JSR QueueSound` con `A=0` (`Sound_Silence`), forzando el silenciamiento y puesta a cero de los 8 canales.
+   - **Round Intro** (`GameState_1_RoundIntro`, [`asm/src/prg.asm:7663-7700`](../asm/src/prg.asm#L7663-L7700)): Pantalla "Jack x 3" durante 96 frames (`$60`). **SILENCIO TOTAL**.
+   - **Carga y Dibujo de Sala** (`GameState_2_LoadRoom` y `GameState_3_DrawScreen`, [`asm/src/prg.asm:3130`](../asm/src/prg.asm#L3130) y [`379`](../asm/src/prg.asm#L379)): **SILENCIO TOTAL**. `GameState_2` lee el tipo de música del encabezado de sala (`RoomData_01` byte 1 = `0`, guardado en `RoomMusic = 0` en [`prg.asm:3156`](../asm/src/prg.asm#L3156)), pero no arranca sonido alguno.
+   - **Inicio de Música de Sala (Round 1 Enter Room)**: Ocurre al finalizar la animación de entrada por puerta en `GameState_4_EnterRoom` en la etiqueta `loc_83E6` ([`asm/src/prg.asm:609`](../asm/src/prg.asm#L609)).
      - Línea 619: `LDX a:RoomMusic` (X = 0).
      - Línea 620: `LDA MusicOptionsTable,X` (carga `MusicOptionsTable[0]` = `Music_MainWithIntro` = `$16` / 22 decimal).
      - **Línea 621**: **`JSR QueueSound`** encola el comando `$16`.
@@ -36,7 +36,7 @@
 
 ## 2. Inicialización de Hardware APU ($4000-$4017)
 
-### 2.1 Secuencia de Arranque en `RESET` ([`asm/src/prg.asm:8-81`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8-L81))
+### 2.1 Secuencia de Arranque en `RESET` ([`asm/src/prg.asm:8-81`](../asm/src/prg.asm#L8-L81))
 
 ```asm
 ; asm/src/prg.asm:8-23
@@ -93,9 +93,9 @@ Seguidamente, `RESET` configura la APU directamente en las líneas 65 a 68:
 ### 2.2 Tratamiento del Registro $4017 (APU Frame Counter)
 
 En el desmontaje completo de Mighty Bomb Jack:
-- El símbolo `JOY2 = $4017` se encuentra definido en [`asm/src/registers.asm:53`](file:///c:/Users/kanel/Documents/mjk/asm/src/registers.asm#L53) y [`asm/src/ram.asm:2445`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L2445).
+- El símbolo `JOY2 = $4017` se encuentra definido en [`asm/src/registers.asm:53`](../asm/src/registers.asm#L53) y [`asm/src/ram.asm:2445`](../asm/src/ram.asm#L2445).
 - **No existe ninguna instrucción de escritura (`STA $4017` o `STA JOY2`) en toda la ROM**.
-- El hardware de la NES arranca el frame counter en modo 4-step sequence con interrupción APU Frame IRQ armada por defecto. Mighty Bomb Jack enmascara las IRQs de CPU de forma permanente con `SEI` ([`prg.asm:9`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L9)), y no define ningún vector ni controlador para IRQ aparte de compartir la dirección con NMI ([`prg.asm:90-91`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L90-L91)).
+- El hardware de la NES arranca el frame counter en modo 4-step sequence con interrupción APU Frame IRQ armada por defecto. Mighty Bomb Jack enmascara las IRQs de CPU de forma permanente con `SEI` ([`prg.asm:9`](../asm/src/prg.asm#L9)), y no define ningún vector ni controlador para IRQ aparte de compartir la dirección con NMI ([`prg.asm:90-91`](../asm/src/prg.asm#L90-L91)).
 
 ---
 
@@ -105,13 +105,13 @@ En el desmontaje completo de Mighty Bomb Jack:
 
 | Dirección RAM | Etiqueta | Tamaño | Descripción Técnica |
 | :--- | :--- | :---: | :--- |
-| `$0432` | `SoundsQueued` | 1 byte | Contador de comandos pendientes en la cola ([`asm/src/ram.asm:1352`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1352)). |
-| `$0433..$0451` | `SoundQueue` | 31 bytes | Buffer circular/FIFO de IDs de sonido solicitados ([`asm/src/ram.asm:1354`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1354)). |
+| `$0432` | `SoundsQueued` | 1 byte | Contador de comandos pendientes en la cola ([`asm/src/ram.asm:1352`](../asm/src/ram.asm#L1352)). |
+| `$0433..$0451` | `SoundQueue` | 31 bytes | Buffer circular/FIFO de IDs de sonido solicitados ([`asm/src/ram.asm:1354`](../asm/src/ram.asm#L1354)). |
 | `$0452..$04B1` | `SoundChannelA_Mus0..3` | 4 × 24 bytes | 4 canales virtuales de BGM (Pulse 1, Pulse 2, Triangle, Noise). |
 | `$04B2..$0511` | `SoundChannelA_Sfx0..3` | 4 × 24 bytes | 4 canales virtuales de SFX (Pulse 1, Pulse 2, Triangle, Noise). |
 | `$07B0..$07EB` | `SoundReg_*` | 16 bytes | Registros espejo locales de APU (`SoundReg_Vol`, `SoundReg_Sweep`, `SoundReg_Lo`, `SoundReg_Hi`). |
 
-### 3.2 Subrutina de Encolado: `QueueSound` ([`asm/src/prg.asm:2198-2202`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2198-L2202))
+### 3.2 Subrutina de Encolado: `QueueSound` ([`asm/src/prg.asm:2198-2202`](../asm/src/prg.asm#L2198-L2202))
 
 ```asm
 QueueSound:
@@ -123,7 +123,7 @@ QueueSound:
 
 ### 3.3 Procesamiento de Cola: `HandleSound` y `HandleSoundQueue`
 
-En cada frame a 60 Hz, la NMI llama a `HandleSound` ([`asm/src/prg.asm:112`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L112)):
+En cada frame a 60 Hz, la NMI llama a `HandleSound` ([`asm/src/prg.asm:112`](../asm/src/prg.asm#L112)):
 
 ```asm
 ; asm/src/music-engine.asm:2-13
@@ -140,7 +140,7 @@ loc_B105:
     BNE loc_B105                ; Línea 12: Repite hasta vaciar la cola
 ```
 
-`HandleSoundQueue` ([`asm/src/music-engine.asm:47-130`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L47-L130)) evalúa el comando:
+`HandleSoundQueue` ([`asm/src/music-engine.asm:47-130`](../asm/src/music-engine.asm#L47-L130)) evalúa el comando:
 
 ```asm
 ; asm/src/music-engine.asm:47-68
@@ -168,55 +168,55 @@ loc_B14D:
     RTS
 ```
 
-Si el comando es mayor que 0 ([`asm/src/music-engine.asm:71-130`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L71-L130)):
+Si el comando es mayor que 0 ([`asm/src/music-engine.asm:71-130`](../asm/src/music-engine.asm#L71-L130)):
 - Decrementa el valor de la cola: `DEC SoundQueue,X` (conversión de 1-indexed a 0-indexed).
-- Multiplica por 2 (`ASL A`) e indexa en `SoundPointers` ([`asm/src/music-data.asm:133-170`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L133-L170)).
+- Multiplica por 2 (`ASL A`) e indexa en `SoundPointers` ([`asm/src/music-data.asm:133-170`](../asm/src/music-data.asm#L133-L170)).
 - Recorre la lista de cabeceras de pista terminada en `$FF`: cada entrada asigna un canal virtual (`0..7`), inicializa su estructura de 24 bytes, fija `duration = 1`, `volume_delay = 1` y enlaza el flujo de bytecode musical.
 
 ---
 
 ## 4. Catálogo Canónico de Comandos de Sonido y Punteros
 
-Definidos en [`asm/src/defs.asm:84-121`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm#L84-L121) y enlazados en [`asm/src/music-data.asm:133-170`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L133-L170):
+Definidos en [`asm/src/defs.asm:84-121`](../asm/src/defs.asm#L84-L121) y enlazados en [`asm/src/music-data.asm:133-170`](../asm/src/music-data.asm#L133-L170):
 
 | ID Byte (Hex) | ID Dec | Nombre Simbólico (`defs.asm`) | Canales Virtuales | Puntero de Datos (`music-data.asm`) | Función en el Juego |
 | :---: | :---: | :--- | :---: | :--- | :--- |
 | **`$00`** | `0` | `Sound_Silence` | Todos (0..7) | N/A (Tratamiento especial en `loc_B14D`) | Apaga y silencia los 8 canales de sonido. |
-| **`$01`** | `1` | `Sound_Jump` | 5 | `SoundData_01_Jump` ([`L174`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L174)) | SFX de salto de Jack. |
-| **`$02`** | `2` | `Sound_Death` | 0, 1, 2, 4, 5, 6 | `SoundData_02_Death` ([`L189`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L189)) | Secuencia de muerte de Jack. |
-| **`$03`** | `3` | `Sound_BonusCoinSpawn` | 5 | `SoundData_03_BonusCoinSpawn` ([`L245`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L245)) | Aparición de moneda bonus. |
-| **`$04`** | `4` | `Sound_CoinCollected` | 5 | `SoundData_04_CoinCollected` ([`L258`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L258)) | Recolección de moneda dorada. |
-| **`$05`** | `5` | `Sound_PowerCoinSpawn` | 5 | `SoundData_05_PowerCoinSpawn` ([`L271`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L271)) | Aparición de Power Coin (P). |
-| **`$06`** | `6` | `Sound_PowerCoinMusic` | 0, 1, 2 | `SoundData_06_PowerCoinMusic` ([`L284`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L284)) | Música durante el estado de enemigos convertidos en monedas. |
-| **`$07`** | `7` | `Sound_BombCollectedUnlit`| 6 | `SoundData_07_GetNormalBomb` ([`L332`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L332)) | Bomba recogida apagada (100 pts). |
-| **`$08`** | `8` | `Sound_BombCollectedLit` | 6 | `SoundData_08_GetFireBomb` ([`L349`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L349)) | Bomba recogida con mecha encendida (200 pts). |
-| **`$09`** | `9` | `Sound_YouAreGreedy` | 0, 1, 2 | `SoundData_09_YouAreGreedy` ([`L366`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L366)) | Fanfarria del cartel "YOU ARE GREEDY". |
-| **`$0A`** | `10` | `Sound_1UP_Captive` | 4, 5 | `SoundData_0A_Get1UP` ([`L455`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L455)) | Vida extra obtenida o cautivo rescatado. |
-| **`$0B`** | `11` | `Sound_CrystalBall` | 4, 5 | `SoundData_0B_GetCrystalBall` ([`L484`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L484)) | Recolección de bola de cristal. |
-| **`$0C`** | `12` | `Sound_C_Null` | — | `SoundData_Null` ([`L171`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L171)) | Nulo (inactivo). |
-| **`$0D`** | `13` | `Sound_BonusStatueCollected`| 4, 5 | `SoundData_0D_GetBonusStatue` ([`L513`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L513)) | Recolección de estatua faraónica. |
-| **`$0E`** | `14` | `Sound_SecretBlockRevealed`| 4, 5 | `SoundData_0E_SecretBlockOpened` ([`L542`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L542))| Apertura de cofre secreto multi-golpe. |
-| **`$0F`** | `15` | `Sound_Door` | 7 | `SoundData_0F_Door` ([`L571`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L571)) | Apertura o cierre mecánico de puerta (canal ruido). |
-| **`$10`** | `16` | `Music_Main` | 0, 1, 2 | `SoundData_10_Music_Main` ([`L595`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L595)) | BGM principal del juego (sin intro). |
-| **`$11`** | `17` | `Music_TreasureRoom` | 0, 1, 2 | `SoundData_11_Music_Treasure` ([`L1000`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1000)) | BGM de sala del tesoro. |
-| **`$12`** | `18` | `Music_SideRoom` | 0, 1, 2 | `SoundData_12_Music_Side` ([`L1233`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1233)) | BGM de pasillos secundarios. |
-| **`$13`** | `19` | `Music_Labyrinth` | 0, 1, 2 | `SoundData_13_Music_Labyrinth` ([`L1414`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1414))| BGM de laberinto piramidal. |
-| **`$14`** | `20` | `Sound_14_Null` | — | `SoundData_Null` ([`L171`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L171)) | Nulo (inactivo). |
-| **`$15`** | `21` | `Music_Outside1` | 0, 1, 2 | `SoundData_15_Music_Outside` ([`L1506`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1506)) | BGM exterior (Ronda 9 / 13). |
-| **`$16`** | `22` | `Music_MainWithIntro` | 0, 1, 2 | `SoundData_16_Music_MainIntro` ([`L1650`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1650))| **BGM principal precedida por la fanfarria de inicio de ronda**. |
-| **`$17`** | `23` | `Music_GameOver` | 0, 1, 2 | `SoundData_17_Music_GameOver` ([`L1739`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1739)) | Fanfarria fúnebre de Game Over. |
-| **`$18`** | `24` | `Music_RoundClear` | 0, 1, 2 | `SoundData_18_Music_RoundClear` ([`L1804`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1804))| Fanfarria de victoria fin de ronda. |
-| **`$19`** | `25` | `Sound_BombChestBonus` | 4, 5 | `SoundData_19_BombChestBonus` ([`L1867`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1867))| Notificación de cofre con Power Coin. |
-| **`$1A`** | `26` | `Sound_1A` | 4, 5 | `SoundData_1A` ([`L1892`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1892)) | Jingle de transición especial. |
-| **`$1B`** | `27` | `Sound_Pause` | 4, 5, 6 | `SoundData_1B_Pause` ([`L1909`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1909)) | Silenciador por bucle SFX de pausa. |
-| **`$1C`** | `28` | `Sound_Unpause` | 4, 5, 6 | `SoundData_1C_Unpause` ([`L1944`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1944)) | Desactivador de silencio por pausa. |
-| **`$1D`** | `29` | `Sound_UsedMightyCoin` | 4, 5, 6 | `SoundData_1D_UseMightyCoin` ([`L1977`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1977))| Activación de Mighty Coin (cambio de color). |
-| **`$1E`** | `30` | `Music_Outside2` | 0, 1, 2 | `SoundData_15_Music_Outside` ([`L1506`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1506)) | Alias idéntico a `Music_Outside1`. |
-| **`$1F`** | `31` | `Music_TortureRoom` | 0, 1, 2 | `SoundData_1F_Music_Torture` ([`L2066`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L2066)) | BGM de la Sala de Tortura. |
-| **`$20`** | `32` | `Sound_BombBonus` | 4, 5 | `SoundData_20_BombBonus` ([`L2162`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L2162)) | Bono de 10.000 / 50.000 pts por todas las bombas. |
-| **`$21`** | `33` | `Sound_TimePickup` | 5 | `SoundData_21_GetMightyDrink` ([`L2207`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L2207))| Recolección de Bebida Mighty (tiempo extra). |
-| **`$22`** | `34` | `Music_Ending` | 0, 1, 2 | `SoundData_22_Music_Ending` ([`L2232`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L2232)) | Tema de créditos de final estándar. |
-| **`$23`** | `35` | `Music_CollectedFullFamily`| 0, 1, 2 | `SoundData_23_Music_BestEnding` ([`L2453`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L2453))| Fanfarria al rescatar a la familia real completa. |
+| **`$01`** | `1` | `Sound_Jump` | 5 | `SoundData_01_Jump` ([`L174`](../asm/src/music-data.asm#L174)) | SFX de salto de Jack. |
+| **`$02`** | `2` | `Sound_Death` | 0, 1, 2, 4, 5, 6 | `SoundData_02_Death` ([`L189`](../asm/src/music-data.asm#L189)) | Secuencia de muerte de Jack. |
+| **`$03`** | `3` | `Sound_BonusCoinSpawn` | 5 | `SoundData_03_BonusCoinSpawn` ([`L245`](../asm/src/music-data.asm#L245)) | Aparición de moneda bonus. |
+| **`$04`** | `4` | `Sound_CoinCollected` | 5 | `SoundData_04_CoinCollected` ([`L258`](../asm/src/music-data.asm#L258)) | Recolección de moneda dorada. |
+| **`$05`** | `5` | `Sound_PowerCoinSpawn` | 5 | `SoundData_05_PowerCoinSpawn` ([`L271`](../asm/src/music-data.asm#L271)) | Aparición de Power Coin (P). |
+| **`$06`** | `6` | `Sound_PowerCoinMusic` | 0, 1, 2 | `SoundData_06_PowerCoinMusic` ([`L284`](../asm/src/music-data.asm#L284)) | Música durante el estado de enemigos convertidos en monedas. |
+| **`$07`** | `7` | `Sound_BombCollectedUnlit`| 6 | `SoundData_07_GetNormalBomb` ([`L332`](../asm/src/music-data.asm#L332)) | Bomba recogida apagada (100 pts). |
+| **`$08`** | `8` | `Sound_BombCollectedLit` | 6 | `SoundData_08_GetFireBomb` ([`L349`](../asm/src/music-data.asm#L349)) | Bomba recogida con mecha encendida (200 pts). |
+| **`$09`** | `9` | `Sound_YouAreGreedy` | 0, 1, 2 | `SoundData_09_YouAreGreedy` ([`L366`](../asm/src/music-data.asm#L366)) | Fanfarria del cartel "YOU ARE GREEDY". |
+| **`$0A`** | `10` | `Sound_1UP_Captive` | 4, 5 | `SoundData_0A_Get1UP` ([`L455`](../asm/src/music-data.asm#L455)) | Vida extra obtenida o cautivo rescatado. |
+| **`$0B`** | `11` | `Sound_CrystalBall` | 4, 5 | `SoundData_0B_GetCrystalBall` ([`L484`](../asm/src/music-data.asm#L484)) | Recolección de bola de cristal. |
+| **`$0C`** | `12` | `Sound_C_Null` | — | `SoundData_Null` ([`L171`](../asm/src/music-data.asm#L171)) | Nulo (inactivo). |
+| **`$0D`** | `13` | `Sound_BonusStatueCollected`| 4, 5 | `SoundData_0D_GetBonusStatue` ([`L513`](../asm/src/music-data.asm#L513)) | Recolección de estatua faraónica. |
+| **`$0E`** | `14` | `Sound_SecretBlockRevealed`| 4, 5 | `SoundData_0E_SecretBlockOpened` ([`L542`](../asm/src/music-data.asm#L542))| Apertura de cofre secreto multi-golpe. |
+| **`$0F`** | `15` | `Sound_Door` | 7 | `SoundData_0F_Door` ([`L571`](../asm/src/music-data.asm#L571)) | Apertura o cierre mecánico de puerta (canal ruido). |
+| **`$10`** | `16` | `Music_Main` | 0, 1, 2 | `SoundData_10_Music_Main` ([`L595`](../asm/src/music-data.asm#L595)) | BGM principal del juego (sin intro). |
+| **`$11`** | `17` | `Music_TreasureRoom` | 0, 1, 2 | `SoundData_11_Music_Treasure` ([`L1000`](../asm/src/music-data.asm#L1000)) | BGM de sala del tesoro. |
+| **`$12`** | `18` | `Music_SideRoom` | 0, 1, 2 | `SoundData_12_Music_Side` ([`L1233`](../asm/src/music-data.asm#L1233)) | BGM de pasillos secundarios. |
+| **`$13`** | `19` | `Music_Labyrinth` | 0, 1, 2 | `SoundData_13_Music_Labyrinth` ([`L1414`](../asm/src/music-data.asm#L1414))| BGM de laberinto piramidal. |
+| **`$14`** | `20` | `Sound_14_Null` | — | `SoundData_Null` ([`L171`](../asm/src/music-data.asm#L171)) | Nulo (inactivo). |
+| **`$15`** | `21` | `Music_Outside1` | 0, 1, 2 | `SoundData_15_Music_Outside` ([`L1506`](../asm/src/music-data.asm#L1506)) | BGM exterior (Ronda 9 / 13). |
+| **`$16`** | `22` | `Music_MainWithIntro` | 0, 1, 2 | `SoundData_16_Music_MainIntro` ([`L1650`](../asm/src/music-data.asm#L1650))| **BGM principal precedida por la fanfarria de inicio de ronda**. |
+| **`$17`** | `23` | `Music_GameOver` | 0, 1, 2 | `SoundData_17_Music_GameOver` ([`L1739`](../asm/src/music-data.asm#L1739)) | Fanfarria fúnebre de Game Over. |
+| **`$18`** | `24` | `Music_RoundClear` | 0, 1, 2 | `SoundData_18_Music_RoundClear` ([`L1804`](../asm/src/music-data.asm#L1804))| Fanfarria de victoria fin de ronda. |
+| **`$19`** | `25` | `Sound_BombChestBonus` | 4, 5 | `SoundData_19_BombChestBonus` ([`L1867`](../asm/src/music-data.asm#L1867))| Notificación de cofre con Power Coin. |
+| **`$1A`** | `26` | `Sound_1A` | 4, 5 | `SoundData_1A` ([`L1892`](../asm/src/music-data.asm#L1892)) | Jingle de transición especial. |
+| **`$1B`** | `27` | `Sound_Pause` | 4, 5, 6 | `SoundData_1B_Pause` ([`L1909`](../asm/src/music-data.asm#L1909)) | Silenciador por bucle SFX de pausa. |
+| **`$1C`** | `28` | `Sound_Unpause` | 4, 5, 6 | `SoundData_1C_Unpause` ([`L1944`](../asm/src/music-data.asm#L1944)) | Desactivador de silencio por pausa. |
+| **`$1D`** | `29` | `Sound_UsedMightyCoin` | 4, 5, 6 | `SoundData_1D_UseMightyCoin` ([`L1977`](../asm/src/music-data.asm#L1977))| Activación de Mighty Coin (cambio de color). |
+| **`$1E`** | `30` | `Music_Outside2` | 0, 1, 2 | `SoundData_15_Music_Outside` ([`L1506`](../asm/src/music-data.asm#L1506)) | Alias idéntico a `Music_Outside1`. |
+| **`$1F`** | `31` | `Music_TortureRoom` | 0, 1, 2 | `SoundData_1F_Music_Torture` ([`L2066`](../asm/src/music-data.asm#L2066)) | BGM de la Sala de Tortura. |
+| **`$20`** | `32` | `Sound_BombBonus` | 4, 5 | `SoundData_20_BombBonus` ([`L2162`](../asm/src/music-data.asm#L2162)) | Bono de 10.000 / 50.000 pts por todas las bombas. |
+| **`$21`** | `33` | `Sound_TimePickup` | 5 | `SoundData_21_GetMightyDrink` ([`L2207`](../asm/src/music-data.asm#L2207))| Recolección de Bebida Mighty (tiempo extra). |
+| **`$22`** | `34` | `Music_Ending` | 0, 1, 2 | `SoundData_22_Music_Ending` ([`L2232`](../asm/src/music-data.asm#L2232)) | Tema de créditos de final estándar. |
+| **`$23`** | `35` | `Music_CollectedFullFamily`| 0, 1, 2 | `SoundData_23_Music_BestEnding` ([`L2453`](../asm/src/music-data.asm#L2453))| Fanfarria al rescatar a la familia real completa. |
 
 ---
 
@@ -247,18 +247,18 @@ sequenceDiagram
 ```
 
 ### 5.1 Pantalla de Copyright (`TitleScreen_US_0` y `TitleScreen_US_1`)
-- **Líneas en `prg.asm`**: [`7496-7531`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7496-L7531).
+- **Líneas en `prg.asm`**: [`7496-7531`](../asm/src/prg.asm#L7496-L7531).
 - **Comportamiento**: Escribe texto de copyright de Tecmo en la PPU y espera temporizador o pulsación de Start.
 - **Audio**: **Completamente en silencio**. No invoca `QueueSound` ni toca variables de sonido.
 
 ### 5.2 Pantalla de Título (`TitleScreen_0`, `TitleScreen_1`, `TitleScreen_2`, `TitleScreen_3`)
-- **Líneas en `prg.asm`**: [`7533-7659`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7533-L7659).
-- **Comportamiento**: Dibuja nametable de título, texto "PUSH START BUTTON", puntuaciones máximas y sprite de Jack. Cuando el jugador pulsa Start (`loc_ADC0`, [`prg.asm:7629`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7629)), Jack cae por la parte inferior de la pantalla hasta `PlayerYPosHi >= $D8` (`TitleScreen_3`, [`prg.asm:7648`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7648)).
+- **Líneas en `prg.asm`**: [`7533-7659`](../asm/src/prg.asm#L7533-L7659).
+- **Comportamiento**: Dibuja nametable de título, texto "PUSH START BUTTON", puntuaciones máximas y sprite de Jack. Cuando el jugador pulsa Start (`loc_ADC0`, [`prg.asm:7629`](../asm/src/prg.asm#L7629)), Jack cae por la parte inferior de la pantalla hasta `PlayerYPosHi >= $D8` (`TitleScreen_3`, [`prg.asm:7648`](../asm/src/prg.asm#L7648)).
 - **Audio**: **Completamente en silencio**. No existe música de título en Mighty Bomb Jack.
 
 ### 5.3 Inicialización del Juego (`GameState_0_Init`)
-- **Líneas en `prg.asm`**: [`323-361`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L323-L361).
-- **Línea de Encolado**: [`asm/src/prg.asm:341`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L341):
+- **Líneas en `prg.asm`**: [`323-361`](../asm/src/prg.asm#L323-L361).
+- **Línea de Encolado**: [`asm/src/prg.asm:341`](../asm/src/prg.asm#L341):
   ```asm
   LDA #0
   STA PlayerMightyCoins    ; Línea 340
@@ -267,14 +267,14 @@ sequenceDiagram
 - **Efecto**: Garantiza que cualquier residuo sonoro previo quede formalmente apagado (`ActiveSoundChannels = 0`).
 
 ### 5.4 Introducción de Ronda (`GameState_1_RoundIntro`)
-- **Líneas en `prg.asm`**: [`7663-7700`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7663-L7700).
+- **Líneas en `prg.asm`**: [`7663-7700`](../asm/src/prg.asm#L7663-L7700).
 - **Comportamiento**: Muestra el sprite de Jack y el contador de vidas (`GameState1WaitTimer = $60`, 96 frames a 60 Hz = 1.6 segundos).
 - **Audio**: **Completamente en silencio**. No se encola sonido.
 
 ### 5.5 Carga y Renderizado de Sala (`GameState_2_LoadRoom` y `GameState_3_DrawScreen`)
-- **Líneas en `prg.asm`**: [`3130-3251`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3130-L3251) y [`379-441`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L379-L441).
+- **Líneas en `prg.asm`**: [`3130-3251`](../asm/src/prg.asm#L3130-L3251) y [`379-441`](../asm/src/prg.asm#L379-L441).
 - En `GameState_2`, se lee el segundo byte del bloque de sala:
-  - Para Ronda 1 (`RoomData_01`, [`asm/src/roomdata-us.asm:5`](file:///c:/Users/kanel/Documents/mjk/asm/src/roomdata-us.asm#L5)): `.BYTE $E0, 0, $81...`
+  - Para Ronda 1 (`RoomData_01`, [`asm/src/roomdata-us.asm:5`](../asm/src/roomdata-us.asm#L5)): `.BYTE $E0, 0, $81...`
   - Byte 1 = `0`.
   - Líneas 3154-3156:
     ```asm
@@ -286,7 +286,7 @@ sequenceDiagram
 - **Audio**: **Completamente en silencio**. No se encola música durante la carga ni durante el volcado PPU de `GameState_3`.
 
 ### 5.6 Entrada a Sala 1 y Arranque de Música (`GameState_4_EnterRoom`)
-- **Líneas en `prg.asm`**: [`445-623`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L445-L623).
+- **Líneas en `prg.asm`**: [`445-623`](../asm/src/prg.asm#L445-L623).
 - Jack realiza la animación de entrada por la puerta (`AnimateDoorOpen`, desplazamiento, `AnimateDoorClose`).
 - Cuando la animación de puerta concluye y Jack toma el control interactivo:
 
@@ -308,7 +308,7 @@ loc_83E6:
     RTS                     ; Línea 622
 ```
 
-Consultando la tabla [`asm/src/data.asm:312-320`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L312-L320):
+Consultando la tabla [`asm/src/data.asm:312-320`](../asm/src/data.asm#L312-L320):
 ```asm
 MusicOptionsTable:
     .BYTE Music_MainWithIntro   ; Índice 0 ($16 / 22 decimal)
@@ -323,9 +323,9 @@ MusicOptionsTable:
 
 > [!IMPORTANT]
 > **Cita de Ground Truth Exacta**:
-> - **Línea exacta en `prg.asm`**: [`asm/src/prg.asm:621`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L621).
+> - **Línea exacta en `prg.asm`**: [`asm/src/prg.asm:621`](../asm/src/prg.asm#L621).
 > - **Byte / Comando exacto encolado**: `$16` (`Music_MainWithIntro`, 22 decimal).
-> - En el frame NMI inmediatamente posterior ([`asm/src/prg.asm:112`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L112)), `HandleSound` consume `$16` y lanza `SoundData_16_Music_MainIntro` ([`asm/src/music-data.asm:1650`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1650)), que reproduce la fanfarria de inicio e inmediatamente salta mediante `SndJmpF0` ([`music-data.asm:1679`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1679)) al tema cíclico principal `SoundTrack_10_0` (`Music_Main`).
+> - En el frame NMI inmediatamente posterior ([`asm/src/prg.asm:112`](../asm/src/prg.asm#L112)), `HandleSound` consume `$16` y lanza `SoundData_16_Music_MainIntro` ([`asm/src/music-data.asm:1650`](../asm/src/music-data.asm#L1650)), que reproduce la fanfarria de inicio e inmediatamente salta mediante `SndJmpF0` ([`music-data.asm:1679`](../asm/src/music-data.asm#L1679)) al tema cíclico principal `SoundTrack_10_0` (`Music_Main`).
 
 ---
 
@@ -335,10 +335,10 @@ El motor de audio de Mighty Bomb Jack implementa un conjunto jerárquico de meca
 
 ### 6.1 Silenciamiento Maestro Global (`Sound_Silence`, Comando `$00`)
 - **Invocación**: `LDA #0; JSR QueueSound`.
-- **Rutina**: [`asm/src/music-engine.asm:47-68`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L47-L68).
+- **Rutina**: [`asm/src/music-engine.asm:47-68`](../asm/src/music-engine.asm#L47-L68).
 - **Efecto Técnico**:
   - Escribe `#$00` en el byte de estado (`offset $00`) de los 8 canales virtuales (`SoundPointersA[0..7]`).
-  - Al procesar el volcado de hardware en `WriteSoundRegisters` ([`music-engine.asm:712-720`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L712-L720)):
+  - Al procesar el volcado de hardware en `WriteSoundRegisters` ([`music-engine.asm:712-720`](../asm/src/music-engine.asm#L712-L720)):
     ```asm
     LDA a:ActiveSoundChannels   ; = 0
     LSR A; LSR A; LSR A; LSR A
@@ -348,24 +348,24 @@ El motor de audio de Mighty Bomb Jack implementa un conjunto jerárquico de meca
     ```
 
 ### 6.2 Silencio / Silencio de Nota en Canal (`SoundCommand_Cx`, Bytecode `$C0..$CF`)
-- **Implementación**: [`asm/src/music-engine.asm:355-367`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L355-L367).
+- **Implementación**: [`asm/src/music-engine.asm:355-367`](../asm/src/music-engine.asm#L355-L367).
 - **Efecto Técnico**:
   - Escribe `opcode & 0x0F` en la parte baja de frecuencia (`offset $11`) y `#8` en la parte alta (`offset $12`).
   - Llama a `sub_B285` para actualizar registros y efectúa doble retorno (`PLA; PLA; JMP loc_B274`) desapilando el frame de llamada para pasar directamente a esperar la duración de la nota sin reproducir audio.
 
 ### 6.3 Asignación de Envolvente de Volumen (`SoundCommand_Ax_Bx`, Bytecode `$A0..$BF`)
-- **Implementación**: [`asm/src/music-engine.asm:333-349`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L333-L349).
+- **Implementación**: [`asm/src/music-engine.asm:333-349`](../asm/src/music-engine.asm#L333-L349).
 - **Efecto Técnico**:
   - Toma `idx = opcode & 0x1F`.
-  - Carga el puntero de 16 bits desde `SoundVolTable,X` ([`asm/src/music-data.asm:1-125`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1-L125)) en los offsets `$05/$06` del canal virtual.
+  - Carga el puntero de 16 bits desde `SoundVolTable,X` ([`asm/src/music-data.asm:1-125`](../asm/src/music-data.asm#L1-L125)) en los offsets `$05/$06` del canal virtual.
   - Reinicia el índice de paso de envolvente (`offset $07 = 0`).
-  - Llama a `MaybeResetVolDelay` ([`music-engine.asm:646`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L646)), cargando el primer byte de volumen y duración de fase (`offset $0E`).
+  - Llama a `MaybeResetVolDelay` ([`music-engine.asm:646`](../asm/src/music-engine.asm#L646)), cargando el primer byte de volumen y duración de fase (`offset $0E`).
 
 ### 6.4 Atenuación de Volumen por Canal (`SoundCommand_Ex`, Bytecode `$E0..$EF`)
-- **Implementación**: [`asm/src/music-engine.asm:410-416`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L410-L416).
+- **Implementación**: [`asm/src/music-engine.asm:410-416`](../asm/src/music-engine.asm#L410-L416).
 - **Efecto Técnico**:
   - Almacena `opcode & 0x0F` en el `offset $0D` del canal virtual.
-  - Al evaluar la envolvente en `MaybeResetVolDelay` ([`music-engine.asm:676-685`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L676-L685)), si el bit 4 del byte de envolvente está activo, se resta este nivel de atenuación:
+  - Al evaluar la envolvente en `MaybeResetVolDelay` ([`music-engine.asm:676-685`](../asm/src/music-engine.asm#L676-L685)), si el bit 4 del byte de envolvente está activo, se resta este nivel de atenuación:
     ```asm
     LDA off_4
     AND #$F
@@ -377,31 +377,31 @@ El motor de audio de Mighty Bomb Jack implementa un conjunto jerárquico de meca
     ```
 
 ### 6.5 Configuración de Duty Cycle (`SoundCommand_Dx`, Bytecode `$D0..$D7`)
-- **Implementación**: [`asm/src/music-engine.asm:371-387`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L371-L387).
+- **Implementación**: [`asm/src/music-engine.asm:371-387`](../asm/src/music-engine.asm#L371-L387).
 - **Efecto Técnico**:
   - Si el argumento es `< 8`, desplaza bits a las posiciones 6 y 7 del registro de volumen del canal (`offset $0F`), configurando los 4 posibles ciclos de trabajo de los generadores Pulse (12.5%, 25%, 50%, 75%).
 
 ### 6.6 Finalización de Pista y Restauración de BGM (`SoundCommand_F6_F7`, Bytecode `$F6`, `$F7`)
-- **Implementación**: [`asm/src/music-engine.asm:605-630`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L605-L630).
+- **Implementación**: [`asm/src/music-engine.asm:605-630`](../asm/src/music-engine.asm#L605-L630).
 - **Efecto Técnico**:
   - Pone `status = 0` en el canal activo.
   - Si el canal activo es un canal SFX (`CurrentSoundChannel >= 4`):
     - Localiza el canal hermano de BGM (`CurrentSoundChannel - 4`).
-    - Si el canal hermano BGM sigue activo (`status & 1`), ejecuta `SoundCommand_F6_F7_sub1` ([`music-engine.asm:273`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L273)), restaurando inmediatamente sus registros de volumen, sweep y frecuencia en el hardware de la APU.
+    - Si el canal hermano BGM sigue activo (`status & 1`), ejecuta `SoundCommand_F6_F7_sub1` ([`music-engine.asm:273`](../asm/src/music-engine.asm#L273)), restaurando inmediatamente sus registros de volumen, sweep y frecuencia en el hardware de la APU.
 
 ### 6.7 Mecanismo Canónico de Pausa mediante Loops SFX Silenciosos
 - **Pausa (`Sound_Pause = $1B`)**:
-  - [`asm/src/music-data.asm:1909-1943`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1909-L1943).
+  - [`asm/src/music-data.asm:1909-1943`](../asm/src/music-data.asm#L1909-L1943).
   - Instancia los canales SFX 4, 5 y 6 (Pulse 1, Pulse 2, Triangle). Tras una breve fanfarria de aviso de pausa, entra en bucles infinitos de silencios:
     ```asm
     SoundTrack_1B_4L:
         .BYTE $80, $0C
         SndJmpF0 SoundTrack_1B_4L
     ```
-  - Al estar activos los canales SFX 4, 5 y 6, la comprobación `CheckIfSoundChannelIsActive` ([`music-engine.asm:751`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-engine.asm#L751)) bloquea la escritura de los canales BGM 0, 1 y 2 en el hardware, silenciando la música sin detener sus contadores lógicos de tempo.
+  - Al estar activos los canales SFX 4, 5 y 6, la comprobación `CheckIfSoundChannelIsActive` ([`music-engine.asm:751`](../asm/src/music-engine.asm#L751)) bloquea la escritura de los canales BGM 0, 1 y 2 en el hardware, silenciando la música sin detener sus contadores lógicos de tempo.
 - **Despausa (`Sound_Unpause = $1C`)**:
-  - [`asm/src/music-data.asm:1944-1976`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1944-L1976).
-  - Emite un jingle de despausa en los canales SFX 4, 5 y 6, y finaliza cada pista con `.BYTE $FF` ([`L1958, L1968, L1976`](file:///c:/Users/kanel/Documents/mjk/asm/src/music-data.asm#L1958)).
+  - [`asm/src/music-data.asm:1944-1976`](../asm/src/music-data.asm#L1944-L1976).
+  - Emite un jingle de despausa en los canales SFX 4, 5 y 6, y finaliza cada pista con `.BYTE $FF` ([`L1958, L1968, L1976`](../asm/src/music-data.asm#L1958)).
   - La terminación de los canales SFX dispara la reactivación instantánea de los canales BGM hermanos.
 
 ---
@@ -410,12 +410,12 @@ El motor de audio de Mighty Bomb Jack implementa un conjunto jerárquico de meca
 
 | Pregunta de Investigación | Veredicto 6502 | Cita Fuente Exacta |
 | :--- | :--- | :--- |
-| ¿Dónde se inicializa APU $4015? | `RESET`, `LDA #$F; STA SND_CHN` | [`asm/src/prg.asm:67-68`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L67-L68) |
-| ¿Dónde se inicializa APU $4017? | **NUNCA**. No se escribe en $4017. IRQ enmascarada por `SEI`. | [`asm/src/prg.asm:9`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L9) |
-| ¿Dónde se limpian los canales al boot? | Bucle `RESET` borra RAM `$0000-$07FF` a cero. | [`asm/src/prg.asm:47-60`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L47-L60) |
-| ¿Dónde se encola silencio explícito? | `GameState_0_Init`, `JSR QueueSound` con `A=0` | [`asm/src/prg.asm:341`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L341) |
-| ¿Suena algo en Copyright Screen? | **No**, silencio total. | [`asm/src/prg.asm:7496-7531`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7496-L7531) |
-| ¿Suena algo en Title Screen? | **No**, silencio total. | [`asm/src/prg.asm:7533-7659`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7533-L7659) |
-| ¿Suena algo en Round Intro (GameState_1)? | **No**, silencio total (duración 96 frames). | [`asm/src/prg.asm:7663-7700`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7663-L7700) |
-| ¿En qué línea exacta arranca la música de Round 1? | `prg.asm:621` en `GameState_4_EnterRoom` tras animación de puerta | [`asm/src/prg.asm:621`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L621) |
-| ¿Cuál es el byte/comando exacto encolado? | `$16` (`Music_MainWithIntro`, 22 dec) | [`asm/src/data.asm:313`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L313), [`defs.asm:107`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm#L107) |
+| ¿Dónde se inicializa APU $4015? | `RESET`, `LDA #$F; STA SND_CHN` | [`asm/src/prg.asm:67-68`](../asm/src/prg.asm#L67-L68) |
+| ¿Dónde se inicializa APU $4017? | **NUNCA**. No se escribe en $4017. IRQ enmascarada por `SEI`. | [`asm/src/prg.asm:9`](../asm/src/prg.asm#L9) |
+| ¿Dónde se limpian los canales al boot? | Bucle `RESET` borra RAM `$0000-$07FF` a cero. | [`asm/src/prg.asm:47-60`](../asm/src/prg.asm#L47-L60) |
+| ¿Dónde se encola silencio explícito? | `GameState_0_Init`, `JSR QueueSound` con `A=0` | [`asm/src/prg.asm:341`](../asm/src/prg.asm#L341) |
+| ¿Suena algo en Copyright Screen? | **No**, silencio total. | [`asm/src/prg.asm:7496-7531`](../asm/src/prg.asm#L7496-L7531) |
+| ¿Suena algo en Title Screen? | **No**, silencio total. | [`asm/src/prg.asm:7533-7659`](../asm/src/prg.asm#L7533-L7659) |
+| ¿Suena algo en Round Intro (GameState_1)? | **No**, silencio total (duración 96 frames). | [`asm/src/prg.asm:7663-7700`](../asm/src/prg.asm#L7663-L7700) |
+| ¿En qué línea exacta arranca la música de Round 1? | `prg.asm:621` en `GameState_4_EnterRoom` tras animación de puerta | [`asm/src/prg.asm:621`](../asm/src/prg.asm#L621) |
+| ¿Cuál es el byte/comando exacto encolado? | `$16` (`Music_MainWithIntro`, 22 dec) | [`asm/src/data.asm:313`](../asm/src/data.asm#L313), [`defs.asm:107`](../asm/src/defs.asm#L107) |

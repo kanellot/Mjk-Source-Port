@@ -5,16 +5,16 @@
 - **Fecha**: 2026-10-25
 - **Estado**: COMPLETADO
 - **Subsistemas Involucrados**:
-  - `BigBeefySubHandlesBGColliding` / `sub_9CDB` ([`asm/src/prg.asm:4615-4856`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4615-L4856))
-  - `MaybePickupItem` ([`asm/src/prg.asm:4860-4893`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4860-L4893))
-  - `JTPickup_Chest` y `JTPickup_Chest2` ([`asm/src/prg.asm:5259-5308`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5259-L5308))
-  - `MaybeOpenHiddenBlock` ([`asm/src/prg.asm:5392-5458`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5392-L5458))
-  - `MaybeSpawnThingFromObject` ([`asm/src/prg.asm:5462-5495`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5462-L5495))
-  - `sub_A18E` y `sub_A1A6` ([`asm/src/prg.asm:5499-5525`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5499-L5525))
-  - `SpawnPowerCoin` ([`asm/src/prg.asm:8978-8991`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8978-L8991))
-  - `ItemToTileTable` ([`asm/src/data.asm:888-920`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L888-L920))
-  - `MetatileDefinitions` ([`asm/src/data.asm:1549-1660`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L1549-L1660))
-  - `TileAttributeTable` ([`asm/src/data.asm:598-639`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L598-L639))
+  - `BigBeefySubHandlesBGColliding` / `sub_9CDB` ([`asm/src/prg.asm:4615-4856`](../asm/src/prg.asm#L4615-L4856))
+  - `MaybePickupItem` ([`asm/src/prg.asm:4860-4893`](../asm/src/prg.asm#L4860-L4893))
+  - `JTPickup_Chest` y `JTPickup_Chest2` ([`asm/src/prg.asm:5259-5308`](../asm/src/prg.asm#L5259-L5308))
+  - `MaybeOpenHiddenBlock` ([`asm/src/prg.asm:5392-5458`](../asm/src/prg.asm#L5392-L5458))
+  - `MaybeSpawnThingFromObject` ([`asm/src/prg.asm:5462-5495`](../asm/src/prg.asm#L5462-L5495))
+  - `sub_A18E` y `sub_A1A6` ([`asm/src/prg.asm:5499-5525`](../asm/src/prg.asm#L5499-L5525))
+  - `SpawnPowerCoin` ([`asm/src/prg.asm:8978-8991`](../asm/src/prg.asm#L8978-L8991))
+  - `ItemToTileTable` ([`asm/src/data.asm:888-920`](../asm/src/data.asm#L888-L920))
+  - `MetatileDefinitions` ([`asm/src/data.asm:1549-1660`](../asm/src/data.asm#L1549-L1660))
+  - `TileAttributeTable` ([`asm/src/data.asm:598-639`](../asm/src/data.asm#L598-L639))
 
 ---
 
@@ -67,7 +67,7 @@ Existen dos subsistemas principales:
 
 ### 3.1 Detección de Colisión y Rutinas de Contacto (`JTPickup_Chest`, `JTPickup_Chest2`)
 
-Ubicación: [`asm/src/prg.asm:5259-5308`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5259-L5308).
+Ubicación: [`asm/src/prg.asm:5259-5308`](../asm/src/prg.asm#L5259-L5308).
 
 ```assembly
 JTPickup_Chest:
@@ -121,8 +121,8 @@ locret_A064:
 ### 3.2 El Gatillo del Salto (`loc_9CC3`)
 
 Cuando Jack está de pie sobre un cofre y el jugador presiona el botón de salto:
-1. `PlayerPhysics` activa el salto y escribe `Sound_Jump` en `JustJumpedFlag` (`$0370`) ([`asm/src/prg.asm:1429`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1429)).
-2. En el ciclo de colisiones ([`asm/src/prg.asm:4709-4720`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4709-L4720)):
+1. `PlayerPhysics` activa el salto y escribe `Sound_Jump` en `JustJumpedFlag` (`$0370`) ([`asm/src/prg.asm:1429`](../asm/src/prg.asm#L1429)).
+2. En el ciclo de colisiones ([`asm/src/prg.asm:4709-4720`](../asm/src/prg.asm#L4709-L4720)):
 ```assembly
 loc_9CC3:
     LDA PlayerStruct
@@ -141,7 +141,7 @@ loc_9CC3:
 
 ## 4. Lógica de Revelación y Apertura (`MaybeOpenHiddenBlock`)
 
-Ubicación: [`asm/src/prg.asm:5392-5458`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5392-L5458).
+Ubicación: [`asm/src/prg.asm:5392-5458`](../asm/src/prg.asm#L5392-L5458).
 
 ```assembly
 MaybeOpenHiddenBlock:
@@ -220,7 +220,7 @@ loc_A141:
 
 ## 5. Recolección de Ítems (`MaybePickupItem`)
 
-Ubicación: [`asm/src/prg.asm:4860-4966`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4860-L4966).
+Ubicación: [`asm/src/prg.asm:4860-4966`](../asm/src/prg.asm#L4860-L4966).
 
 Cuando Jack toca un ítem expuesto en el suelo o brotado de un cofre:
 ```assembly
@@ -264,7 +264,7 @@ MaybePickupItem:
 
 ## 6. Lógica de Spawneo Especial: Power Coin P ($0357)
 
-Ubicación: [`asm/src/prg.asm:4980-4995`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4980-L4995) y [`8978-8991`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8978-L8991).
+Ubicación: [`asm/src/prg.asm:4980-4995`](../asm/src/prg.asm#L4980-L4995) y [`8978-8991`](../asm/src/prg.asm#L8978-L8991).
 
 ### 6.1 Activación de la Bandera
 Al recolectar bombas en `JTPickup_Bomb`:
@@ -304,7 +304,7 @@ SpawnPowerCoin:
 
 ## 7. Verificación de Metatiles y Tiles PPU
 
-### 7.1 Tabla Canónica `ItemToTileTable` ([`asm/src/data.asm:888-906`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L888-L906))
+### 7.1 Tabla Canónica `ItemToTileTable` ([`asm/src/data.asm:888-906`](../asm/src/data.asm#L888-L906))
 
 | Índice Ítem | Metatile Asociado | Nombre / Descripción | Tiles CHR Componentes ($8 \times 8$ px) |
 |:---:|:---:|:---|:---|
@@ -328,7 +328,7 @@ SpawnPowerCoin:
 En el prompt se solicitó verificar: *"metatile de cofre abierto: $29 tiles {0xEC, 0xED, 0xEE, 0xEF}"*.
 La inspección matemática exacta del desensamblado revela:
 1. **Tiles `{0xEC, 0xED, 0xEE, 0xEF}`**:
-   - Se encuentran en [`asm/src/data.asm:1649`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L1649), offset `$018C` de `MetatileDefinitions`.
+   - Se encuentran en [`asm/src/data.asm:1649`](../asm/src/data.asm#L1649), offset `$018C` de `MetatileDefinitions`.
    - Offset `$018C` / 4 bytes por metatile = **99 decimal = `$63` hexadecimal**.
    - Por tanto, el metatile correspondiente a `{0xEC, 0xED, 0xEE, 0xEF}` es **`$63`**, **no** `$29`.
 2. **Metatile `$28`**:
@@ -383,13 +383,13 @@ stateDiagram-v2
 
 ## 9. Citas y Direcciones Exactas del Código Fuente
 
-1. **Tabla de saltos de colisión de fondo**: [`asm/src/prg.asm:4836-4855`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4836-L4855).
-2. **Rutina de recolección de ítem**: [`asm/src/prg.asm:4860-4893`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4860-L4893).
-3. **Manejadores de cofres (`JTPickup_Chest`, `JTPickup_Chest2`)**: [`asm/src/prg.asm:5259-5308`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5259-L5308).
-4. **Rutina central de revelación (`MaybeOpenHiddenBlock`)**: [`asm/src/prg.asm:5392-5458`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5392-L5458).
-5. **Generador de actores de cofre (`MaybeSpawnThingFromObject`)**: [`asm/src/prg.asm:5462-5495`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5462-L5495).
-6. **Escritura PPU de metatile de ítem (`sub_A1A6`)**: [`asm/src/prg.asm:5515-5525`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5515-L5525).
-7. **Rutina de creación de Moneda Power Coin (`SpawnPowerCoin`)**: [`asm/src/prg.asm:8978-8991`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8978-L8991).
-8. **Asignación de comandos en desempaquetado de salas**: [`asm/src/prg.asm:3402-3434`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3402-L3434) (`JT_94AD_multi`) y [`3438-3443`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3438-L3443) (`JT_94AD_5_6`).
-9. **Tabla de conversión de ítems a metatiles**: [`asm/src/data.asm:888-920`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L888-L920).
-10. **Definiciones cuadrangulares de metatiles**: [`asm/src/data.asm:1549-1660`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L1549-L1660).
+1. **Tabla de saltos de colisión de fondo**: [`asm/src/prg.asm:4836-4855`](../asm/src/prg.asm#L4836-L4855).
+2. **Rutina de recolección de ítem**: [`asm/src/prg.asm:4860-4893`](../asm/src/prg.asm#L4860-L4893).
+3. **Manejadores de cofres (`JTPickup_Chest`, `JTPickup_Chest2`)**: [`asm/src/prg.asm:5259-5308`](../asm/src/prg.asm#L5259-L5308).
+4. **Rutina central de revelación (`MaybeOpenHiddenBlock`)**: [`asm/src/prg.asm:5392-5458`](../asm/src/prg.asm#L5392-L5458).
+5. **Generador de actores de cofre (`MaybeSpawnThingFromObject`)**: [`asm/src/prg.asm:5462-5495`](../asm/src/prg.asm#L5462-L5495).
+6. **Escritura PPU de metatile de ítem (`sub_A1A6`)**: [`asm/src/prg.asm:5515-5525`](../asm/src/prg.asm#L5515-L5525).
+7. **Rutina de creación de Moneda Power Coin (`SpawnPowerCoin`)**: [`asm/src/prg.asm:8978-8991`](../asm/src/prg.asm#L8978-L8991).
+8. **Asignación de comandos en desempaquetado de salas**: [`asm/src/prg.asm:3402-3434`](../asm/src/prg.asm#L3402-L3434) (`JT_94AD_multi`) y [`3438-3443`](../asm/src/prg.asm#L3438-L3443) (`JT_94AD_5_6`).
+9. **Tabla de conversión de ítems a metatiles**: [`asm/src/data.asm:888-920`](../asm/src/data.asm#L888-L920).
+10. **Definiciones cuadrangulares de metatiles**: [`asm/src/data.asm:1549-1660`](../asm/src/data.asm#L1549-L1660).

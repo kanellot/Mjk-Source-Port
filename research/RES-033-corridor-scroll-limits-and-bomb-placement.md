@@ -31,18 +31,18 @@ El propósito de esta investigación es determinar el comportamiento canónico e
 
 | Archivo | Rango de Líneas | Identificador / Etiqueta | Descripción Funcional |
 | :--- | :--- | :--- | :--- |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1548-L1604) | `1548 - 1604` | `loc_8A06`..`loc_8A66` | Anclaje de Jack a $X=128$, desanclaje en `RF_AtScrollEdge` y re-anclaje bidireccional. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2579-L2626) | `2579 - 2626` | `MaybeLoadRoomFlags` | Carga de `AdjacentRoomsTable` y extracción de flags de sala a `RoomStatusFlags`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3130-L3251) | `3130 - 3251` | `GameState_2_LoadRoom` | Carga de sección vía `SectionRoomsTable` e inicialización de `RoomDataRAM`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3257-L3341) | `3257 - 3341` | `ReadRoomData` | Decodificación del bytecode de objetos por sala (bombas, cofres, bloques). |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5906-L6125) | `5906 - 6125` | `MainSub_3`, `loc_A454`, `loc_A505` | Motor de scroll horizontal, detección de bordes, avance de nametables y costura. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6522-L6534) | `6522 - 6534` | `sub_A843` | Negación de velocidad horizontal (`byte_98:byte_99 = -PlayerXVel`). |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6538-L6611) | `6538 - 6611` | `sub_A85F`, `sub_A875` | Inyección de metatiles de objetos de `MaybeRoomIDCopyAgain` en el buffer de costura. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8588-L8656) | `8588 - 8656` | `sub_B7B4`, `sub_B7BF` | Traslación de actores y enemigos en coordenadas de pantalla aplicando deltas de cámara. |
-| [`asm/src/data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L640-L700) | `640 - 700` | `SectionRoomsTable`, `Section_1_1` | Tabla de composición de secciones y salas pertenecientes al pasillo inicial. |
-| [`asm/src/data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L1704-L1720) | `1704 - 1720` | `AdjacentRoomsTable` | Topología de salas (flags, arriba, abajo, derecha, izquierda). |
-| [`asm/src/roomdata-us.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/roomdata-us.asm#L4-L16) | `4 - 16` | `RoomData_01` a `RoomData_06` | Bytecode de salas 1 a 6 de la revisión US. |
-| [`asm/src/roomdata-us.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/roomdata-us.asm#L262-L264) | `262 - 264` | `RoomData_90` | Bytecode de la Sala Real de Bombas del Round 1 (Sala `$90`). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L1548-L1604) | `1548 - 1604` | `loc_8A06`..`loc_8A66` | Anclaje de Jack a $X=128$, desanclaje en `RF_AtScrollEdge` y re-anclaje bidireccional. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L2579-L2626) | `2579 - 2626` | `MaybeLoadRoomFlags` | Carga de `AdjacentRoomsTable` y extracción de flags de sala a `RoomStatusFlags`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L3130-L3251) | `3130 - 3251` | `GameState_2_LoadRoom` | Carga de sección vía `SectionRoomsTable` e inicialización de `RoomDataRAM`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L3257-L3341) | `3257 - 3341` | `ReadRoomData` | Decodificación del bytecode de objetos por sala (bombas, cofres, bloques). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L5906-L6125) | `5906 - 6125` | `MainSub_3`, `loc_A454`, `loc_A505` | Motor de scroll horizontal, detección de bordes, avance de nametables y costura. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L6522-L6534) | `6522 - 6534` | `sub_A843` | Negación de velocidad horizontal (`byte_98:byte_99 = -PlayerXVel`). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L6538-L6611) | `6538 - 6611` | `sub_A85F`, `sub_A875` | Inyección de metatiles de objetos de `MaybeRoomIDCopyAgain` en el buffer de costura. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L8588-L8656) | `8588 - 8656` | `sub_B7B4`, `sub_B7BF` | Traslación de actores y enemigos en coordenadas de pantalla aplicando deltas de cámara. |
+| [`asm/src/data.asm`](../asm/src/data.asm#L640-L700) | `640 - 700` | `SectionRoomsTable`, `Section_1_1` | Tabla de composición de secciones y salas pertenecientes al pasillo inicial. |
+| [`asm/src/data.asm`](../asm/src/data.asm#L1704-L1720) | `1704 - 1720` | `AdjacentRoomsTable` | Topología de salas (flags, arriba, abajo, derecha, izquierda). |
+| [`asm/src/roomdata-us.asm`](../asm/src/roomdata-us.asm#L4-L16) | `4 - 16` | `RoomData_01` a `RoomData_06` | Bytecode de salas 1 a 6 de la revisión US. |
+| [`asm/src/roomdata-us.asm`](../asm/src/roomdata-us.asm#L262-L264) | `262 - 264` | `RoomData_90` | Bytecode de la Sala Real de Bombas del Round 1 (Sala `$90`). |
 
 ---
 
@@ -50,7 +50,7 @@ El propósito de esta investigación es determinar el comportamiento canónico e
 
 ### 3.1. Arquitectura Topológica de Pasillos en NES
 
-En el motor original de *Mighty Bomb Jack*, cada "Pasillo" (corredor horizontal) se compone de un conjunto finito de salas contiguas indexadas en `SectionRoomsTable` ([`asm/src/data.asm:640-686`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L640-L686)). Para el Pasillo del Round 1 (`Section_1_1`):
+En el motor original de *Mighty Bomb Jack*, cada "Pasillo" (corredor horizontal) se compone de un conjunto finito de salas contiguas indexadas en `SectionRoomsTable` ([`asm/src/data.asm:640-686`](../asm/src/data.asm#L640-L686)). Para el Pasillo del Round 1 (`Section_1_1`):
 
 ```assembly
 ; asm/src/data.asm:684-686
@@ -73,7 +73,7 @@ El pasillo contiene **exactamente 6 salas** (Salas 1, 2, 3, 4, 5 y 6). La Sala `
 
 ### 3.2. Banderas de Topología en `AdjacentRoomsTable`
 
-En [`asm/src/data.asm:1704-1720`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L1704-L1720), cada sala define una entrada de 5 bytes:
+En [`asm/src/data.asm:1704-1720`](../asm/src/data.asm#L1704-L1720), cada sala define una entrada de 5 bytes:
 `[Flags, Up, Down, Right, Left]`.
 
 ```assembly
@@ -108,7 +108,7 @@ Análisis de las salas terminales:
 
 ### 3.3. Algoritmo de Bloqueo de Cámara y Desanclaje en Sala 6
 
-El desmontaje de [`asm/src/prg.asm:6045-6111`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6045-L6111) demuestra con certeza matemática el flujo de parada de scroll:
+El desmontaje de [`asm/src/prg.asm:6045-6111`](../asm/src/prg.asm#L6045-L6111) demuestra con certeza matemática el flujo de parada de scroll:
 
 ```
 [Jack anclado en X=128 cruzando Sala 5 a la Derecha]
@@ -239,7 +239,7 @@ loc_8A3E:
 
 ### 3.4. Cinemática de Actores y Enemigos (`sub_B7B4` / `sub_B7BF`)
 
-El código en [`asm/src/prg.asm:8588-8656`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8588-L8656) confirma la arquitectura descubierta en `RES-019`:
+El código en [`asm/src/prg.asm:8588-8656`](../asm/src/prg.asm#L8588-L8656) confirma la arquitectura descubierta en `RES-019`:
 **Todos los actores, enemigos y monedas residen internamente en coordenadas de pantalla**.
 
 ```assembly
@@ -298,7 +298,7 @@ En `RoomData_06`:
 Al contrastar la arquitectura original contra el código fuente C de `src/core/`, se identificó una cadena de **cuatro defectos lógicos acumulativos** que causan la aparición de bombas dentro de la pared derecha:
 
 ### Defecto 1: Precarga de la Sala de Bombas (`$90`) como vecino contiguo de pasillo
-- **Ubicación**: [`src/core/mjk_state_machine.c:250-255`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_state_machine.c#L250-L255) y [`lines 571-580`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_state_machine.c#L571-L580):
+- **Ubicación**: [`src/core/mjk_state_machine.c:250-255`](../src/core/mjk_state_machine.c#L250-L255) y [`lines 571-580`](../src/core/mjk_state_machine.c#L571-L580):
   ```c
   if (room_id < MJK_TOTAL_ROOMS_COUNT) {
       const MjkAdjacentRoom* adj = &g_adjacent_rooms[room_id];
@@ -314,7 +314,7 @@ Al contrastar la arquitectura original contra el código fuente C de `src/core/`
   Dado que `bombs[24]` tiene capacidad para 24 elementos y Sala 6 aportó 6 bombas, las siguientes 18 bombas de la Sala `$90` saturaron el array.
 
 ### Defecto 2: Omisión del chequeo de `RF_Horizontal` al desplazarse a la derecha
-- **Ubicación**: [`src/core/mjk_camera.c:280-286`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_camera.c#L280-L286):
+- **Ubicación**: [`src/core/mjk_camera.c:280-286`](../src/core/mjk_camera.c#L280-L286):
   ```c
   } else {
       // Moviendo a la derecha (prg.asm:6070-6111):
@@ -327,7 +327,7 @@ Al contrastar la arquitectura original contra el código fuente C de `src/core/`
       }
   ```
 - **Mecanismo de Falla**:
-  El código C omitió la condición canónica de [`asm/src/prg.asm:6045-6055`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6045-L6055) (`loc_A505`):
+  El código C omitió la condición canónica de [`asm/src/prg.asm:6045-6055`](../asm/src/prg.asm#L6045-L6055) (`loc_A505`):
   ```c
   if (cam->room_flags & MJK_RF_HORIZONTAL) {
       cam->scroll_x_fixed = 0;
@@ -339,7 +339,7 @@ Al contrastar la arquitectura original contra el código fuente C de `src/core/`
   Al no tener esta guarda, cuando el scroll desbordó de Sala 5 a Sala 6 y activó `MJK_RF_HORIZONTAL`, en los fotogramas siguientes la cámara **continuó desplazándose a lo largo de la Sala 6** (`cam->scroll_x_fixed` creció de $0$ a $255$), mientras Jack permanecía anclado erróneamente en $X=128$.
 
 ### Defecto 3: Blitteo indebido del nametable de la Sala `$90` sobre la Sala 6
-- **Ubicación**: [`src/core/mjk_game.c:654-672`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_game.c#L654-L672):
+- **Ubicación**: [`src/core/mjk_game.c:654-672`](../src/core/mjk_game.c#L654-L672):
   ```c
   if (game->camera_x > 0 && adj->right != 0) {
       uint8_t right_nametable[30][32];
@@ -364,7 +364,7 @@ Al contrastar la arquitectura original contra el código fuente C de `src/core/`
   A medida que `camera_x` aumentaba, las bombas de la Sala `$90` (que tienen coordenadas $X = 2, 3, 4, 11, 13$) se deslizaron sobre el borde derecho de la pantalla, **superponiéndose y estampándose directamente sobre los metatiles del muro terminal de la Sala 6**.
 
 ### Defecto 4: Proyección errónea en recolección y colisiones
-- **Ubicación**: [`src/core/mjk_room_decoder.c:454-455`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_room_decoder.c#L454-L455) y [`src/core/mjk_player.c:662`](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_player.c#L662):
+- **Ubicación**: [`src/core/mjk_room_decoder.c:454-455`](../src/core/mjk_room_decoder.c#L454-L455) y [`src/core/mjk_player.c:662`](../src/core/mjk_player.c#L662):
   ```c
   } else if (game->jack.room_id < MJK_TOTAL_ROOMS_COUNT && g_adjacent_rooms[game->jack.room_id].right == bomb->room_id) {
       screen_bx = (256 - game->camera_x) + (bomb->tile_x * 16);

@@ -27,21 +27,21 @@ El presente informe documenta la ingeniería inversa exhaustiva y análisis a ni
 
 | Archivo | Rango de Líneas | Símbolos / Etiquetas Analizadas |
 | :--- | :---: | :--- |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4970-L5165) | 4970–5164 | `JTPickup_Bomb`, `loc_9E68`, `loc_9E94`, `loc_9E9D`, `loc_9EB2`, `loc_9EC9`, `loc_9EDB`, `loc_9F09`, `loc_9F1E`, `loc_9F20`, `loc_9F31`, `loc_9F40`, `loc_9F48`, `loc_9F4B`, `loc_9F60`, `loc_9F6D`, `loc_9F82`, `loc_9F8C`, `loc_9F98`, `loc_9FAB` |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5367-L5388) | 5367–5388 | `MaybeDrawFireBombSprite` |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5645-L5667) | 5645–5667 | `sub_A270` (Spawning del score popup flotante de 100/200 pts) |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5670-L5697) | 5670–5697 | `sub_A29C` (Lógica de animación/flashing del sprite de chispa en OAM) |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3130-L3398) | 3130–3398 | `GameState_2_LoadRoom`, `ReadRoomData`, `HandleRoomDataObject`, `JT_94AD_0` (Inicialización de bombas en `RoomDataRAM`) |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6867-L6878) | 6867–6878 | `DoorCond_0C_AllFireBombs` |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8976-L8992) | 8976–8992 | `SpawnPowerCoin` |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8546-L8566) | 8546–8566 | `MaybeConsiderOffscreen` (Limpieza de flags de Power Coin) |
-| [prg.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5415-L5431) | 5415–5431 | `loc_A11A` (Aparición de Power Coin al abrir cofre) |
-| [ram.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L378-L382) | 378–382 | `byte_F7` (`$00F7`), `MaybeBombThing` (`$00F8`) |
-| [ram.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L263-L266) | 263–266 | `FireBombsCollected` (`$00AE`), `FireBombsCollected2` (`$00AF`) |
-| [ram.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1043-L1046) | 1043–1046 | `MaybeTempCollectableFlag2` (`$0356`), `MaybeTempCollectableFlag` (`$0357`) |
-| [ram.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1846-L1865) | 1846–1865 | `RoomDataRAM` (`$0603`) |
-| [data.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L848-L870) | 848–870 | `ScoreAddTable` |
-| [data.asm](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L831-L836) | 831–836 | `FireBombBonus` |
+| [prg.asm](../asm/src/prg.asm#L4970-L5165) | 4970–5164 | `JTPickup_Bomb`, `loc_9E68`, `loc_9E94`, `loc_9E9D`, `loc_9EB2`, `loc_9EC9`, `loc_9EDB`, `loc_9F09`, `loc_9F1E`, `loc_9F20`, `loc_9F31`, `loc_9F40`, `loc_9F48`, `loc_9F4B`, `loc_9F60`, `loc_9F6D`, `loc_9F82`, `loc_9F8C`, `loc_9F98`, `loc_9FAB` |
+| [prg.asm](../asm/src/prg.asm#L5367-L5388) | 5367–5388 | `MaybeDrawFireBombSprite` |
+| [prg.asm](../asm/src/prg.asm#L5645-L5667) | 5645–5667 | `sub_A270` (Spawning del score popup flotante de 100/200 pts) |
+| [prg.asm](../asm/src/prg.asm#L5670-L5697) | 5670–5697 | `sub_A29C` (Lógica de animación/flashing del sprite de chispa en OAM) |
+| [prg.asm](../asm/src/prg.asm#L3130-L3398) | 3130–3398 | `GameState_2_LoadRoom`, `ReadRoomData`, `HandleRoomDataObject`, `JT_94AD_0` (Inicialización de bombas en `RoomDataRAM`) |
+| [prg.asm](../asm/src/prg.asm#L6867-L6878) | 6867–6878 | `DoorCond_0C_AllFireBombs` |
+| [prg.asm](../asm/src/prg.asm#L8976-L8992) | 8976–8992 | `SpawnPowerCoin` |
+| [prg.asm](../asm/src/prg.asm#L8546-L8566) | 8546–8566 | `MaybeConsiderOffscreen` (Limpieza de flags de Power Coin) |
+| [prg.asm](../asm/src/prg.asm#L5415-L5431) | 5415–5431 | `loc_A11A` (Aparición de Power Coin al abrir cofre) |
+| [ram.asm](../asm/src/ram.asm#L378-L382) | 378–382 | `byte_F7` (`$00F7`), `MaybeBombThing` (`$00F8`) |
+| [ram.asm](../asm/src/ram.asm#L263-L266) | 263–266 | `FireBombsCollected` (`$00AE`), `FireBombsCollected2` (`$00AF`) |
+| [ram.asm](../asm/src/ram.asm#L1043-L1046) | 1043–1046 | `MaybeTempCollectableFlag2` (`$0356`), `MaybeTempCollectableFlag` (`$0357`) |
+| [ram.asm](../asm/src/ram.asm#L1846-L1865) | 1846–1865 | `RoomDataRAM` (`$0603`) |
+| [data.asm](../asm/src/data.asm#L848-L870) | 848–870 | `ScoreAddTable` |
+| [data.asm](../asm/src/data.asm#L831-L836) | 831–836 | `FireBombBonus` |
 
 ---
 
@@ -429,7 +429,7 @@ loc_A2B1:
 
 ## 4. Discrepancias Frente a la Implementación Actual en C
 
-En el archivo [src/core/mjk_room_decoder.c](file:///c:/Users/kanel/Documents/mjk/src/core/mjk_room_decoder.c#L363-L379) se identifican discrepancias críticas respecto a la lógica original de NES:
+En el archivo [src/core/mjk_room_decoder.c](../src/core/mjk_room_decoder.c#L363-L379) se identifican discrepancias críticas respecto a la lógica original de NES:
 
 ```c
 // IMPLEMENTACIÓN ACTUAL EN C (INCORRECTA / SIMPLISTA):

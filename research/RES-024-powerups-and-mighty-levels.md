@@ -13,17 +13,17 @@
 
 | Variable | Dirección RAM | Tamaño | Descripción Técnica |
 |:---|:---:|:---:|:---|
-| `PlayerMightyLevel` | `$03E0` | 1 byte | Nivel de poder Mighty actual del jugador (`0`, `1`, `2`, `3`). [`asm/src/ram.asm:1255`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1255) |
-| `PlayerMightyLevelPressesLeft` | `$03E1` | 1 byte | Presupuesto restante de pulsaciones de salto (botón A) antes de descender de nivel. [`asm/src/ram.asm:1257`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1257) |
-| `PlayerMightyCoins` | `$03E2` | 1 byte | Inventario de monedas Mighty acumuladas (máximo tolerado < 10). [`asm/src/ram.asm:1259`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1259) |
-| `StageTimer` | `$00A4` | 1 byte | Temporizador del round en formato BCD (segundos restantes). [`asm/src/ram.asm:245`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L245) |
-| `byte_333` | `$0333` | 1 byte | Flag/contador interno reseteado a `#$00` al usar moneda Mighty. [`asm/src/ram.asm:1107`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1107) |
+| `PlayerMightyLevel` | `$03E0` | 1 byte | Nivel de poder Mighty actual del jugador (`0`, `1`, `2`, `3`). [`asm/src/ram.asm:1255`](../asm/src/ram.asm#L1255) |
+| `PlayerMightyLevelPressesLeft` | `$03E1` | 1 byte | Presupuesto restante de pulsaciones de salto (botón A) antes de descender de nivel. [`asm/src/ram.asm:1257`](../asm/src/ram.asm#L1257) |
+| `PlayerMightyCoins` | `$03E2` | 1 byte | Inventario de monedas Mighty acumuladas (máximo tolerado < 10). [`asm/src/ram.asm:1259`](../asm/src/ram.asm#L1259) |
+| `StageTimer` | `$00A4` | 1 byte | Temporizador del round en formato BCD (segundos restantes). [`asm/src/ram.asm:245`](../asm/src/ram.asm#L245) |
+| `byte_333` | `$0333` | 1 byte | Flag/contador interno reseteado a `#$00` al usar moneda Mighty. [`asm/src/ram.asm:1107`](../asm/src/ram.asm#L1107) |
 
 ---
 
 ### 1.2 Recolección de Ítems en Cofres (`MaybePickupItem`)
 
-Ubicación: [`asm/src/prg.asm:4860-4966`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4860-L4966) y [`5187-5201`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5187-L5201).
+Ubicación: [`asm/src/prg.asm:4860-4966`](../asm/src/prg.asm#L4860-L4966) y [`5187-5201`](../asm/src/prg.asm#L5187-L5201).
 
 ```assembly
 ; asm/src/prg.asm:4942-4953
@@ -70,7 +70,7 @@ locret_9FDB:
 
 ### 1.3 Activación del Nivel Mighty: Consumo de Moneda (Botón B)
 
-Ubicación: [`asm/src/prg.asm:1448-1458`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1448-L1458).
+Ubicación: [`asm/src/prg.asm:1448-1458`](../asm/src/prg.asm#L1448-L1458).
 
 ```assembly
 loc_895A:
@@ -89,7 +89,7 @@ loc_895A:
 
 ### 1.4 Lógica de Incremento y Tope en Nivel 3 (`UseMightyCoin`)
 
-Ubicación: [`asm/src/prg.asm:1745-1768`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1745-L1768).
+Ubicación: [`asm/src/prg.asm:1745-1768`](../asm/src/prg.asm#L1745-L1768).
 
 ```assembly
 UseMightyCoin:
@@ -122,7 +122,7 @@ locret_8B5F:
 
 El nivel Mighty no expira por tiempo continuo, sino por **presupuesto de pulsaciones de salto** (botón A).
 
-Ubicación: [`asm/src/prg.asm:1397-1421`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1397-L1421).
+Ubicación: [`asm/src/prg.asm:1397-1421`](../asm/src/prg.asm#L1397-L1421).
 
 ```assembly
 _MightyLevelAPressCheck:
@@ -151,7 +151,7 @@ _NoMightyLevelDown:
 ```
 
 #### Presupuesto por Nivel (`MightyLevelAPressesTable`)
-Definida en [`asm/src/data.asm:309-310`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L309-L310):
+Definida en [`asm/src/data.asm:309-310`](../asm/src/data.asm#L309-L310):
 ```assembly
 MightyLevelAPressesTable:
 	.BYTE 1,  20,  30,  35
@@ -168,8 +168,8 @@ MightyLevelAPressesTable:
 ### 2.1 Tablas de Datos de Paleta
 
 Ubicación en ROM:
-- Tabla de colores por nivel Mighty: [`asm/src/data.asm:306-307`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L306-L307).
-- Paleta maestra inicial: [`asm/src/data.asm:258-268`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L258-L268).
+- Tabla de colores por nivel Mighty: [`asm/src/data.asm:306-307`](../asm/src/data.asm#L306-L307).
+- Paleta maestra inicial: [`asm/src/data.asm:258-268`](../asm/src/data.asm#L258-L268).
 
 ```assembly
 ; asm/src/data.asm:306-307
@@ -205,7 +205,7 @@ La subpaleta 1 de sprites de Jack reside en las posiciones `$14..$17` del `Palet
 
 ### 2.3 Mecanismo de Carga a la PPU
 
-Ubicación: [`asm/src/prg.asm:1774-1779`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1774-L1779) y [`259-281`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L259-L281).
+Ubicación: [`asm/src/prg.asm:1774-1779`](../asm/src/prg.asm#L1774-L1779) y [`259-281`](../asm/src/prg.asm#L259-L281).
 
 ```assembly
 ; X = PlayerMightyLevel (0..3)
@@ -237,7 +237,7 @@ Al entrar a salas de bombas (`prg.asm:396-400`), el juego fuerza el reseteo del 
 
 ### 3.1 Apertura de Cofres Naranjas (Requiere Nivel >= 1)
 
-Ubicación: [`asm/src/prg.asm:5300-5308`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5300-L5308).
+Ubicación: [`asm/src/prg.asm:5300-5308`](../asm/src/prg.asm#L5300-L5308).
 
 Los cofres de color naranja poseen el metatile `$11`.
 
@@ -256,7 +256,7 @@ Jack debe encontrarse en **Nivel Mighty 1 o superior** para poder interactuar y 
 
 ### 3.2 Apertura con Cabezazo de Cofres Rojos (Requiere Nivel >= 2)
 
-Ubicación: [`asm/src/prg.asm:5259-5296`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5259-L5296).
+Ubicación: [`asm/src/prg.asm:5259-5296`](../asm/src/prg.asm#L5259-L5296).
 
 Los cofres rojos poseen el metatile `$10`. Cuando Jack colisiona desde abajo (ascendiendo con `PlayerYVelHi < 0`), la bandera `byte_310` permanece en `0` (cabezazo). Si Jack aterriza encima cayendo (`PlayerYVelHi >= 0`), `byte_310` es incrementada en línea 4783.
 
@@ -290,7 +290,7 @@ Abrir cofres rojos golpeándolos desde abajo requiere estrictamente **Nivel Migh
 
 ### 3.3 Puertas con Condición Mighty 3 (`DoorCond_XX_Mighty3`)
 
-Ubicación: [`asm/src/prg.asm:6903-6909`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6903-L6909).
+Ubicación: [`asm/src/prg.asm:6903-6909`](../asm/src/prg.asm#L6903-L6909).
 
 ```assembly
 DoorCond_XX_Mighty3:
@@ -303,17 +303,17 @@ DoorCond_XX_Mighty3:
 
 #### Asignación en Tabla de Puertas (`prg.asm:6747-6816`)
 En la versión USA/World, las siguientes ranuras de condiciones de puerta exigen estar en Nivel 3:
-- `$07`: [`prg.asm:6754`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6754)
-- `$0E`: [`prg.asm:6761`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6761) (Exclusivo revisión USA)
-- `$17`: [`prg.asm:6770`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6770)
-- `$18`: [`prg.asm:6771`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6771)
-- `$1B`: [`prg.asm:6774`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L6774)
+- `$07`: [`prg.asm:6754`](../asm/src/prg.asm#L6754)
+- `$0E`: [`prg.asm:6761`](../asm/src/prg.asm#L6761) (Exclusivo revisión USA)
+- `$17`: [`prg.asm:6770`](../asm/src/prg.asm#L6770)
+- `$18`: [`prg.asm:6771`](../asm/src/prg.asm#L6771)
+- `$1B`: [`prg.asm:6774`](../asm/src/prg.asm#L6774)
 
 ---
 
 ### 3.4 Recolección Exclusiva de Monedas Secretas (Secret Coins)
 
-Ubicación: [`asm/src/prg.asm:4081-4091`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4081-L4091).
+Ubicación: [`asm/src/prg.asm:4081-4091`](../asm/src/prg.asm#L4081-L4091).
 
 ```assembly
 JT_98A4_A_SecretCoin:
@@ -338,17 +338,17 @@ locret_9926:
 
 | Variable | Dirección RAM | Tamaño | Descripción Técnica |
 |:---|:---:|:---:|:---|
-| `EnemyCoinTimer` | `$006A..$006B` | 2 bytes | Temporizador de transmutación (palabra 16 bits en Little-Endian, Zero Page). [`asm/src/ram.asm:171`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L171) |
-| `byte_54` | `$0054` | 1 byte | Contador de racha/combo de monedas recogidas en transmutación (0..6). [`asm/src/ram.asm:84`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L84) |
-| `MaybeTempCollectableFlag` | `$0357` | 1 byte | Flag de habilitación de Power Coin en el siguiente cofre. [`asm/src/ram.asm:1046`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1046) |
-| `MaybeTempCollectableFlag2` | `$0356` | 1 byte | Acumulador de bombas para activar Power Coin (umbral = 20). [`asm/src/ram.asm:1045`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1045) |
-| `GoldCoinsCollected` | `$0366` | 1 byte | Contador acumulativo de monedas de oro recogidas (umbral = 40). [`asm/src/ram.asm:1136`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1136) |
+| `EnemyCoinTimer` | `$006A..$006B` | 2 bytes | Temporizador de transmutación (palabra 16 bits en Little-Endian, Zero Page). [`asm/src/ram.asm:171`](../asm/src/ram.asm#L171) |
+| `byte_54` | `$0054` | 1 byte | Contador de racha/combo de monedas recogidas en transmutación (0..6). [`asm/src/ram.asm:84`](../asm/src/ram.asm#L84) |
+| `MaybeTempCollectableFlag` | `$0357` | 1 byte | Flag de habilitación de Power Coin en el siguiente cofre. [`asm/src/ram.asm:1046`](../asm/src/ram.asm#L1046) |
+| `MaybeTempCollectableFlag2` | `$0356` | 1 byte | Acumulador de bombas para activar Power Coin (umbral = 20). [`asm/src/ram.asm:1045`](../asm/src/ram.asm#L1045) |
+| `GoldCoinsCollected` | `$0366` | 1 byte | Contador acumulativo de monedas de oro recogidas (umbral = 40). [`asm/src/ram.asm:1136`](../asm/src/ram.asm#L1136) |
 
 ---
 
 ### 4.2 Spawneo de la Moneda Power Coin "P"
 
-Ubicación: [`asm/src/prg.asm:4980-4999`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4980-L4999) y [`8978-8991`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8978-L8991).
+Ubicación: [`asm/src/prg.asm:4980-4999`](../asm/src/prg.asm#L4980-L4999) y [`8978-8991`](../asm/src/prg.asm#L8978-L8991).
 
 1. Al recoger bombas ordinarias (`JTPickup_Bomb`), `MaybeTempCollectableFlag2` suma las bombas.
 2. Al alcanzar 20 bombas (`CMP #20` en línea 4986), ejecuta `INC MaybeTempCollectableFlag` (`$0357 = 1`) y suena `Sound_BombChestBonus` (`$19`).
@@ -358,7 +358,7 @@ Ubicación: [`asm/src/prg.asm:4980-4999`](file:///c:/Users/kanel/Documents/mjk/a
 
 ### 4.3 Inicio de la Transmutación (`TurnEnemiesIntoCoins`)
 
-Ubicación: [`asm/src/prg.asm:9019-9049`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L9019-L9049).
+Ubicación: [`asm/src/prg.asm:9019-9049`](../asm/src/prg.asm#L9019-L9049).
 
 ```assembly
 JT_98A4_8_PowerCoin:
@@ -393,7 +393,7 @@ TurnEnemiesIntoCoins:
 
 ### 4.4 Efecto en las Entidades Enemigas
 
-Ubicación: [`asm/src/prg.asm:8828-8860`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8828-L8860) y [`8178-8182`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L8178-L8182).
+Ubicación: [`asm/src/prg.asm:8828-8860`](../asm/src/prg.asm#L8828-L8860) y [`8178-8182`](../asm/src/prg.asm#L8178-L8182).
 
 1. **Transformación Visual y de Estado**:
    En `DrawEnemies`:
@@ -423,7 +423,7 @@ Ubicación: [`asm/src/prg.asm:8828-8860`](file:///c:/Users/kanel/Documents/mjk/a
 3. **Aviso de Expiración**:
    Cuando `EnemyCoinTimer` cae por debajo de `$0040` (últimos 64 frames / ~1 segundo), cicla los bits de atributo de sprite (líneas 8846-8858) generando un parpadeo cromático acelerado.
 4. **Expiración**:
-   En `_EnemyCoinTimerCheck` ([`prg.asm:1368-1395`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1368-L1395)), cuando el temporizador llega a cero:
+   En `_EnemyCoinTimerCheck` ([`prg.asm:1368-1395`](../asm/src/prg.asm#L1368-L1395)), cuando el temporizador llega a cero:
    - Limpia `MaybeTempCollectableFlag` y `MaybeTempCollectableFlag2`.
    - Restaura las paletas de sprites originales (`RestoreDefaultPalettesLimited`).
    - Reanuda la música del escenario (`RoomMusic`).
@@ -433,7 +433,7 @@ Ubicación: [`asm/src/prg.asm:8828-8860`](file:///c:/Users/kanel/Documents/mjk/a
 
 ### 4.5 Sistema de Bonificación Escalar por Recogida (`JT_98A4_multi`)
 
-Ubicación: [`asm/src/prg.asm:4032-4060`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4032-L4060).
+Ubicación: [`asm/src/prg.asm:4032-4060`](../asm/src/prg.asm#L4032-L4060).
 
 ```assembly
 JT_98A4_multi:
@@ -465,7 +465,7 @@ locret_98FB:
 ```
 
 #### Escala de Puntuación (`ScoreAddTable`, `asm/src/data.asm:848-879`)
-Cuando `AddScore` ([`prg.asm:2436-2485`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2436-L2485)) procesa el índice `A`:
+Cuando `AddScore` ([`prg.asm:2436-2485`](../asm/src/prg.asm#L2436-L2485)) procesa el índice `A`:
 - Moneda 1 (`byte_54 = 1`, `A = 2`): **200 puntos** (`Score_200`)
 - Moneda 2 (`byte_54 = 2`, `A = 3`): **300 puntos** (`Score_300`)
 - Moneda 3 (`byte_54 = 3`, `A = 4`): **500 puntos** (`Score_500`)
@@ -473,7 +473,7 @@ Cuando `AddScore` ([`prg.asm:2436-2485`](file:///c:/Users/kanel/Documents/mjk/as
 - Moneda 5 (`byte_54 = 5`, `A = 6`): **1,200 puntos** (`Score_1200`)
 - Moneda 6+ (`byte_54 = 6`, `A = 7`): **2,000 puntos** (`Score_2000`)
 
-En salas de bombas (Bomb Rooms) con multiplicador activo (`ScoreMultiplier` en `$03E3` con valores x2, x3, x4, x5), se aplica `MultipliedScoreTable` ([`data.asm:837-846`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L837-L846)), elevando las recompensas en base BCD.
+En salas de bombas (Bomb Rooms) con multiplicador activo (`ScoreMultiplier` en `$03E3` con valores x2, x3, x4, x5), se aplica `MultipliedScoreTable` ([`data.asm:837-846`](../asm/src/data.asm#L837-L846)), elevando las recompensas en base BCD.
 
 ---
 
@@ -483,20 +483,20 @@ En salas de bombas (Bomb Rooms) con multiplicador activo (`ScoreMultiplier` en `
 
 | Variable | Dirección RAM | Tamaño | Descripción Técnica |
 |:---|:---:|:---:|:---|
-| `PlayerLives` | `$03E4` | 1 byte | Contador de vidas de Jack. [`asm/src/ram.asm:1263`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1263) |
-| `ExtraLivesFound` | `$037A` | 1 byte | Total acumulado de vidas extra halladas (para cálculo de GDV final). [`asm/src/ram.asm:1154`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1154) |
-| `MaybeCollectedThing2` | `$0358` | 1 byte | Registro de eventos especiales: Bit 7 (`$80`) = 1UP pendiente; Bit 0 (`$01`) = 1UP procesado. [`asm/src/ram.asm:1047`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1047) |
-| `Collected1UPThisRoundFlag` | `$0359` | 1 byte | Bandera que impide recolectar más de un 1UP en el mismo round. [`asm/src/ram.asm:1048`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1048) |
-| `Show1UPSpriteTimer` | `$035A` | 1 byte | Temporizador (64 frames / `$40`) para el letrero flotante "1UP". [`asm/src/ram.asm:1049`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1049) |
+| `PlayerLives` | `$03E4` | 1 byte | Contador de vidas de Jack. [`asm/src/ram.asm:1263`](../asm/src/ram.asm#L1263) |
+| `ExtraLivesFound` | `$037A` | 1 byte | Total acumulado de vidas extra halladas (para cálculo de GDV final). [`asm/src/ram.asm:1154`](../asm/src/ram.asm#L1154) |
+| `MaybeCollectedThing2` | `$0358` | 1 byte | Registro de eventos especiales: Bit 7 (`$80`) = 1UP pendiente; Bit 0 (`$01`) = 1UP procesado. [`asm/src/ram.asm:1047`](../asm/src/ram.asm#L1047) |
+| `Collected1UPThisRoundFlag` | `$0359` | 1 byte | Bandera que impide recolectar más de un 1UP en el mismo round. [`asm/src/ram.asm:1048`](../asm/src/ram.asm#L1048) |
+| `Show1UPSpriteTimer` | `$035A` | 1 byte | Temporizador (64 frames / `$40`) para el letrero flotante "1UP". [`asm/src/ram.asm:1049`](../asm/src/ram.asm#L1049) |
 
 ---
 
 ### 5.2 Formato de la Variable `PlayerLives`
 
-- **Inicialización**: Se inicializa en `3` en `GameState_0_Init` ([`asm/src/prg.asm:356`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L356): `LDA #3; STA PlayerLives`).
-- **Decremento**: En caso de muerte, `DEC PlayerLives` ([`asm/src/prg.asm:1137`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1137)).
+- **Inicialización**: Se inicializa en `3` en `GameState_0_Init` ([`asm/src/prg.asm:356`](../asm/src/prg.asm#L356): `LDA #3; STA PlayerLives`).
+- **Decremento**: En caso de muerte, `DEC PlayerLives` ([`asm/src/prg.asm:1137`](../asm/src/prg.asm#L1137)).
 - **Visualización HUD (Formato BCD)**:
-  En `GameState_1_RoundIntro` ([`asm/src/prg.asm:7692-7698`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L7692-L7698)):
+  En `GameState_1_RoundIntro` ([`asm/src/prg.asm:7692-7698`](../asm/src/prg.asm#L7692-L7698)):
   ```assembly
   SpriteData   0, $10, $94, $60, $25 ;; Contador visual de vidas
   LDA PlayerLives
@@ -510,7 +510,7 @@ En salas de bombas (Bomb Rooms) con multiplicador activo (`ScoreMultiplier` en `
 
 `MaybeAward1UP` es la **única rutina en todo el código original** que ejecuta `INC PlayerLives`.
 
-Ubicación: [`asm/src/prg.asm:5797-5830`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5797-L5830).
+Ubicación: [`asm/src/prg.asm:5797-5830`](../asm/src/prg.asm#L5797-L5830).
 
 ```assembly
 MaybeAward1UP:
@@ -548,7 +548,7 @@ loc_A3A7:
 	; ... volcado a OAM de sprites ...
 ```
 
-- **Efecto de Sonido**: `Sound_1UP_Captive` (`$0A` / decimal 10, [`asm/src/defs.asm:95`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm#L95)).
+- **Efecto de Sonido**: `Sound_1UP_Captive` (`$0A` / decimal 10, [`asm/src/defs.asm:95`](../asm/src/defs.asm#L95)).
 
 ---
 
@@ -556,14 +556,14 @@ loc_A3A7:
 
 El Bit 7 (`#$80`) de `MaybeCollectedThing2` es activado exclusivamente por dos eventos:
 1. **Rescate del Hermano (Brother)**:
-   [`asm/src/prg.asm:4070-4072`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4070-L4072):
+   [`asm/src/prg.asm:4070-4072`](../asm/src/prg.asm#L4070-L4072):
    ```assembly
    JT_98A4_10_Brother:
    	LDA #$80
    	STA a:MaybeCollectedThing2  ; Fija #$80 -> Detona MaybeAward1UP
    ```
 2. **Recolección de la Placa Tecmo (Tecmo Plate)**:
-   [`asm/src/prg.asm:5177-5182`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5177-L5182):
+   [`asm/src/prg.asm:5177-5182`](../asm/src/prg.asm#L5177-L5182):
    ```assembly
    JTPickup_TecmoPlate:
    	LDA #Score_100000           ; 100,000 puntos
@@ -577,7 +577,7 @@ El Bit 7 (`#$80`) de `MaybeCollectedThing2` es activado exclusivamente por dos e
 
 ### 5.5 Comportamiento de la Extra Coin (`EnemyType_9_ExtraCoin`)
 
-Ubicación: [`asm/src/prg.asm:2528-2542`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L2528-L2542), [`5462-5478`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5462-L5478), [`4064-4066`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4064-L4066) y [`9532-9548`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L9532-L9548).
+Ubicación: [`asm/src/prg.asm:2528-2542`](../asm/src/prg.asm#L2528-L2542), [`5462-5478`](../asm/src/prg.asm#L5462-L5478), [`4064-4066`](../asm/src/prg.asm#L4064-L4066) y [`9532-9548`](../asm/src/prg.asm#L9532-L9548).
 
 1. **Condición de Aparición**:
    Cuando Jack recolecta 40 monedas (`GoldCoinsCollected >= 40`), `byte_364` adquiere el bit 2 (`#$04`). Al alcanzar la siguiente meta de puntuación en `AddScore`:
@@ -661,8 +661,8 @@ stateDiagram-v2
 
 ## 7. Referencias Cruzadas del Repositorio
 
-- [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm): Lógica de ejecución de input, colisiones, cofres y transmutaciones.
-- [`asm/src/data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm): Tablas de colores (`MightyLevelColors`), pulsaciones (`MightyLevelAPressesTable`) y puntuaciones (`ScoreAddTable`).
-- [`asm/src/ram.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm): Mapeo canónico de memoria RAM NES.
-- [`asm/src/defs.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm): Constantes enum de sonido (`Sound_...`), tipos de entidad y puntuación.
-- [`research/RES-023-chests-and-secret-blocks.md`](file:///c:/Users/kanel/Documents/mjk/research/RES-023-chests-and-secret-blocks.md): Análisis complementario de metatiles y bloques ocultos.
+- [`asm/src/prg.asm`](../asm/src/prg.asm): Lógica de ejecución de input, colisiones, cofres y transmutaciones.
+- [`asm/src/data.asm`](../asm/src/data.asm): Tablas de colores (`MightyLevelColors`), pulsaciones (`MightyLevelAPressesTable`) y puntuaciones (`ScoreAddTable`).
+- [`asm/src/ram.asm`](../asm/src/ram.asm): Mapeo canónico de memoria RAM NES.
+- [`asm/src/defs.asm`](../asm/src/defs.asm): Constantes enum de sonido (`Sound_...`), tipos de entidad y puntuación.
+- [`research/RES-023-chests-and-secret-blocks.md`](../research/RES-023-chests-and-secret-blocks.md): Análisis complementario de metatiles y bloques ocultos.

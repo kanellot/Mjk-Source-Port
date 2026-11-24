@@ -11,7 +11,7 @@
 
 ## 1. Objetivo y Preguntas de Investigación
 
-El propósito de esta investigación es desensamblar, formalizar matemáticamente y documentar sin asunciones el sistema canónico de detección y resolución de colisiones del protagonista (Jack) en *Mighty Bomb Jack* (NES), analizando el código ensamblador 6502 en [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm) y las tablas de datos en [`asm/src/data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm).
+El propósito de esta investigación es desensamblar, formalizar matemáticamente y documentar sin asunciones el sistema canónico de detección y resolución de colisiones del protagonista (Jack) en *Mighty Bomb Jack* (NES), analizando el código ensamblador 6502 en [`asm/src/prg.asm`](../asm/src/prg.asm) y las tablas de datos en [`asm/src/data.asm`](../asm/src/data.asm).
 
 ### Preguntas Clave:
 1. **Puntos de Sondeo (9 Probes)**: ¿Cuáles son las coordenadas relativas $(dX, dY)$, el orden canónico y el propósito específico de cada una de las 9 sondas definidas en `byte_A3D8`?
@@ -27,20 +27,20 @@ El propósito de esta investigación es desensamblar, formalizar matemáticament
 
 | Archivo | Rango de Líneas | Símbolos / Funciones Analizadas | Propósito en el Motor |
 | :--- | :--- | :--- | :--- |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5863-L5872) | `5863 - 5872` | `byte_A3D8` | Tabla de desplazamientos relativos $(dX, dY)$ de las 9 sondas de colisión. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5873-L5883) | `5873 - 5883` | `byte_A3EA` | Tabla de máscaras de solidez por cuadrantes $8 \times 8$ para metatiles `$38..$4B`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5894-L5903) | `5894 - 5903` | `byte_A406` | Máscaras de bits para acumulación de resultados de sondas en `byte_30F`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L3871-L3900) | `3871 - 3900` | `loc_97CA` (en `HandleSpawnsAndMore`) | Secuencia principal de sondeo de centro (sonda 0) y disparo de colisiones. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4152-L4226) | `4152 - 4226` | `sub_9965`, `loc_99BB`, `loc_99DB` | Programación de sondas verticales/laterales y compresión en `CollisionFlag`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4230-L4247) | `4230 - 4247` | `sub_99EA`, `loc_99F4` | Despacho de pares de sondas para salas estáticas (`RF_ScrollStop`). |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4251-L4314) | `4251 - 4314` | `sub_9A03` | Cálculo de coordenadas de sondeo mundo/pantalla y llamada a comprobación. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4480-L4611) | `4480 - 4611` | `sub_9B6A`, `loc_9BBB`, `loc_9BEB`, `loc_9C05` | Resolución de solidez de metatile, muerte por fuego y acumulación en `byte_30F`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L4615-L4706) | `4615 - 4706` | `BigBeefySubHandlesBGColliding` | Detección de cruce de celda de $8$ px y activación de `byte_330`. |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5530-L5555) | `5530 - 5555` | `sub_A1B9`, `loc_A1E2` | Respuesta a impacto de cabeza con techo (fuerza caída y expulsa $Y$). |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5559-L5609) | `5559 - 5609` | `sub_A1EB`, `loc_A20A`, `loc_A224` | Respuesta a contacto con suelo/plataforma (alinea $Y$, resetea caída). |
-| [`asm/src/prg.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L1547-L1562) | `1547 - 1562` | `loc_8A06`, `loc_8A10` | Bloqueo de velocidad horizontal $X$ si `CollisionFlag & 1` o `2` está activo. |
-| [`asm/src/data.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L598-L639) | `598 - 639` | `TileAttributeTable` | Tabla de atributos de 2 bits por metatile (160 metatiles). |
-| [`asm/src/ram.asm`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1223-L1246) | `1223 - 1246` | `PlayerStruct` a `PlayerYPosHi` | Distribución en RAM de la estructura del jugador (`$03CE-$03D9`). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L5863-L5872) | `5863 - 5872` | `byte_A3D8` | Tabla de desplazamientos relativos $(dX, dY)$ de las 9 sondas de colisión. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L5873-L5883) | `5873 - 5883` | `byte_A3EA` | Tabla de máscaras de solidez por cuadrantes $8 \times 8$ para metatiles `$38..$4B`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L5894-L5903) | `5894 - 5903` | `byte_A406` | Máscaras de bits para acumulación de resultados de sondas en `byte_30F`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L3871-L3900) | `3871 - 3900` | `loc_97CA` (en `HandleSpawnsAndMore`) | Secuencia principal de sondeo de centro (sonda 0) y disparo de colisiones. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L4152-L4226) | `4152 - 4226` | `sub_9965`, `loc_99BB`, `loc_99DB` | Programación de sondas verticales/laterales y compresión en `CollisionFlag`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L4230-L4247) | `4230 - 4247` | `sub_99EA`, `loc_99F4` | Despacho de pares de sondas para salas estáticas (`RF_ScrollStop`). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L4251-L4314) | `4251 - 4314` | `sub_9A03` | Cálculo de coordenadas de sondeo mundo/pantalla y llamada a comprobación. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L4480-L4611) | `4480 - 4611` | `sub_9B6A`, `loc_9BBB`, `loc_9BEB`, `loc_9C05` | Resolución de solidez de metatile, muerte por fuego y acumulación en `byte_30F`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L4615-L4706) | `4615 - 4706` | `BigBeefySubHandlesBGColliding` | Detección de cruce de celda de $8$ px y activación de `byte_330`. |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L5530-L5555) | `5530 - 5555` | `sub_A1B9`, `loc_A1E2` | Respuesta a impacto de cabeza con techo (fuerza caída y expulsa $Y$). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L5559-L5609) | `5559 - 5609` | `sub_A1EB`, `loc_A20A`, `loc_A224` | Respuesta a contacto con suelo/plataforma (alinea $Y$, resetea caída). |
+| [`asm/src/prg.asm`](../asm/src/prg.asm#L1547-L1562) | `1547 - 1562` | `loc_8A06`, `loc_8A10` | Bloqueo de velocidad horizontal $X$ si `CollisionFlag & 1` o `2` está activo. |
+| [`asm/src/data.asm`](../asm/src/data.asm#L598-L639) | `598 - 639` | `TileAttributeTable` | Tabla de atributos de 2 bits por metatile (160 metatiles). |
+| [`asm/src/ram.asm`](../asm/src/ram.asm#L1223-L1246) | `1223 - 1246` | `PlayerStruct` a `PlayerYPosHi` | Distribución en RAM de la estructura del jugador (`$03CE-$03D9`). |
 
 ---
 
@@ -104,7 +104,7 @@ byte_A3D8:
 
 ### 4.1. Estructura de Entidad y Correspondencia en RAM
 
-La estructura del jugador reside en `$03CE` ([`asm/src/ram.asm:1223-1246`](file:///c:/Users/kanel/Documents/mjk/asm/src/ram.asm#L1223-L1246)) y comparte indexación idéntica con los enemigos (`EnemyStruct_*` en [`asm/src/defs.asm:161-175`](file:///c:/Users/kanel/Documents/mjk/asm/src/defs.asm#L161-L175)):
+La estructura del jugador reside en `$03CE` ([`asm/src/ram.asm:1223-1246`](../asm/src/ram.asm#L1223-L1246)) y comparte indexación idéntica con los enemigos (`EnemyStruct_*` en [`asm/src/defs.asm:161-175`](../asm/src/defs.asm#L161-L175)):
 
 - Offset `+0` (`$03CE`): `PlayerStruct` (Estado, bits de salto/vuelo/muerte).
 - Offset `+1` (`$03CF`): `CollisionFlag` (**Registro maestro de colisiones**).
@@ -398,7 +398,7 @@ ENDM
 
 ### 6.2. Catálogo y Clasificación de Metatiles Usados en la Sala 1
 
-La Sala 1 se decodifica a partir de las mitades de pantalla `h0 = $34` y `h1 = $22` ([`asm/src/data.asm:923`](file:///c:/Users/kanel/Documents/mjk/asm/src/data.asm#L923)), conformando una matriz de $16 \times 15$ metatiles ($256 \times 240$ px).
+La Sala 1 se decodifica a partir de las mitades de pantalla `h0 = $34` y `h1 = $22` ([`asm/src/data.asm:923`](../asm/src/data.asm#L923)), conformando una matriz de $16 \times 15$ metatiles ($256 \times 240$ px).
 
 | Metatile ID | `TileAttributeTable` | Solidez por Sonda (`sub_9B6A`) | Clasificación Arquitectónica | Cuadrantes $TL, TR, BL, BR$ |
 | :---: | :---: | :--- | :--- | :---: |
@@ -438,7 +438,7 @@ Fila 14:  2D 2D 2D 2D 2D 2F 2F 2F | 00 00 00 00 00 5E 00 00  <-- Suelo Inferior
 
 ## 7. Catálogo Completo de Metatiles con Solidez Parcial (`byte_A3EA`)
 
-Para metatiles en el rango `$38..$4B`, la tabla `byte_A3EA` ([`asm/src/prg.asm:5873-5883`](file:///c:/Users/kanel/Documents/mjk/asm/src/prg.asm#L5873-L5883)) define la solidez a nivel de cuadrantes de $8 \times 8$ píxeles:
+Para metatiles en el rango `$38..$4B`, la tabla `byte_A3EA` ([`asm/src/prg.asm:5873-5883`](../asm/src/prg.asm#L5873-L5883)) define la solidez a nivel de cuadrantes de $8 \times 8$ píxeles:
 
 ```assembly
 ; asm/src/prg.asm:5873-5883

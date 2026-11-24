@@ -64,15 +64,19 @@ bool MjkEnemy_SpawnCollectible(MjkEnemyManager* mgr, MjkEnemyType type, uint8_t 
                 e->type = MJK_ENEMY_MUMMY;
                 e->spawn_flash_timer = 0x20u;
                 MjkEnemyInternal_InitMummyFall(e, mgr->transform_reload);
+                if (mgr->transmute_timer > 0u) {
+                    e->transmuted = true;
+                }
                 mgr->alive_count++;
             } else {
                 e->type = (uint8_t)type;
                 if (type == MJK_ENEMY_POWER_COIN) {
                     e->vel_y = MjkQ8_FromInt(-1);
-                    e->ai_timer = 16u;
+                    e->ai_timer = 8u; /* ObjInit_8_PowerCoin (prg.asm:9485-9488): sube 8 px */
                     e->ai_dir = 0u;
                 } else if (type == MJK_ENEMY_BALLOON) {
                     e->vel_y = MjkQ8_FromInt(-1);
+                    e->spawn_flash_timer = 0x0Cu; /* ObjInit_C_Balloon (prg.asm:9556): 12f de inmunidad */
                 } else if (type == MJK_ENEMY_BONUS_COIN || type == MJK_ENEMY_EXTRA_COIN) {
                     e->falling = true;
                     e->jump_accum = 0x4000u;
@@ -130,7 +134,8 @@ bool MjkEnemyInternal_StepCollectible(MjkEnemy* e, const MjkGame* game) {
                 e->falling = false;
                 e->vel_y = 0;
                 e->pos_y = (mjk_uq8_8_t)(e->pos_y & 0xF800u);
-                e->vel_x = (ex >= game->jack_x) ? (mjk_q8_8_t)(-spd) : spd;
+                /* sub_BB39 (prg.asm:9245-9262): arranca a ±0x0080 hasta el primer rebote en pared. */
+                e->vel_x = (ex >= game->jack_x) ? (mjk_q8_8_t)(-0x0080) : (mjk_q8_8_t)0x0080;
             } else if ((cf & 0x01u) != 0u) {
                 e->vel_x = (mjk_q8_8_t)(-spd);
             } else if ((cf & 0x02u) != 0u) {
@@ -165,27 +170,28 @@ bool MjkEnemyInternal_StepCollectible(MjkEnemy* e, const MjkGame* game) {
 
 void MjkEnemyInternal_HandleTransmutedPickup(MjkEnemy* e, MjkEnemyManager* mgr,
                                              MjkGame* game, uint8_t ex, uint8_t ey) {
-    static const MjkScoreId k_chain[7] = {
-        MJK_SCORE_100, MJK_SCORE_200, MJK_SCORE_300, MJK_SCORE_500,
+    (void)ex;
+    (void)ey;
+    /* JT_98A4_multi (prg.asm:4035-4046): racha empieza en Score_200 -> 200..2000 sin popup OAM. */
+    static const MjkScoreId k_chain[6] = {
+        MJK_SCORE_200, MJK_SCORE_300, MJK_SCORE_500,
         MJK_SCORE_800, MJK_SCORE_1200, MJK_SCORE_2000
     };
-    uint8_t s_idx = (mgr->transmute_streak < 7u) ? mgr->transmute_streak : 6u;
-    uint8_t fx = (ex >= 8u) ? (uint8_t)(ex - 8u) : 0u;
-    uint8_t fy = (ey >= 8u) ? (uint8_t)(ey - 8u) : 0u;
+    uint8_t s_idx = (mgr->transmute_streak < 6u) ? mgr->transmute_streak : 5u;
     MjkGame_AddScore(game, k_chain[s_idx]);
     MjkGame_QueueSound(game, MJK_SND_COIN_COLLECTED);
-    game->gold_coins++;
-    MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, fx, fy,
-                              k_chain[s_idx], game->score_multiplier, game->room.is_bomb_room);
-    if (mgr->transmute_streak < 6u) { mgr->transmute_streak++; }
+    if (game->gold_coins < 40u) {
+        game->gold_coins++;
+    }
+    if (mgr->transmute_streak < 5u) { mgr->transmute_streak++; }
     e->active = false;
     if (mgr->alive_count > 0u) { mgr->alive_count--; }
 }
 
 void MjkEnemyInternal_HandleCollectiblePickup(MjkEnemy* e, MjkEnemyManager* mgr,
                                               MjkGame* game, uint8_t ex, uint8_t ey) {
-    uint8_t fx = (ex >= 8u) ? (uint8_t)(ex - 8u) : 0u;
-    uint8_t fy = (ey >= 8u) ? (uint8_t)(ey - 8u) : 0u;
+    (void)ex;
+    (void)ey;
     switch (e->type) {
         case MJK_ENEMY_POWER_COIN:
             MjkEnemy_ActivatePowerCoinEx(mgr, game);
@@ -193,6 +199,8 @@ void MjkEnemyInternal_HandleCollectiblePickup(MjkEnemy* e, MjkEnemyManager* mgr,
             break;
         case MJK_ENEMY_EXTRA_COIN:
         case MJK_ENEMY_BROTHER:
+            /* JT_98A4_9_ExtraCoin / JT_98A4_10_Brother (prg.asm:4064-4076): +3000 pts (Score_1E) + 1UP. */
+            MjkGame_AddScore(game, MJK_SCORE_1E_X);
             game->lives++;
             game->extra_lives_found++;
             game->collected_1up = 1u;
@@ -205,35 +213,23 @@ void MjkEnemyInternal_HandleCollectiblePickup(MjkEnemy* e, MjkEnemyManager* mgr,
                 game->gdv_bcd = MjkGame_AddGdvBcd(game->gdv_bcd, 1u);
                 MjkGame_AddScore(game, MJK_SCORE_50000);
                 MjkGame_QueueSound(game, MJK_SND_COIN_COLLECTED);
-                MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, fx, fy,
-                                          MJK_SCORE_50000, game->score_multiplier,
-                                          game->room.is_bomb_room);
                 e->active = false;
             }
             break;
         case MJK_ENEMY_CAPTIVE:
             MjkGame_AddScore(game, MJK_SCORE_2000);
             MjkGame_QueueSound(game, MJK_SND_BONUS_STATUE);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, fx, fy,
-                                      MJK_SCORE_2000, game->score_multiplier,
-                                      game->room.is_bomb_room);
             e->active = false;
             break;
         case MJK_ENEMY_BALLOON:
             MjkGame_AddScore(game, MJK_SCORE_10000);
             MjkGame_QueueSound(game, MJK_SND_BOMB_LIT);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, fx, fy,
-                                      MJK_SCORE_10000, game->score_multiplier,
-                                      game->room.is_bomb_room);
             e->active = false;
             break;
         case MJK_ENEMY_BONUS_COIN:
             if (game->score_multiplier < 4u) { game->score_multiplier++; }
             MjkGame_AddScore(game, MJK_SCORE_1000);
             MjkGame_QueueSound(game, MJK_SND_COIN_COLLECTED);
-            MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS, fx, fy,
-                                      MJK_SCORE_1000, game->score_multiplier,
-                                      game->room.is_bomb_room);
             e->active = false;
             break;
         default:

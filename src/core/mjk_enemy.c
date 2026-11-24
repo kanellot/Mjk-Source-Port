@@ -34,24 +34,29 @@ static uint8_t enemy_gameido_div(const MjkAssetPackage* pkg, uint8_t speed_tier)
 }
 
 uint8_t MjkEnemyInternal_ArchetypeSpriteId(uint8_t t, uint8_t anim, bool facing_left) {
-    uint8_t phase = (uint8_t)((anim >> 3u) & 1u);
+    (void)facing_left;
+    uint8_t step6 = (uint8_t)(anim / 6u);
+    uint8_t phase = (uint8_t)(step6 & 1u);
+    static const uint8_t k_hanezo[3] = { 0x12u, 0x13u, 0x13u };
+    static const uint8_t k_extra[3]  = { 0x1Bu, 0x1Cu, 0x1Du };
+    static const uint8_t k_bonus[3]  = { 0x19u, 0x1Au, 0x1Du };
     switch (t) {
         case MJK_ENEMY_MUMMY:
         case MJK_ENEMY_MUMMY1:
         case MJK_ENEMY_MUMMY2:     return (uint8_t)(0x0Eu + phase);
-        case MJK_ENEMY_HANEZO:     return (uint8_t)(0x12u + phase);
+        case MJK_ENEMY_HANEZO:     return k_hanezo[step6 % 3u];
         case MJK_ENEMY_GEJISHOGUN: return (uint8_t)(0x0Cu + phase);
-        case MJK_ENEMY_GAMEIDO:    return (uint8_t)(0x16u + phase);
+        case MJK_ENEMY_GAMEIDO:    return (uint8_t)(0x16u + (step6 % 3u));
         case MJK_ENEMY_DOKURON:    return (uint8_t)(0x14u + phase);
         case MJK_ENEMY_DESUFA:     return 0x07u;
-        case MJK_ENEMY_HORUS:      return facing_left ? 0x08u : 0x09u;
+        case MJK_ENEMY_HORUS:      return (uint8_t)(0x08u + phase);
         case MJK_ENEMY_POWER_COIN: return 0x20u;
-        case MJK_ENEMY_EXTRA_COIN: return 0x1Bu;
+        case MJK_ENEMY_EXTRA_COIN: return k_extra[step6 % 3u];
         case MJK_ENEMY_SECRET_COIN:return 0x1Fu;
         case MJK_ENEMY_CAPTIVE:
         case MJK_ENEMY_BROTHER:    return 0x23u;
         case MJK_ENEMY_BALLOON:    return 0x24u;
-        case MJK_ENEMY_BONUS_COIN: return 0x19u;
+        case MJK_ENEMY_BONUS_COIN: return k_bonus[step6 % 3u];
         default:                   return 0x0Eu;
     }
 }
@@ -65,7 +70,8 @@ uint8_t MjkEnemyInternal_ArchetypePalette(uint8_t t) {
         case MJK_ENEMY_SECRET_COIN:
         case MJK_ENEMY_BALLOON:
         case MJK_ENEMY_BONUS_COIN: return 0u;
-        case MJK_ENEMY_POWER_COIN: return 1u;
+        case MJK_ENEMY_POWER_COIN:
+        case MJK_ENEMY_BROTHER:    return 1u;
         default:                   return 3u;
     }
 }
@@ -184,6 +190,10 @@ static void step_mummy(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* 
             e->falling = false;
             e->vel_y = 0;
             e->pos_y = (mjk_uq8_8_t)(e->pos_y & 0xF800u);
+            if ((game->camera.room_flags & (MJK_RF_SINGLE_SCREEN | MJK_RF_SCROLL_STOP)) != 0u &&
+                MjkUQ8_Int(e->pos_y) >= 0xE0u) {
+                e->pos_y = MjkUQ8_FromInt(0xD8u);
+            }
             e->vel_x = (ex >= game->jack_x) ? (mjk_q8_8_t)(-0x0080) : (mjk_q8_8_t)0x0080;
             e->edge_turned = false;
             if (game->room.is_bomb_room && MjkUQ8_Int(e->pos_y) >= 0xD8u) {
@@ -199,7 +209,8 @@ static void step_mummy(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* 
             e->edge_turned = false;
         }
     } else if (e->falling) {
-        uint32_t acc = (uint32_t)e->jump_accum + 0x00F0u;
+        /* ObjCode_0_Mummy -> sub_BA9E deja X=4 -> word_C163[1] = $0160 (prg.asm:9267, 1658-1676). */
+        uint32_t acc = (uint32_t)e->jump_accum + 0x0160u;
         if ((acc >> 8u) >= 0x80u) { acc = (0x7Fu << 8u) | (acc & 0xFFu); }
         e->jump_accum = (uint16_t)acc;
         uint8_t hi = (uint8_t)(e->jump_accum >> 8u);
@@ -247,11 +258,17 @@ static void step_horus(MjkEnemy* e, const MjkGame* game, mjk_q8_8_t spd, uint8_t
 
 static void step_enemy_ai(MjkEnemy* e, const MjkGame* game, const MjkEnemyManager* mgr) {
     uint8_t ex = MjkUQ8_Int(e->pos_x), ey = MjkUQ8_Int(e->pos_y);
-    uint8_t cf = MjkEnemyInternal_CalcCollisionFlags(game, ex, ey);
+    uint8_t raw_cf = MjkEnemyInternal_CalcCollisionFlags(game, ex, ey);
+    /* sub_9965 (prg.asm:4171-4200): filtrar sondas según sentido de velocidad para evitar re-rebotes subpíxel. */
+    uint8_t cf = raw_cf;
+    if (e->vel_x > 0) { cf &= (uint8_t)~EF_LEFT; }
+    else if (e->vel_x < 0) { cf &= (uint8_t)~EF_RIGHT; }
+    if (e->vel_y > 0) { cf &= (uint8_t)~EF_CEIL; }
+    else if (e->vel_y < 0) { cf &= (uint8_t)~EF_FLOOR; }
     mjk_q8_8_t spd = MjkEnemyInternal_SpeedQ8(game->pkg, mgr->speed_tier);
 
     switch (e->type) {
-        case MJK_ENEMY_MUMMY: step_mummy(e, game, mgr, cf); break;
+        case MJK_ENEMY_MUMMY: step_mummy(e, game, mgr, raw_cf); break;
         case MJK_ENEMY_HANEZO:
             if ((cf & EF_RIGHT) != 0u) { e->vel_x = (mjk_q8_8_t)(-spd); }
             else if ((cf & EF_LEFT) != 0u) { e->vel_x = spd; }
@@ -298,7 +315,8 @@ void MjkEnemy_InitForRoom(MjkEnemyManager* mgr, const MjkAssetPackage* pkg,
     if (!mgr) { return; }
     memset(mgr, 0, sizeof(*mgr));
     mgr->spawn_reload = 0xA0u;
-    mgr->transform_reload = is_bomb_room ? 0x40u : 0x80u;
+    /* LoadDifficultySettings (prg.asm:8298-8306): Bomb Room -> row[2] ($80), normal -> row[3] ($40). */
+    mgr->transform_reload = is_bomb_room ? 0x80u : 0x40u;
     if (pkg) {
         uint8_t tier = (uint8_t)(last_bomb_cleared & 0x0Fu);
         const uint8_t* diff = MjkAssets_ResolveCpuPtr(pkg, MJK_ADDR_DIFFICULTY_TABLE, (size_t)(tier + 1u) * 4u);
@@ -306,19 +324,21 @@ void MjkEnemy_InitForRoom(MjkEnemyManager* mgr, const MjkAssetPackage* pkg,
             const uint8_t* row = diff + ((size_t)tier * 4u);
             mgr->speed_tier = row[0];
             mgr->spawn_reload = row[1];
-            mgr->transform_reload = is_bomb_room ? row[3] : row[2];
+            mgr->transform_reload = is_bomb_room ? row[2] : row[3];
         }
     }
     mgr->spawn_timer = mgr->spawn_reload;
 }
 
-static bool try_spawn_candidate(uint8_t yx, bool is_right_room, int32_t scroll_x,
+static bool try_spawn_candidate(uint8_t yx, bool is_neighbor, bool is_horizontal,
+                                int32_t scroll_x, int32_t scroll_y,
                                 uint8_t* out_sx, uint8_t* out_sy) {
     if (yx == 0x00u) { return false; }
-    int32_t screen_x = (int32_t)(((yx & 0x0Fu) << 4u) + 8u) + (is_right_room ? 256 : 0) - scroll_x;
-    if (screen_x < 0 || screen_x >= 256) { return false; }
+    int32_t screen_x = (int32_t)(((yx & 0x0Fu) << 4u) + 8u) + ((is_neighbor && is_horizontal) ? 256 : 0) - scroll_x;
+    int32_t screen_y = (int32_t)((yx & 0xF0u) + 8u) + ((is_neighbor && !is_horizontal) ? 240 : 0) - scroll_y;
+    if (screen_x < 0 || screen_x >= 256 || screen_y < 0 || screen_y >= 240) { return false; }
     *out_sx = (uint8_t)screen_x;
-    *out_sy = (uint8_t)((yx & 0xF0u) + 8u);
+    *out_sy = (uint8_t)screen_y;
     return true;
 }
 
@@ -329,21 +349,30 @@ static uint16_t manhattan_dist(uint8_t ax, uint8_t ay, uint8_t bx, uint8_t by) {
 
 static void spawn_mummy(MjkEnemyManager* mgr, const MjkGame* game) {
     int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
-    uint16_t wx = (uint16_t)MjkUQ8_Int(game->player.pos_x) + (uint16_t)scroll_x;
-    bool is_right = (wx >= 256u && game->camera.neighbor_room_id != 0u);
-    uint8_t rid = is_right ? game->camera.neighbor_room_id : game->current_room_id;
+    int32_t scroll_y = (int32_t)(game->camera.scroll_y_fixed >> 8);
+    int32_t wx = (int32_t)MjkUQ8_Int(game->player.pos_x) + scroll_x;
+    int32_t wy = (int32_t)MjkUQ8_Int(game->player.pos_y) + scroll_y;
+    bool horiz = game->room.is_horizontal;
+    bool is_neighbor = (game->camera.neighbor_room_id != 0u) &&
+                       (horiz ? (wx >= 256) : (wy >= 240));
+    uint8_t rid = is_neighbor ? game->camera.neighbor_room_id : game->current_room_id;
     const uint8_t* sp = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_ENEMY_SPAWN_POS, 512u);
     if (!sp || sp[(size_t)rid * 2u] == 0x00u) { return; }
 
     uint8_t sx0 = 0u, sy0 = 0u, sx1 = 0u, sy1 = 0u;
-    bool v0 = try_spawn_candidate(sp[(size_t)rid * 2u], is_right, scroll_x, &sx0, &sy0);
-    bool v1 = try_spawn_candidate(sp[(size_t)rid * 2u + 1u], is_right, scroll_x, &sx1, &sy1);
+    bool v0 = try_spawn_candidate(sp[(size_t)rid * 2u], is_neighbor, horiz, scroll_x, scroll_y, &sx0, &sy0);
+    bool v1 = try_spawn_candidate(sp[(size_t)rid * 2u + 1u], is_neighbor, horiz, scroll_x, scroll_y, &sx1, &sy1);
     if (!v0 && !v1) { return; }
 
     uint8_t sx = v0 ? sx0 : sx1, sy = v0 ? sy0 : sy1;
-    if (v0 && v1 && manhattan_dist(sx1, sy1, game->jack_x, game->jack_y) >
-                    manhattan_dist(sx0, sy0, game->jack_x, game->jack_y)) {
-        sx = sx1; sy = sy1;
+    if (v0 && v1) {
+        uint16_t d0 = manhattan_dist(sx0, sy0, game->jack_x, game->jack_y);
+        uint16_t d1 = manhattan_dist(sx1, sy1, game->jack_x, game->jack_y);
+        /* ChooseEnemySpawnPoint (prg.asm:8731-8745): más lejano en SingleScreen, más cercano con scroll. */
+        bool pick_1 = ((game->camera.room_flags & MJK_RF_SINGLE_SCREEN) != 0u) ? (d1 > d0) : (d1 < d0);
+        if (pick_1) {
+            sx = sx1; sy = sy1;
+        }
     }
     MjkEnemy_SpawnCollectible(mgr, MJK_ENEMY_MUMMY, sx, sy);
 }
@@ -407,8 +436,11 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
                 e->pos_x = (mjk_uq8_8_t)nx;
                 e->pos_y = (mjk_uq8_8_t)ny;
             }
-        } else if (!MjkEnemyInternal_StepCollectible(e, game)) {
-            continue;
+        } else {
+            if (e->spawn_flash_timer > 0u) { e->spawn_flash_timer--; }
+            if (!MjkEnemyInternal_StepCollectible(e, game)) {
+                continue;
+            }
         }
 
         uint8_t ex = MjkUQ8_Int(e->pos_x);
@@ -419,17 +451,29 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
             if (e->transmuted) {
                 MjkEnemyInternal_HandleTransmutedPickup(e, mgr, game, ex, ey);
             } else if (!MjkEnemyInternal_IsMonsterType(e->type)) {
-                MjkEnemyInternal_HandleCollectiblePickup(e, mgr, game, ex, ey);
+                if (e->type != MJK_ENEMY_BALLOON || e->spawn_flash_timer == 0u) {
+                    MjkEnemyInternal_HandleCollectiblePickup(e, mgr, game, ex, ey);
+                }
             } else if (!game->player.is_dying && e->spawn_flash_timer == 0u &&
                        mgr->post_transmute_grace == 0u) {
                 game->player.is_dying = true;
                 game->player.death_grounded = false;
                 game->player.death_timer = 0u;
                 game->player.vel_x = 0;
+                MjkGame_QueueSound(game, MJK_SND_SILENCE);
                 MjkGame_QueueSound(game, MJK_SND_DEATH);
             }
         }
-        if (e->active) { e->sprite_id = MjkEnemyInternal_ArchetypeSpriteId(e->type, e->anim_timer, e->facing_left); }
+        if (e->active) {
+            uint8_t step6 = (uint8_t)(e->anim_timer / 6u);
+            if (e->type == MJK_ENEMY_MUMMY && e->falling) {
+                e->sprite_id = (uint8_t)(0x10u + (step6 & 1u));
+            } else if (e->type == MJK_ENEMY_HORUS && e->vel_y != 0 && e->vel_x == 0) {
+                e->sprite_id = (uint8_t)(0x0Au + (step6 & 1u));
+            } else {
+                e->sprite_id = MjkEnemyInternal_ArchetypeSpriteId(e->type, e->anim_timer, e->facing_left);
+            }
+        }
     }
     return MJK_ACTION_CONTINUE;
 }
@@ -451,7 +495,18 @@ uint8_t MjkEnemy_RenderOam(const MjkEnemyManager* mgr, const MjkAssetPackage* pk
         } else if (MjkEnemyInternal_IsMonsterType(e->type) && e->spawn_flash_timer > 16u) {
             slot = MjkPpu_WriteMetasprite(ppu, pkg, 0x25u, ex, ey, 0x00u, slot);
         } else {
-            uint8_t attr = (uint8_t)((e->attr_base & 3u) | (e->facing_left ? 0x00u : 0x04u));
+            uint8_t step6 = (uint8_t)(e->anim_timer / 6u);
+            uint8_t flip_bits = 0x00u;
+            if (e->type == MJK_ENEMY_MUMMY && !e->facing_left) {
+                flip_bits = 0x04u;
+            } else if (e->type == MJK_ENEMY_HANEZO && (step6 % 3u) == 2u) {
+                flip_bits = 0x04u;
+            } else if (e->type == MJK_ENEMY_HORUS && e->vel_x > 0) {
+                flip_bits = 0x04u;
+            } else if (e->type == MJK_ENEMY_DESUFA && (step6 & 1u) != 0u) {
+                flip_bits = 0x08u;
+            }
+            uint8_t attr = (uint8_t)((e->attr_base & 3u) | flip_bits);
             slot = MjkPpu_WriteMetasprite(ppu, pkg, e->sprite_id, ex, ey, attr, slot);
         }
     }

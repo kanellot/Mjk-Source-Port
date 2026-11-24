@@ -322,8 +322,8 @@ static void test_power_coin_rises_above_chest(const MjkAssetPackage* pkg) {
     }
     if (!g.enemies.slots[0].active ||
         g.enemies.slots[0].type != MJK_ENEMY_POWER_COIN ||
-        MjkUQ8_Int(g.enemies.slots[0].pos_y) != 0x68u) {
-        fprintf(stderr, "[FAIL] Power Coin no subio 16 px sobre el cofre (y=0x%02X)\n",
+        MjkUQ8_Int(g.enemies.slots[0].pos_y) != 0x70u) {
+        fprintf(stderr, "[FAIL] Power Coin no subio 8 px sobre el cofre (y=0x%02X)\n",
                 MjkUQ8_Int(g.enemies.slots[0].pos_y));
         g_failures++;
     }
@@ -361,19 +361,21 @@ static void test_collectibles_secret_captive_balloon_bonus(const MjkAssetPackage
         g_failures++;
     }
 
-    /* Balloon floats up and gives +10000 + MJK_SND_BOMB_LIT */
+    /* Balloon floats up (12f immunity) and gives +10000 + MJK_SND_BOMB_LIT */
     g.jack_x = 0x20u;
     g.jack_y = 0x20u;
     MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_BALLOON, 0x80u, 0x80u);
-    MjkEnemy_UpdateAll(&g.enemies, &g);
-    MjkEnemy_UpdateAll(&g.enemies, &g);
-    if (MjkUQ8_Int(g.enemies.slots[0].pos_y) != 0x7Eu) {
-        fprintf(stderr, "[FAIL] Balloon no floto hacia arriba\n");
+    for (int f = 0; f < 12; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (MjkUQ8_Int(g.enemies.slots[0].pos_y) != 0x74u) {
+        fprintf(stderr, "[FAIL] Balloon no floto hacia arriba (y=0x%02X)\n",
+                MjkUQ8_Int(g.enemies.slots[0].pos_y));
         g_failures++;
     }
     g.sound_queue_count = 0u;
     g.jack_x = 0x80u;
-    g.jack_y = 0x7Eu;
+    g.jack_y = 0x74u;
     MjkEnemy_UpdateAll(&g.enemies, &g);
     if (!has_sound(&g, MJK_SND_BOMB_LIT) || g.score_bcd[2] != 0x06u) {
         fprintf(stderr, "[FAIL] Balloon no dio +10000 / SFX (s2=0x%02X)\n", g.score_bcd[2]);
@@ -383,7 +385,7 @@ static void test_collectibles_secret_captive_balloon_bonus(const MjkAssetPackage
     /* BonusCoin */
     g.sound_queue_count = 0u;
     g.score_multiplier = 0u;
-    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_BONUS_COIN, 0x80u, 0x7Eu);
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_BONUS_COIN, 0x80u, 0x74u);
     MjkEnemy_UpdateAll(&g.enemies, &g);
     if (g.score_multiplier != 1u || !has_sound(&g, MJK_SND_COIN_COLLECTED)) {
         fprintf(stderr, "[FAIL] BonusCoin no incremento multiplicador / SFX\n");

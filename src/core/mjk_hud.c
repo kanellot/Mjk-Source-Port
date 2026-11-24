@@ -66,6 +66,7 @@ void MjkHud_AddScore(MjkGame* game,
         game->score_5000_mark = mark;
         if (game->room.is_bomb_room && game->score_multiplier < 4u) {
             if (game->gold_coins >= 40u) {
+                game->gold_coins = 0u; /* AddScore (prg.asm:2531-2536): resetear tras ExtraCoin. */
                 if (out_spawn_extra_coin) { *out_spawn_extra_coin = true; }
             } else if (out_spawn_bonus_coin) {
                 *out_spawn_bonus_coin = true;

@@ -62,7 +62,7 @@ int main(void) {
         g.room.static_metatiles[my][MJK_ROOM_MT_COLS - 1u] = 0x01u;
     }
     MjkEnemy_InitForRoom(&g.enemies, &pkg, 0x90u, false);
-    if (g.enemies.spawn_reload != 0xA0u || g.enemies.transform_reload != 0x80u) {
+    if (g.enemies.spawn_reload != 0xA0u || g.enemies.transform_reload != 0x40u) {
         fprintf(stderr, "[FAIL] DifficultyTable R1 inesperada (%u, %u)\n",
                 g.enemies.spawn_reload, g.enemies.transform_reload);
         g_failures++;
@@ -85,7 +85,7 @@ int main(void) {
     g.enemies.slots[0].pos_x = MjkUQ8_FromInt(g.jack_x);
     g.enemies.slots[0].pos_y = MjkUQ8_FromInt(g.jack_y);
     MjkEnemy_UpdateAll(&g.enemies, &g);
-    if (g.enemies.transmute_timer != 319u || g.score_bcd[1] != 0x01u) {
+    if (g.enemies.transmute_timer != 319u || g.score_bcd[1] != 0x02u) {
         fprintf(stderr, "[FAIL] Power Coin pickup/timer fallo (t=%u s1=0x%02X)\n",
                 g.enemies.transmute_timer, g.score_bcd[1]);
         g_failures++;

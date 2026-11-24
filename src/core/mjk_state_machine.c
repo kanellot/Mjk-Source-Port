@@ -173,6 +173,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             game->mighty_coins = 0u;
             game->collected_1up = 0u;
             game->score_multiplier = 0u;
+            game->score_5000_mark = 0u;
             game->timer_status = 0u;
             memset(game->score_bcd, 0, sizeof(game->score_bcd));
             queue_sound(game, MJK_SND_SILENCE);
@@ -192,8 +193,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 MjkPpu_ClearOam(&game->ppu);
                 MjkPpu_ClearNametable(&game->ppu, 0x24u);
                 MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
-                MjkPpu_ClearOam(&game->ppu);
-            uint8_t slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0u, 0x70u, 0x60u, 0x01u, 0u);
+                uint8_t slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0u, 0x70u, 0x60u, 0x01u, 0u);
                 MjkPpu_SetOam(&game->ppu, slot++, 0x80u, 0x5Cu, 0x0Cu, 0u);
                 MjkPpu_DrawBcdByte(&game->ppu, MjkBcd_FromBinary(game->lives), 0x94u, 0x60u, true, slot);
                 game->state_timer = 0x60u; /* 96f */
@@ -223,6 +223,14 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             MjkEnemy_InitForRoom(&game->enemies, game->pkg, game->last_bomb_room_cleared, game->room.is_bomb_room);
             memset(game->popups, 0, sizeof(game->popups));
             const uint8_t* rdata = MjkAssets_GetRoomDataPtr(game->pkg, game->current_room_id, NULL);
+            if (rdata && (rdata[0] & 0xF0u) == 0xE0u && (rdata[2] & 0x40u) != 0u) {
+                /* SpawnBrotherRoomObjects (prg.asm:6659-6694): 2 Captives ($68/$A8,$D8) + Brother ($88,$D8). */
+                MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_CAPTIVE, 0x68u, 0xD8u);
+                MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_CAPTIVE, 0xA8u, 0xD8u);
+                MjkEnemy_SpawnCollectible(&game->enemies,
+                                          (game->collected_1up != 0u) ? MJK_ENEMY_CAPTIVE : MJK_ENEMY_BROTHER,
+                                          0x88u, 0xD8u);
+            }
             if (rdata && (rdata[0] & 0xF0u) == 0xE0u && rdata[2] != 0u && (rdata[2] & 0x40u) == 0u &&
                 game->current_room_id != 0xFCu) {
                 game->checkpoint_room_id = game->current_room_id;
@@ -315,6 +323,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                         if (game->timer_status == 0u) {
                             game->stage_timer_bcd = 0x60u;
                             game->timer_frames = 256u;
+                            game->timer_status = 1u;
                         }
                         const uint8_t* mus_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_MUSIC_OPTIONS, 8u);
                         if (mus_tbl) {
@@ -349,6 +358,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                     if (game->timer_status == 0u) {
                         game->stage_timer_bcd = 0x60u;
                         game->timer_frames = 256u;
+                        game->timer_status = 1u;
                     }
                     const uint8_t* mus_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_MUSIC_OPTIONS, 8u);
                     if (mus_tbl) {
@@ -412,10 +422,13 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
 
             if (!game->player.is_dying) {
                 MjkCamera_Update(&game->camera, &game->player, game->pkg);
-                game->jack_x = MjkUQ8_Int(game->player.pos_x);
-                game->jack_y = MjkUQ8_Int(game->player.pos_y);
                 game->ppu.scroll_x = (uint16_t)(game->camera.scroll_x_fixed >> 8);
                 game->ppu.scroll_y = (uint8_t)(game->camera.scroll_y_fixed >> 8);
+            }
+            game->jack_x = MjkUQ8_Int(game->player.pos_x);
+            game->jack_y = MjkUQ8_Int(game->player.pos_y);
+
+            if (!game->player.is_dying) {
                 if (game->camera.room_crossed) {
                     game->current_room_id = game->camera.current_room_id;
                     MjkRoom_DecodeGeometry(game->pkg, game->current_room_id, &game->room);
@@ -463,6 +476,8 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 game->ppu.scroll_y = 0u;
                 game->timer_status |= 0x80u;
                 game->state_timer = 0x80u; /* 128f */
+                MjkPpu_ClearOam(&game->ppu);
+                MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
                 MjkPpu_ClearNametable(&game->ppu, 0x24u);
                 MjkPpu_WriteString(&game->ppu, game->pkg, MJK_STR_TIME_OVER);
                 queue_sound(game, MJK_SND_DEATH);
@@ -484,6 +499,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 game->ppu.scroll_y = 0u;
                 game->torture_scene_flag = 1u;
                 MjkPpu_ClearOam(&game->ppu);
+                MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
                 MjkPpu_ClearNametable(&game->ppu, 0x24u);
                 MjkPpu_WriteString(&game->ppu, game->pkg, MJK_STR_YOU_ARE_GREEDY);
                 MjkPpu_WriteString(&game->ppu, game->pkg, MJK_STR_GO_TO_TORTURE_ROOM);

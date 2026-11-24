@@ -38,8 +38,11 @@ MJK_CORE_API void MjkDoors_OpenRoomDoor(struct MjkGame* game, uint8_t door_obj_i
 /** @brief Evalúa la condición de la sala y abre sus puertas; `true` si abrió alguna. */
 MJK_CORE_API bool MjkDoors_Update(struct MjkGame* game);
 
-/** @brief Procesa evento de Esfinge / Familia Real / Beelzebut (`UnknownDoorTable`). */
+/** @brief Procesa evento de Esfinge (`HandleSphinxEvent`, comprueba bit 7 de `sphinx_flags`). */
 MJK_CORE_API void MjkDoors_HandleSphinxEvent(struct MjkGame* game, uint8_t event_idx);
+
+/** @brief Dispara un evento de puerta directo (`loc_AACF`, sin comprobar bit 7: Familia Real / Beelzebub). */
+MJK_CORE_API bool MjkDoors_TriggerEventDirect(struct MjkGame* game, uint8_t event_idx);
 
 /** @brief Detecta el cruce de Jack por una puerta abierta -> `MJK_ACTION_ROOM_CHANGED`. */
 MJK_CORE_API MjkActionResult MjkDoors_CheckPlayerEntry(struct MjkGame* game);

@@ -142,6 +142,38 @@ int main(void) {
         g_failures++;
     }
 
+    /* 8. Regresión D-01: puerta oculta+bloqueada (0xB2) pasa a 0x52 al abrirse y permite cruce */
+    g.room.objects[0].ram_state = 0xB2u;
+    MjkDoors_OpenRoomDoor(&g, 0u);
+    if (g.room.objects[0].ram_state != 0x52u) {
+        fprintf(stderr, "[FAIL] D-01: puerta 0xB2 no paso a 0x52 (0x%02X)\n", g.room.objects[0].ram_state);
+        g_failures++;
+    }
+    g.state = MJK_GS_MAIN;
+    if (MjkDoors_CheckPlayerEntry(&g) != MJK_ACTION_ROOM_CHANGED) {
+        fprintf(stderr, "[FAIL] D-01: puerta 0xB2 abierta no permitio entrar\n");
+        g_failures++;
+    }
+
+    /* 9. Regresión D-02/D-03: Cond $1E en Sala $FC marca sphinx_flags[$1E]=$52 y PreloadSection de $FD no lo borra */
+    g.current_room_id = 0xFCu;
+    g.persist.sphinx_flags[0x1Eu] = 0xB2u;
+    g.door_1e_deaths = 2u;
+    g.player.is_dying = false;
+    g.room.object_count = 1u;
+    MjkDoors_Update(&g);
+    if (g.persist.sphinx_flags[0x1Eu] != 0x52u) {
+        fprintf(stderr, "[FAIL] D-02: Cond $1E no marco sphinx_flags[$1E]=0x52 (0x%02X)\n",
+                g.persist.sphinx_flags[0x1Eu]);
+        g_failures++;
+    }
+    MjkRoom_PreloadSection(&pkg, 0xFDu, &g.persist, 0u);
+    if (g.persist.sphinx_flags[0x1Eu] != 0x52u) {
+        fprintf(stderr, "[FAIL] D-03: PreloadSection($FD) borro sphinx_flags[$1E] (0x%02X)\n",
+                g.persist.sphinx_flags[0x1Eu]);
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_doors: %d fallo(s).\n", g_failures);

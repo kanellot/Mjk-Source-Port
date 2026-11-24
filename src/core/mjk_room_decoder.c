@@ -211,7 +211,7 @@ static bool parse_room_data_to_slot(const MjkAssetPackage* pkg,
             } else if (hi == 8u) {
                 uint8_t yx_door = rdata[f - 1u];
                 uint8_t st = k_door_state_table_us[yx_door & 7u];
-                if ((st & 0x80u) != 0u && persist) {
+                if ((st & 0x80u) != 0u && persist && persist->sphinx_flags[yx_door >> 3u] != 0x52u) {
                     persist->sphinx_flags[yx_door >> 3u] = st;
                 }
                 slot->objects[e++] = st;
@@ -266,6 +266,16 @@ bool MjkRoom_PreloadSection(const MjkAssetPackage* pkg,
                 return false;
             }
         }
+        return true;
+    }
+
+    /* IfNotTitleScreenRoomDoThings (prg.asm:3084-3125): no re-parsear salas ya cargadas en slots[] o scratch. */
+    for (size_t i = 0u; i < MJK_ROOM_PERSIST_SLOTS; ++i) {
+        if (persist->slots[i].room_id == room_id) {
+            return true;
+        }
+    }
+    if (persist->scratch.room_id == room_id) {
         return true;
     }
 
@@ -354,6 +364,12 @@ bool MjkRoom_DecodeObjects(const MjkAssetPackage* pkg,
             apply_metatile_xy(room, attr_tbl, obj.yx, tile);
             if ((obj.opcode & 0xF0u) == 0x80u && obj.yx2 != 0u) {
                 apply_metatile_xy(room, attr_tbl, obj.yx2, tile2);
+            } else if ((obj.opcode & 0xF0u) != 0x80u && obj.ram_state <= 0x0Fu) {
+                uint8_t o_my = (uint8_t)((obj.yx >> 4u) & 0x0Fu);
+                uint8_t o_mx = (uint8_t)(obj.yx & 0x0Fu);
+                if (o_my < MJK_ROOM_MT_ROWS && o_mx < MJK_ROOM_MT_COLS) {
+                    room->static_metatiles[o_my][o_mx] = 0x2Fu;
+                }
             }
         }
 

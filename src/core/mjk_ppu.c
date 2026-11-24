@@ -322,12 +322,13 @@ uint8_t MjkPpu_DrawBcdByte(MjkPpu* ppu,
     uint8_t slot = start_slot;
     uint8_t tens = (uint8_t)((bcd_val >> 4u) & 0x0Fu);
     uint8_t ones = (uint8_t)(bcd_val & 0x0Fu);
+    /* WriteBCDDigitsSprites (prg.asm:2129-2153): unidades en (x-4, y-4), decenas en (x-12, y-4). */
     if (slot < MJK_PPU_OAM_COUNT) {
         uint8_t t_tile = (hide_leading_zero && tens == 0u) ? 0x0Fu : tens;
-        MjkPpu_SetOam(ppu, slot++, (uint8_t)(x - 4u), (uint8_t)(y - 4u), t_tile, 0u);
+        MjkPpu_SetOam(ppu, slot++, (uint8_t)(x - 12u), (uint8_t)(y - 4u), t_tile, 0u);
     }
     if (slot < MJK_PPU_OAM_COUNT) {
-        MjkPpu_SetOam(ppu, slot++, (uint8_t)(x + 4u), (uint8_t)(y - 4u), ones, 0u);
+        MjkPpu_SetOam(ppu, slot++, (uint8_t)(x - 4u), (uint8_t)(y - 4u), ones, 0u);
     }
     return slot;
 }

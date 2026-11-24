@@ -56,19 +56,27 @@ int main(void) {
         MjkGame_StepFrame(&g, &in);
     }
 
-    /* 1. Recoger 1ª bomba de Sala 1 ($85) -> puff 32f + 32f */
+    /* 1. Recoger 1ª bomba de Sala 1 ($85) -> puff 32f (fase 0) + popup 32f (fase 1) en slot único */
     g.player.pos_x = MjkUQ8_FromInt(0x54u);
     g.player.pos_y = MjkUQ8_FromInt(0x84u);
     MjkObjects_Update(&g.objects, &g, &in);
     if (!g.objects.puff.active || g.objects.puff.phase != 0u || g.objects.puff.timer != 32u) {
-        fprintf(stderr, "[FAIL] Puff fase 1 no inicio tras recoger bomba\n");
+        fprintf(stderr, "[FAIL] Puff fase 0 no inicio tras recoger bomba\n");
         g_failures++;
     }
     for (int f = 0; f < 32; ++f) {
         MjkObjects_Update(&g.objects, &g, &in);
     }
-    if (g.objects.puff.active || !g.popups[0].active) {
-        fprintf(stderr, "[FAIL] Puff no paso a popup flotante tras 32f\n");
+    if (!g.objects.puff.active || g.objects.puff.phase != 1u || g.objects.puff.timer != 32u ||
+        g.popups[0].active) {
+        fprintf(stderr, "[FAIL] Puff no paso a fase 1 (popup) en slot unico tras 32f\n");
+        g_failures++;
+    }
+    for (int f = 0; f < 32; ++f) {
+        MjkObjects_Update(&g.objects, &g, &in);
+    }
+    if (g.objects.puff.active) {
+        fprintf(stderr, "[FAIL] Puff fase 1 no termino tras 32f\n");
         g_failures++;
     }
 
@@ -161,6 +169,115 @@ int main(void) {
                     g.room.objects[chest_idx].ram_state, g.room.metatiles[0x0A][0x04]);
             g_failures++;
         }
+    }
+
+    /* 6. Regresión Royal Room: chispa de mecha usa tile $0D/$0F y no se mueve al coger bomba apagada */
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.room_id = 0x10u;
+    g.room.is_bomb_room = true;
+    g.room.object_count = 3u;
+    g.room.objects[0].yx = 0x42u; g.room.objects[0].ram_state = 0x05u; g.room.objects[0].ram_index = 0u;
+    g.room.objects[1].yx = 0x44u; g.room.objects[1].ram_state = 0x05u; g.room.objects[1].ram_index = 1u;
+    g.room.objects[2].yx = 0x46u; g.room.objects[2].ram_state = 0x05u; g.room.objects[2].ram_index = 2u;
+    g.camera.neighbor_room_id = 0u;
+    g.camera.scroll_x_fixed = 0u;
+    g.camera.scroll_y_fixed = 0u;
+    g.score_multiplier = 0u;
+    MjkObjects_InitForRoom(&g.objects, &g);
+
+    /* Recoger 1.ª bomba -> debe encender la 2.ª con tile_id == 0x0D */
+    g.player.pos_x = MjkUQ8_FromInt(0x28u);
+    g.player.pos_y = MjkUQ8_FromInt(0x48u);
+    MjkInput_Update(&in, 0u);
+    MjkObjects_Update(&g.objects, &g, &in);
+    if (!g.objects.spark.active || g.objects.spark.yx != 0x44u || g.objects.spark.tile_id != 0x0Du) {
+        fprintf(stderr, "[FAIL] Chispa Royal Room mal inicializada (active=%d yx=0x%02X tile=0x%02X)\n",
+                g.objects.spark.active, g.objects.spark.yx, g.objects.spark.tile_id);
+        g_failures++;
+    }
+    /* Tras 3 ticks, la chispa alterna 0x0D -> 0x0F (nunca dígitos 0x00/0x02) */
+    g.player.pos_x = MjkUQ8_FromInt(0x88u);
+    for (int f = 0; f < 3; ++f) {
+        MjkObjects_Update(&g.objects, &g, &in);
+    }
+    if (g.objects.spark.tile_id != 0x0Fu) {
+        fprintf(stderr, "[FAIL] Chispa no alterno a 0x0F tras 3f (tile=0x%02X)\n", g.objects.spark.tile_id);
+        g_failures++;
+    }
+    /* Recoger la 3.ª bomba (apagada) NO debe mover la chispa de la 2.ª (0x44) y debe sobrescribir el puff anterior */
+    g.player.pos_x = MjkUQ8_FromInt(0x68u);
+    MjkObjects_Update(&g.objects, &g, &in);
+    if (!g.objects.spark.active || g.objects.spark.yx != 0x44u) {
+        fprintf(stderr, "[FAIL] Recoger bomba apagada movio la chispa (active=%d yx=0x%02X)\n",
+                g.objects.spark.active, g.objects.spark.yx);
+        g_failures++;
+    }
+    if (!g.objects.puff.active || g.objects.puff.phase != 0u || g.objects.puff.timer != 32u ||
+        MjkUQ8_Int(g.objects.puff.x) != 0x68u || g.popups[0].active) {
+        fprintf(stderr, "[FAIL] Recoger 2.a bomba no sobrescribio el puff sin crear popup anterior\n");
+        g_failures++;
+    }
+
+    /* 7. Regresión cofre secreto (0x30) dentro de terreno sólido: al abrirlo se limpia static_metatiles */
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.room_id = 0x01u;
+    g.room.is_horizontal = true;
+    g.room.object_count = 1u;
+    g.room.objects[0].yx = 0x84u;
+    g.room.objects[0].ram_state = 0x30u; /* Cofre secreto oculto */
+    g.room.objects[0].opcode = 0x90u;    /* Item 0 (bolsa 100) */
+    g.room.objects[0].ram_index = 0u;
+    g.room.static_metatiles[8][4] = 0x01u; /* Terreno sólido debajo del cofre secreto */
+    g.camera.neighbor_room_id = 0u;
+    g.camera.scroll_x_fixed = 0u;
+    g.camera.scroll_y_fixed = 0u;
+    MjkObjects_InitForRoom(&g.objects, &g);
+    g.player.pos_x = MjkUQ8_FromInt(0x48u);
+    g.player.pos_y = MjkUQ8_FromInt(0x78u);
+    g.player.in_air = false;
+    g.player.just_jumped = false;
+    /* 1.º salto: revela cofre (0x30 -> 0x10) */
+    MjkInput_Update(&in, 0u);
+    MjkObjects_Update(&g.objects, &g, &in);
+    g.player.just_jumped = true;
+    MjkObjects_Update(&g.objects, &g, &in);
+    /* 2.º salto: abre cofre (0x10 -> 0x00) y debe limpiar static_metatiles[8][4] */
+    g.player.in_air = false;
+    g.player.just_jumped = false;
+    MjkObjects_Update(&g.objects, &g, &in);
+    g.player.just_jumped = true;
+    MjkObjects_Update(&g.objects, &g, &in);
+    if (g.room.objects[0].ram_state != 0x00u || g.room.static_metatiles[8][4] != 0x2Fu) {
+        fprintf(stderr, "[FAIL] Cofre secreto abierto conservo colision solida (st=0x%02X static=0x%02X)\n",
+                g.room.objects[0].ram_state, g.room.static_metatiles[8][4]);
+        g_failures++;
+    }
+
+    /* 8. Regresión O-01: bloque secreto (0x33) se rompe saltando encima (feet_yx + just_jumped) */
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.room_id = 0x01u;
+    g.room.is_horizontal = true;
+    g.room.object_count = 1u;
+    g.room.objects[0].yx = 0x84u;
+    g.room.objects[0].ram_state = 0x33u;
+    g.room.objects[0].opcode = 0x62u; /* 2 saltos */
+    g.room.objects[0].ram_index = 0u;
+    g.room.static_metatiles[8][4] = 0x01u;
+    MjkObjects_InitForRoom(&g.objects, &g);
+    g.player.pos_x = MjkUQ8_FromInt(0x48u);
+    g.player.pos_y = MjkUQ8_FromInt(0x78u);
+    g.player.in_air = false;
+    g.player.just_jumped = false;
+    for (int j = 0; j < 2; ++j) {
+        MjkObjects_Update(&g.objects, &g, &in); /* latch */
+        g.player.just_jumped = true;
+        MjkObjects_Update(&g.objects, &g, &in); /* jump hit */
+        g.player.just_jumped = false;
+    }
+    if (g.room.objects[0].ram_state != 0x0Fu || g.room.static_metatiles[8][4] != 0x2Fu) {
+        fprintf(stderr, "[FAIL] O-01: bloque secreto 0x33 no rompio tras 2 saltos (st=0x%02X static=0x%02X)\n",
+                g.room.objects[0].ram_state, g.room.static_metatiles[8][4]);
+        g_failures++;
     }
 
     MjkAssets_Unload(&pkg);

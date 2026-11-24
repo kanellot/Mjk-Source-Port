@@ -14,6 +14,31 @@ static int compare_score_bcd(const uint8_t a[4], const uint8_t b[4]) {
     return 0;
 }
 
+static void render_round_clear_oam(MjkGame* game) {
+    MjkPpu_ClearOam(&game->ppu);
+    uint8_t slot = MjkPpu_DrawHudScore(&game->ppu, game->score_bcd, 0u);
+    /* DrawRoundIntroSprites (prg.asm:804, 7682-7700): Jack x Lives */
+    slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0u, 0x70u, 0x60u, 0x01u, slot);
+    MjkPpu_SetOam(&game->ppu, slot++, 0x80u, 0x5Cu, 0x0Cu, 0u);
+    slot = MjkPpu_DrawBcdByte(&game->ppu, MjkBcd_FromBinary(game->lives), 0x94u, 0x60u, true, slot);
+    /* Número de ronda "ROUND X CLEAR" (prg.asm:820-833) */
+    uint8_t rnum = MjkBcd_FromBinary((uint8_t)((game->last_bomb_room_cleared & 0x0Fu) + 1u));
+    slot = MjkPpu_DrawBcdByte(&game->ppu, rnum, 0x84u, 0x44u, true, slot);
+    /* Time Bonus: dígitos BCD + "00" (prg.asm:816-819, 1008-1018) */
+    slot = MjkPpu_DrawBcdByte(&game->ppu, game->stage_timer_copy, 0xACu, 0x7Cu, true, slot);
+    MjkPpu_SetOam(&game->ppu, slot++, 0xB0u, 0x78u, 0x00u, 0u);
+    MjkPpu_SetOam(&game->ppu, slot++, 0xB8u, 0x78u, 0x00u, 0u);
+    /* Special Bonus si >= 20 Fire Bombs (prg.asm:835-866, 1022-1032) */
+    if ((game->gs8_status & 2u) != 0u) {
+        uint8_t fb_bcd = MjkBcd_FromBinary(game->fire_bombs_collected);
+        slot = MjkPpu_DrawBcdByte(&game->ppu, fb_bcd, 0x54u, 0xACu, true, slot);
+        slot = MjkPpu_DrawBcdByte(&game->ppu, game->fire_bomb_bonus_bcd, 0xB4u, 0xC4u, true, slot);
+        MjkPpu_SetOam(&game->ppu, slot++, 0xB8u, 0xC0u, 0x00u, 0u);
+        MjkPpu_SetOam(&game->ppu, slot++, 0xC0u, 0xC0u, 0x00u, 0u);
+        MjkPpu_SetOam(&game->ppu, slot++, 0xC8u, 0xC0u, 0x00u, 0u);
+    }
+}
+
 void MjkState_StepRoundClear(MjkGame* game) {
     static const uint8_t k_fire_bomb_bonus[4] = { 0x10u, 0x20u, 0x30u, 0x50u };
     switch (game->sub_state) {
@@ -22,13 +47,11 @@ void MjkState_StepRoundClear(MjkGame* game) {
             game->ppu.scroll_y = 0u;
             game->timer_status |= 0x40u;
             game->state_timer = 0x40u;
-            MjkPpu_ClearOam(&game->ppu);
+            MjkPpu_RestoreDefaultPalettes(&game->ppu, game->pkg);
             MjkPpu_ClearNametable(&game->ppu, 0x24u);
             MjkPpu_WriteString(&game->ppu, game->pkg, MJK_STR_ROUND_CLEAR);
             MjkPpu_WriteString(&game->ppu, game->pkg, MJK_STR_TIME_BONUS);
             game->stage_timer_copy = game->stage_timer_bcd;
-            uint8_t rnum = MjkBcd_FromBinary((uint8_t)((game->last_bomb_room_cleared & 0x0Fu) + 1u));
-            MjkPpu_DrawBcdByte(&game->ppu, rnum, 0x84u, 0x44u, true, 0u);
 
             if (game->fire_bombs_collected >= 20u) {
                 uint8_t idx = (uint8_t)(game->fire_bombs_collected - 20u);
@@ -39,6 +62,7 @@ void MjkState_StepRoundClear(MjkGame* game) {
                 MjkPpu_WriteString(&game->ppu, game->pkg, MJK_STR_SPECIAL_BONUS);
                 game->gs8_status |= 2u;
             }
+            render_round_clear_oam(game);
             MjkGame_QueueSound(game, MJK_MUS_ROUND_CLEAR);
             game->sub_state = 1u;
             break;
@@ -51,6 +75,7 @@ void MjkState_StepRoundClear(MjkGame* game) {
             if (game->stage_timer_copy > 0u) {
                 game->stage_timer_copy = MjkBcd_Sub1(game->stage_timer_copy);
                 MjkGame_AddScore(game, MJK_SCORE_100);
+                render_round_clear_oam(game);
                 game->state_timer = 6u;
             } else {
                 game->state_timer = 64u;
@@ -65,6 +90,7 @@ void MjkState_StepRoundClear(MjkGame* game) {
             if (game->fire_bomb_bonus_bcd > 0u) {
                 game->fire_bomb_bonus_bcd = MjkBcd_Sub1(game->fire_bomb_bonus_bcd);
                 MjkGame_AddScore(game, MJK_SCORE_1000);
+                render_round_clear_oam(game);
                 game->state_timer = 6u;
             } else {
                 game->state_timer = 64u;
@@ -210,7 +236,7 @@ void MjkState_StepGameOver(MjkGame* game) {
         if (compare_score_bcd(game->score_bcd, game->high_score_bcd) > 0) {
             memcpy(game->high_score_bcd, game->score_bcd, 4u);
         }
-        MjkPpu_DrawBcdByte(&game->ppu, game->gdv_bcd, 0xA4u, 0x84u, false, 0u);
+        MjkPpu_DrawBcdByte(&game->ppu, game->gdv_bcd, 0xA4u, 0x84u, true, 0u);
         game->state_timer = 256u;
         game->sub_state = 1u;
         return;

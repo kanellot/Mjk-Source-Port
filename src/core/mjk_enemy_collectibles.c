@@ -73,6 +73,9 @@ bool MjkEnemy_SpawnCollectible(MjkEnemyManager* mgr, MjkEnemyType type, uint8_t 
                     e->ai_dir = 0u;
                 } else if (type == MJK_ENEMY_BALLOON) {
                     e->vel_y = MjkQ8_FromInt(-1);
+                } else if (type == MJK_ENEMY_BONUS_COIN || type == MJK_ENEMY_EXTRA_COIN) {
+                    e->falling = true;
+                    e->jump_accum = 0x4000u;
                 }
             }
             e->sprite_id = MjkEnemyInternal_ArchetypeSpriteId(e->type, 0u, false);
@@ -115,6 +118,47 @@ bool MjkEnemyInternal_StepCollectible(MjkEnemy* e, const MjkGame* game) {
             return false;
         }
         e->pos_y = (mjk_uq8_8_t)bny;
+    } else if ((e->type == MJK_ENEMY_BONUS_COIN || e->type == MJK_ENEMY_EXTRA_COIN) &&
+               game && game->room.is_bomb_room) {
+        /* ObjCode_9_E_ExtraBonusCoin (prg.asm:9144-9198): cae hasta suelo y camina a speed mod 5. */
+        uint8_t ex = MjkUQ8_Int(e->pos_x);
+        uint8_t ey = MjkUQ8_Int(e->pos_y);
+        uint8_t cf = MjkEnemyInternal_CalcCollisionFlags(game, ex, ey);
+        mjk_q8_8_t spd = MjkEnemyInternal_SpeedQ8(game->pkg, 5u);
+        if ((cf & 0x04u) != 0u) {
+            if (e->falling) {
+                e->falling = false;
+                e->vel_y = 0;
+                e->pos_y = (mjk_uq8_8_t)(e->pos_y & 0xF800u);
+                e->vel_x = (ex >= game->jack_x) ? (mjk_q8_8_t)(-spd) : spd;
+            } else if ((cf & 0x01u) != 0u) {
+                e->vel_x = (mjk_q8_8_t)(-spd);
+            } else if ((cf & 0x02u) != 0u) {
+                e->vel_x = spd;
+            }
+        } else {
+            if (!e->falling) {
+                e->falling = true;
+                e->jump_accum = 0x4000u;
+                e->vel_x = 0;
+            }
+            uint32_t acc = (uint32_t)e->jump_accum + 0x00F0u;
+            if ((acc >> 8u) >= 0x80u) { acc = (0x7Fu << 8u) | (acc & 0xFFu); }
+            e->jump_accum = (uint16_t)acc;
+            uint8_t hi = (uint8_t)(e->jump_accum >> 8u);
+            uint8_t idx = (hi < 0x40u) ? hi : (uint8_t)((hi ^ 0xFFu) & 0x3Fu);
+            uint16_t mag = 0x0380u;
+            MjkAssets_ReadCpuU16(game->pkg, (uint16_t)(MJK_ADDR_JUMP_TABLE_C0E3 + (uint16_t)idx * 2u), &mag);
+            e->vel_y = (hi < 0x40u) ? (mjk_q8_8_t)(-(int16_t)mag) : (mjk_q8_8_t)mag;
+        }
+        int32_t nx = (int32_t)e->pos_x + (int32_t)e->vel_x;
+        int32_t ny = (int32_t)e->pos_y + (int32_t)e->vel_y;
+        if (nx < 0 || nx >= 0x10000 || ny < 0 || ny >= 0x10000) {
+            e->active = false;
+            return false;
+        }
+        e->pos_x = (mjk_uq8_8_t)nx;
+        e->pos_y = (mjk_uq8_8_t)ny;
     }
     return true;
 }

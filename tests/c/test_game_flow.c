@@ -280,7 +280,8 @@ static void test_death_blocks_door_and_resets_scroll(const MjkAssetPackage* pkg)
         return;
     }
 
-    g.player.death_timer = 95u;
+    g.player.death_grounded = true;
+    g.player.death_timer = 63u;
     MjkGame_StepFrame(&g, &in); /* -> LoseLife -> ROUND_INTRO */
     MjkGame_StepFrame(&g, &in); /* ROUND_INTRO sub_state 0 -> reset scroll */
     if (g.ppu.scroll_x != 0u || g.ppu.scroll_y != 0u) {

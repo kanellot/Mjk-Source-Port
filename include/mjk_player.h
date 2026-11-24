@@ -31,6 +31,7 @@ typedef struct {
     bool        in_air;
     bool        just_jumped;
     bool        is_dying;
+    bool        death_grounded; /**< Bit 5 ($20) de PlayerStruct (prg.asm:1326-1350). */
     uint8_t     death_timer;
     uint8_t     fire_tile_died_to;
     uint8_t     a_press_counter;

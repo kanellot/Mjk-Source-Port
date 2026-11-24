@@ -21,6 +21,7 @@ typedef struct {
     uint8_t     phase;     /**< 0 = puff ($25) 32f, 1 = popup 100/200 32f. */
     uint8_t     timer;
     uint8_t     bomb_type; /**< 0 = 100, 1 = 200. */
+    uint8_t     mult_tile; /**< $0F vacío o $3C..$3F (x2..x5) en Bomb Room (sub_8FB1). */
     mjk_uq8_8_t x;
     mjk_uq8_8_t y;
 } MjkBombPuff;

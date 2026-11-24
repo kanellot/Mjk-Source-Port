@@ -71,10 +71,8 @@ static void update_vertical_camera(MjkCamera* cam,
         uint8_t py = MjkUQ8_Int(player->pos_y);
         if (cam->scroll_y_fixed == 0 && py >= 120u && player->vel_y > 0 && cam->neighbor_room_id != 0u) {
             cam->room_flags &= (uint8_t)~MJK_RF_AT_SCROLL_EDGE;
-            player->pos_y = MjkUQ8_FromInt(120u);
-        } else if (py <= 120u && player->vel_y < 0 && (adj->flags & 0x0Au) == 0x02u) {
+        } else if (py <= 120u && player->vel_y < 0 && adj->up != 0u && (adj->flags & 0x0Au) != 0x0Au) {
             cam->room_flags &= (uint8_t)~MJK_RF_AT_SCROLL_EDGE;
-            player->pos_y = MjkUQ8_FromInt(120u);
         } else {
             if (py < 8u) { player->pos_y = MjkUQ8_FromInt(8u); }
             if (py > 232u) { player->pos_y = MjkUQ8_FromInt(232u); }
@@ -83,7 +81,11 @@ static void update_vertical_camera(MjkCamera* cam,
     }
 
     int32_t old_sy = cam->scroll_y_fixed >> 8;
-    int32_t next_sy = cam->scroll_y_fixed + (int32_t)player->vel_y;
+    int32_t dy_fixed = (int32_t)player->pos_y - (120 << 8);
+    if (dy_fixed == 0) {
+        dy_fixed = (int32_t)player->vel_y;
+    }
+    int32_t next_sy = cam->scroll_y_fixed + dy_fixed;
     int32_t unwrapped_sy = next_sy;
     player->pos_y = MjkUQ8_FromInt(120u);
 

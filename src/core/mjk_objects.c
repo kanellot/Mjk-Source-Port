@@ -61,13 +61,13 @@ void MjkObjects_InitForRoom(MjkObjectSystem* obj, MjkGame* game) {
     }
     if (game->room.is_bomb_room) {
         game->fire_bombs_collected = 0u;
-    }
-    for (uint8_t i = 0u; i < game->room.object_count; ++i) {
-        if ((game->room.objects[i].ram_state & 0x4Fu) == 0x45u) {
-            obj->spark.active = true;
-            obj->spark.yx = game->room.objects[i].yx;
-            obj->spark.tile_id = 0x0Du;
-            break;
+        for (uint8_t i = 0u; i < game->room.object_count; ++i) {
+            if ((game->room.objects[i].ram_state & 0x4Fu) == 0x45u) {
+                obj->spark.active = true;
+                obj->spark.yx = game->room.objects[i].yx;
+                obj->spark.tile_id = 0x0Du;
+                break;
+            }
         }
     }
 }
@@ -94,30 +94,23 @@ bool MjkObjects_UseMightyCoin(MjkGame* game, bool* out_trigger_transmute) {
     return true;
 }
 
-static void spawn_puff_popup(MjkGame* game, const MjkBombPuff* puff) {
-    uint8_t px = MjkUQ8_Int(puff->x);
-    uint8_t py = MjkUQ8_Int(puff->y);
-    uint8_t fx = (px >= 8u) ? (uint8_t)(px - 8u) : 0u;
-    uint8_t fy = (py >= 8u) ? (uint8_t)(py - 8u) : 0u;
-    MjkHud_SpawnFloatingScore(game->popups, MJK_FLOAT_SCORE_SLOTS,
-                              fx, fy,
-                              puff->bomb_type ? MJK_SCORE_200 : MJK_SCORE_100,
-                              game->score_multiplier, game->room.is_bomb_room);
-}
-
 static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
                          MjkRoomState* target_room, uint8_t target_nt,
                          bool in_right, MjkRoomPersistSlot* slot, uint8_t obj_idx) {
     MjkRoomObject* ro = &target_room->objects[obj_idx];
     uint8_t st = ro->ram_state;
     bool lit = ((st & 0x40u) != 0u);
+    bool was_first_bomb = !obj->first_bomb_picked;
 
-    if (!obj->first_bomb_picked) {
+    if (was_first_bomb) {
         obj->first_bomb_picked = true;
-        obj->maybe_bomb_thing = ((st & 0x80u) != 0u) ? 1u : 0u;
+        obj->maybe_bomb_thing = (!target_room->is_bomb_room && (st & 0x80u) != 0u) ? 1u : 0u;
+    } else if (!target_room->is_bomb_room && !lit) {
+        /* Coger una bomba apagada en pasillo descalifica el bonus de orden (loc_9F09, prg.asm:5062-5072). */
+        obj->maybe_bomb_thing |= 2u;
     }
 
-    if (st == 0xC5u && obj->maybe_bomb_thing == 1u) {
+    if (!target_room->is_bomb_room && !was_first_bomb && st == 0xC5u && obj->maybe_bomb_thing == 1u) {
         MjkGame_AddScore(game, MJK_SCORE_10000);
         obj->maybe_bomb_thing |= 0x80u;
         play_sfx(game, MJK_SND_BOMB_BONUS);
@@ -154,37 +147,34 @@ static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
         }
     }
 
-    if (obj->puff.active && obj->puff.phase == 0u) {
-        spawn_puff_popup(game, &obj->puff);
-    }
+    /* Slot único puff+popup (sub_A270/sub_A29C, prg.asm:5647-5747): recoger otra bomba sobrescribe el anterior. */
     obj->puff.active = true;
     obj->puff.phase = 0u;
     obj->puff.timer = 32u;
     obj->puff.bomb_type = lit ? 1u : 0u;
+    obj->puff.mult_tile = 0x0Fu;
     int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
-    int32_t puff_sx = (int32_t)(((ro->yx & 0x0Fu) << 4u) + 8u) + (in_right ? 256 : 0) - scroll_x;
+    int32_t scroll_y = (int32_t)(game->camera.scroll_y_fixed >> 8);
+    bool horiz = game->room.is_horizontal;
+    int32_t puff_sx = (int32_t)(((ro->yx & 0x0Fu) << 4u) + 8u) + ((in_right && horiz) ? 256 : 0) - scroll_x;
+    int32_t puff_sy = (int32_t)((ro->yx & 0xF0u) + 8u) + ((in_right && !horiz) ? 240 : 0) - scroll_y;
     if (puff_sx < 0) { puff_sx = 0; }
     if (puff_sx > 255) { puff_sx = 255; }
+    if (puff_sy < 0) { puff_sy = 0; }
+    if (puff_sy > 239) { puff_sy = 239; }
     obj->puff.x = MjkUQ8_FromInt((uint8_t)puff_sx);
-    obj->puff.y = MjkUQ8_FromInt((uint8_t)((ro->yx & 0xF0u) + 8u));
+    obj->puff.y = MjkUQ8_FromInt((uint8_t)puff_sy);
 
-    obj->spark.active = false;
-    bool lit_next = false;
     if (target_room->is_bomb_room) {
-        for (uint8_t step = 1u; step < target_room->object_count; ++step) {
-            uint8_t n = (uint8_t)((obj_idx + step) % target_room->object_count);
-            if ((target_room->objects[n].ram_state & 0x0Fu) == 0x05u) {
-                target_room->objects[n].ram_state |= 0x40u;
-                if (slot && target_room->objects[n].ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
-                    slot->objects[target_room->objects[n].ram_index] |= 0x40u;
-                }
-                obj->spark.active = true;
-                obj->spark.yx = target_room->objects[n].yx;
-                lit_next = true;
+        bool any_remaining = false;
+        for (uint8_t k = 0u; k < target_room->object_count; ++k) {
+            if ((target_room->objects[k].ram_state & 0x0Fu) == 0x05u) {
+                any_remaining = true;
                 break;
             }
         }
-        if (!lit_next) {
+        if (!any_remaining) {
+            obj->spark.active = false;
             const uint8_t* entry_tbl = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_MAYBE_ENTRY_TYPE, 32u);
             uint8_t exit_door = entry_tbl ? entry_tbl[(target_room->room_id & 0x0Fu) * 2u + 1u] : 0u;
             for (uint8_t d = 0u; d < target_room->object_count; ++d) {
@@ -197,15 +187,69 @@ static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
             game->entry_door_type = exit_door;
             game->state = MJK_GS_ANIMATE_DOOR_OPEN;
             game->sub_state = 0u;
+        } else if (was_first_bomb || lit) {
+            /* Solo avanza la mecha si era la 1.ª bomba o la bomba encendida (prg.asm:5109-5161). */
+            obj->spark.active = false;
+            for (uint8_t step = 1u; step < target_room->object_count; ++step) {
+                uint8_t n = (uint8_t)((obj_idx + step) % target_room->object_count);
+                if ((target_room->objects[n].ram_state & 0x0Fu) == 0x05u) {
+                    target_room->objects[n].ram_state |= 0x40u;
+                    if (slot && target_room->objects[n].ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
+                        slot->objects[target_room->objects[n].ram_index] |= 0x40u;
+                    }
+                    obj->spark.active = true;
+                    obj->spark.yx = target_room->objects[n].yx;
+                    obj->spark.tile_id = 0x0Du;
+                    obj->spark.anim_timer = 0u;
+                    break;
+                }
+            }
         }
-    } else {
+    } else if (was_first_bomb || lit) {
+        obj->spark.active = false;
+        bool lit_in_room = false;
         for (uint8_t n = (uint8_t)(obj_idx + 1u); n < target_room->object_count; ++n) {
             if ((target_room->objects[n].ram_state & 0x0Fu) == 0x05u) {
                 target_room->objects[n].ram_state |= 0x40u;
                 if (slot && target_room->objects[n].ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
                     slot->objects[target_room->objects[n].ram_index] |= 0x40u;
                 }
+                lit_in_room = true;
                 break;
+            }
+        }
+        /* loc_9F31 (prg.asm:5088-5103): propagar mecha oculta al siguiente slot de sala de la sección. */
+        if (!lit_in_room && slot) {
+            size_t cur_slot_idx = MJK_ROOM_PERSIST_SLOTS;
+            for (size_t s = 0u; s < MJK_ROOM_PERSIST_SLOTS; ++s) {
+                if (&game->persist.slots[s] == slot) {
+                    cur_slot_idx = s;
+                    break;
+                }
+            }
+            for (size_t s = cur_slot_idx + 1u; s < MJK_ROOM_PERSIST_SLOTS && !lit_in_room; ++s) {
+                MjkRoomPersistSlot* ns = &game->persist.slots[s];
+                if (ns->room_id == 0u) {
+                    break;
+                }
+                for (uint8_t k = 0u; k < MJK_ROOM_SLOT_OBJ_BYTES; ++k) {
+                    if (ns->objects[k] == 0xFFu) {
+                        break;
+                    }
+                    if ((ns->objects[k] & 0x7Fu) == 0x05u) {
+                        ns->objects[k] |= 0x40u;
+                        if (game->camera.neighbor_room_id == ns->room_id) {
+                            for (uint8_t r = 0u; r < game->right_room.object_count; ++r) {
+                                if (game->right_room.objects[r].ram_index == k) {
+                                    game->right_room.objects[r].ram_state |= 0x40u;
+                                    break;
+                                }
+                            }
+                        }
+                        lit_in_room = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -223,11 +267,22 @@ static void open_chest(MjkObjectSystem* obj, MjkGame* game,
     }
 
     int32_t scroll_x = (int32_t)(game->camera.scroll_x_fixed >> 8);
-    int32_t sx_i = (int32_t)(((ro->yx & 0x0Fu) << 4u) + 8u) + (in_right ? 256 : 0) - scroll_x;
+    int32_t scroll_y = (int32_t)(game->camera.scroll_y_fixed >> 8);
+    bool horiz = game->room.is_horizontal;
+    int32_t sx_i = (int32_t)(((ro->yx & 0x0Fu) << 4u) + 8u) + ((in_right && horiz) ? 256 : 0) - scroll_x;
+    int32_t sy_i = (int32_t)((ro->yx & 0xF0u) + 8u) + ((in_right && !horiz) ? 240 : 0) - scroll_y;
     if (sx_i < 0) { sx_i = 0; }
     if (sx_i > 255) { sx_i = 255; }
+    if (sy_i < 0) { sy_i = 0; }
+    if (sy_i > 239) { sy_i = 239; }
     uint8_t sx = (uint8_t)sx_i;
-    uint8_t sy = (uint8_t)((ro->yx & 0xF0u) + 8u);
+    uint8_t sy = (uint8_t)sy_i;
+
+    uint8_t c_my = (uint8_t)((ro->yx >> 4u) & 0x0Fu);
+    uint8_t c_mx = (uint8_t)(ro->yx & 0x0Fu);
+    if (c_my < MJK_ROOM_MT_ROWS && c_mx < MJK_ROOM_MT_COLS) {
+        target_room->static_metatiles[c_my][c_mx] = 0x2Fu;
+    }
 
     const uint8_t* item_to_tile = MjkAssets_ResolveCpuPtr(game->pkg, MJK_ADDR_ITEM_TO_TILE, 18u);
     if (item_id < 9u) {
@@ -297,7 +352,6 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
         }
         case MJK_ITEM_SPHINX:
             MjkGame_AddScore(game, MJK_SCORE_10000);
-            play_sfx(game, MJK_SND_DOOR);
             MjkDoors_HandleSphinxEvent(game, ro->extra);
             break;
         case MJK_ITEM_TECMO_PLATE:
@@ -328,15 +382,14 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
         case MJK_ITEM_KING:
         case MJK_ITEM_QUEEN:
         case MJK_ITEM_PRINCESS:
-            MjkGame_AddScore(game, MJK_SCORE_10000);
-            play_sfx(game, MJK_SND_DOOR);
-            MjkDoors_HandleSphinxEvent(game, ro->extra);
+            /* JTPickup_Family (prg.asm:5227-5237): 0 pts y loc_AACF con X = item_id + 6 ($11..$13). */
+            MjkDoors_TriggerEventDirect(game, (uint8_t)(item_id + 6u));
             break;
         case MJK_ITEM_BEELZEBUT_MASK:
+            /* JTPickup_Beelzebub (prg.asm:5238-5249): 1.000.000 pts, música y luego loc_AACF ($14). */
             MjkGame_AddScore(game, MJK_SCORE_1000000);
-            play_sfx(game, MJK_SND_DOOR);
-            MjkDoors_HandleSphinxEvent(game, ro->extra);
             play_sfx(game, MJK_MUS_COLLECTED_FULL_FAMILY);
+            MjkDoors_TriggerEventDirect(game, (uint8_t)(item_id + 6u));
             break;
         default:
             break;
@@ -372,8 +425,16 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
             obj->puff.timer--;
         }
         if (obj->puff.active && obj->puff.timer == 0u) {
-            spawn_puff_popup(game, &obj->puff);
-            obj->puff.active = false;
+            if (obj->puff.phase == 0u) {
+                obj->puff.phase = 1u;
+                obj->puff.timer = 32u;
+                obj->puff.mult_tile = (game->room.is_bomb_room &&
+                                       game->score_multiplier >= 1u &&
+                                       game->score_multiplier <= 4u)
+                    ? (uint8_t)(0x3Bu + game->score_multiplier) : 0x0Fu;
+            } else {
+                obj->puff.active = false;
+            }
         }
     }
 
@@ -384,16 +445,31 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
         }
     }
 
-    uint16_t wx = (uint16_t)MjkUQ8_Int(game->player.pos_x) + (uint16_t)(game->camera.scroll_x_fixed >> 8);
-    bool in_right = (wx >= 256u && game->camera.neighbor_room_id != 0u);
-    MjkRoomState* target_room = in_right ? &game->right_room : &game->room;
-    uint8_t target_nt = in_right ? 1u : 0u;
+    int32_t wx = (int32_t)MjkUQ8_Int(game->player.pos_x) + (int32_t)(game->camera.scroll_x_fixed >> 8);
+    int32_t wy = (int32_t)MjkUQ8_Int(game->player.pos_y) + (int32_t)(game->camera.scroll_y_fixed >> 8);
+    bool in_neighbor = false;
+    int32_t local_x = wx;
+    int32_t local_y = wy;
+    if (!game->room.is_horizontal && wy >= 240 && game->camera.neighbor_room_id != 0u) {
+        in_neighbor = true;
+        local_y = wy - 240;
+    } else if (wx >= 256 && game->camera.neighbor_room_id != 0u) {
+        in_neighbor = true;
+        local_x = wx - 256;
+    }
+    if (local_x < 0) { local_x = 0; }
+    if (local_x > 255) { local_x = 255; }
+    if (local_y < 0) { local_y = 0; }
+    if (local_y > 239) { local_y = 239; }
+    bool in_right = in_neighbor;
+    MjkRoomState* target_room = in_neighbor ? &game->right_room : &game->room;
+    uint8_t target_nt = in_neighbor ? 1u : 0u;
     MjkRoomPersistSlot* slot = get_slot_for_room(game, target_room->room_id);
 
-    uint8_t jx = (uint8_t)(wx & 0xFFu);
-    uint8_t jy = (uint8_t)(MjkUQ8_Int(game->player.pos_y) + (uint8_t)(game->camera.scroll_y_fixed >> 8));
+    uint8_t jx = (uint8_t)local_x;
+    uint8_t jy = (uint8_t)local_y;
     uint8_t j_yx = (uint8_t)((jy & 0xF0u) | (jx >> 4u));
-    uint8_t feet_yx = (uint8_t)(((jy + 8u) & 0xF0u) | (jx >> 4u));
+    uint8_t feet_yx = (uint8_t)(((uint8_t)((local_y + 8 < 240) ? (local_y + 8) : 239) & 0xF0u) | (jx >> 4u));
 
     bool facing_right = (game->player.facing_attr == 0x04u);
     if (input && (input->held & MJK_BTN_RIGHT) != 0u && (input->held & MJK_BTN_LEFT) == 0u) {
@@ -401,10 +477,11 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
     } else if (input && (input->held & MJK_BTN_LEFT) != 0u && (input->held & MJK_BTN_RIGHT) == 0u) {
         facing_right = false;
     }
-    int32_t side_wx = facing_right ? ((int32_t)wx + 9) : ((int32_t)wx - 9);
+    int32_t side_wx = facing_right ? (wx + 9) : (wx - 9);
     bool has_side = (side_wx >= 0 && side_wx < 512 &&
-                     (side_wx < 256 || game->camera.neighbor_room_id != 0u));
-    bool side_in_right = (side_wx >= 256 && game->camera.neighbor_room_id != 0u);
+                     (side_wx < 256 || (game->room.is_horizontal && game->camera.neighbor_room_id != 0u)));
+    bool side_in_right = (!game->room.is_horizontal) ? in_neighbor
+                                                     : (side_wx >= 256 && game->camera.neighbor_room_id != 0u);
     MjkRoomState* side_room = side_in_right ? &game->right_room : &game->room;
     uint8_t side_nt = side_in_right ? 1u : 0u;
     uint8_t side_yx = has_side
@@ -423,6 +500,30 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
         for (uint8_t i = 0u; i < chest_room->object_count; ++i) {
             MjkRoomObject* ro = &chest_room->objects[i];
             uint8_t st = ro->ram_state;
+            if (ro->yx == obj->chest_target_yx && st == 0x33u) {
+                /* Bloque secreto $33 (MaybeOpenHiddenBlock, prg.asm:5392-5458): romper saltando encima. */
+                if (obj->secret_block_yx != ro->yx) {
+                    obj->secret_block_yx = ro->yx;
+                    obj->secret_hits_left = (uint8_t)(ro->opcode & 0x0Fu);
+                }
+                if (obj->secret_hits_left > 0u) {
+                    obj->secret_hits_left--;
+                }
+                if (obj->secret_hits_left == 0u) {
+                    ro->ram_state = 0x0Fu;
+                    if (chest_slot && ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
+                        chest_slot->objects[ro->ram_index] = 0x0Fu;
+                    }
+                    MjkObjects_SetRoomMetatile(game, chest_room, chest_nt, ro->yx, 0x2Fu);
+                    uint8_t s_my = (uint8_t)((ro->yx >> 4u) & 0x0Fu);
+                    uint8_t s_mx = (uint8_t)(ro->yx & 0x0Fu);
+                    if (s_my < MJK_ROOM_MT_ROWS && s_mx < MJK_ROOM_MT_COLS) {
+                        chest_room->static_metatiles[s_my][s_mx] = 0x2Fu;
+                    }
+                    play_sfx(game, MJK_SND_SECRET_BLOCK_REVEALED);
+                }
+                break;
+            }
             if (ro->yx == obj->chest_target_yx &&
                 ((st & 0x1Fu) == 0x10u || (st & 0x1Fu) == 0x11u)) {
                 bool is_orange = ((st & 0x1Fu) == 0x11u);
@@ -478,21 +579,10 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
             }
         }
 
-        if (st == 0x33u && ro->yx == j_yx) {
-            if (obj->secret_block_yx != ro->yx) {
-                obj->secret_block_yx = ro->yx;
-                obj->secret_hits_left = (uint8_t)(ro->opcode & 0x0Fu);
-            }
-            if (obj->secret_hits_left > 0u) {
-                obj->secret_hits_left--;
-            }
-            if (obj->secret_hits_left == 0u) {
-                ro->ram_state = 0x0Fu;
-                if (slot && ro->ram_index < MJK_ROOM_SLOT_OBJ_BYTES) {
-                    slot->objects[ro->ram_index] = 0x0Fu;
-                }
-                MjkObjects_SetRoomMetatile(game, target_room, target_nt, ro->yx, 0x2Fu);
-                play_sfx(game, MJK_SND_SECRET_BLOCK_REVEALED);
+        if (st == 0x33u) {
+            if (!game->player.in_air && ro->yx == feet_yx) {
+                obj->chest_target_yx = ro->yx;
+                obj->chest_target_room_id = target_room->room_id;
             }
             continue;
         }
@@ -539,10 +629,13 @@ uint8_t MjkObjects_RenderOam(const MjkObjectSystem* obj,
         uint8_t py = MjkUQ8_Int(obj->puff.y);
         if (obj->puff.phase == 0u) {
             slot = MjkPpu_WriteMetasprite(ppu, pkg, 0x25u, px, py, 0x00u, slot);
-        } else if ((size_t)slot + 2u <= MJK_PPU_OAM_COUNT) {
-            MjkPpu_SetOam(ppu, slot++, (uint8_t)(px - 8u), (uint8_t)(py - 4u),
-                          (uint8_t)(0x31u + obj->puff.bomb_type), 0u);
-            MjkPpu_SetOam(ppu, slot++, px, (uint8_t)(py - 4u), 0x30u, 0u);
+        } else if ((size_t)slot + 4u <= MJK_PPU_OAM_COUNT) {
+            uint8_t lx = (px >= 8u) ? (uint8_t)(px - 8u) : 0u;
+            uint8_t ty = (py >= 8u) ? (uint8_t)(py - 8u) : 0u;
+            MjkPpu_SetOam(ppu, slot++, lx, ty, (uint8_t)(0x31u + obj->puff.bomb_type), 0u);
+            MjkPpu_SetOam(ppu, slot++, px, ty, 0x30u, 0u);
+            MjkPpu_SetOam(ppu, slot++, lx, py, 0x0Fu, 0u);
+            MjkPpu_SetOam(ppu, slot++, px, py, obj->puff.mult_tile, 0u);
         }
     }
     return slot;

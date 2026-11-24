@@ -127,6 +127,52 @@ int main(void) {
         g_failures++;
     }
 
+    /* 5. Regresión muerte en suelo vs muerte en aire (trayectoria estrictamente vertical, prg.asm:1304-1366) */
+    memset(&room, 0, sizeof(room));
+    for (uint8_t x = 0u; x < MJK_ROOM_MT_COLS; ++x) {
+        room.static_metatiles[13][x] = 0x01u; /* Suelo en y=208 */
+    }
+    /* 5a. Muerte en el suelo -> directamente tendido (0x2A), sin volteretas */
+    MjkPlayer_Init(&p, 100u, 200u);
+    p.is_dying = true;
+    p.death_grounded = false;
+    p.death_timer = 0u;
+    MjkInput_Update(&in, MJK_BTN_RIGHT);
+    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+    if (!p.death_grounded || p.sprite_id != 0x2Au || MjkUQ8_Int(p.pos_x) != 100u) {
+        fprintf(stderr, "[FAIL] Muerte en suelo no tendio a Jack inmediatamente (g=%d spr=0x%02X x=%u)\n",
+                p.death_grounded ? 1 : 0, p.sprite_id, MjkUQ8_Int(p.pos_x));
+        g_failures++;
+    }
+
+    /* 5b. Muerte en el aire con input RIGHT y vel_x previa -> volteretas verticales (X constante) hasta suelo */
+    MjkPlayer_Init(&p, 100u, 120u);
+    p.in_air = true;
+    p.jump_accum = 0x4000u;
+    p.vel_x = (mjk_q8_8_t)0x0180;
+    p.is_dying = true;
+    p.death_grounded = false;
+    p.death_timer = 0u;
+    bool saw_tumble = false;
+    for (int f = 0; f < 60 && !p.death_grounded; ++f) {
+        MjkInput_Update(&in, MJK_BTN_RIGHT);
+        MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+        if (MjkUQ8_Int(p.pos_x) != 100u || p.vel_x != 0) {
+            fprintf(stderr, "[FAIL] Muerte en aire movio X horizontalmente (x=%u vx=%d)\n",
+                    MjkUQ8_Int(p.pos_x), (int)p.vel_x);
+            g_failures++;
+            break;
+        }
+        if (p.sprite_id == 0x28u || p.sprite_id == 0x29u) {
+            saw_tumble = true;
+        }
+    }
+    if (!saw_tumble || !p.death_grounded || p.sprite_id != 0x2Au || MjkUQ8_Int(p.pos_y) < 192u) {
+        fprintf(stderr, "[FAIL] Muerte en aire no dio volteretas verticales hasta el suelo (tumble=%d g=%d spr=0x%02X y=%u)\n",
+                saw_tumble ? 1 : 0, p.death_grounded ? 1 : 0, p.sprite_id, MjkUQ8_Int(p.pos_y));
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_player: %d fallo(s).\n", g_failures);

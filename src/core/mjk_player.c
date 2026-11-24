@@ -103,15 +103,95 @@ void MjkPlayer_Init(MjkPlayer* p, uint8_t x, uint8_t y) {
     p->facing_attr = 0x04u;
 }
 
-static void step_death(MjkPlayer* p, MjkActionResult* out_res) {
-    p->death_timer++;
-    if (p->death_timer < 48u) {
-        p->sprite_id = ((p->death_timer / 6u) & 1u) ? 0x29u : 0x28u;
-    } else {
+static void step_death(MjkPlayer* p,
+                       const MjkAssetPackage* pkg,
+                       const MjkRoomState* cur_room,
+                       const MjkRoomState* right_room,
+                       uint16_t scroll_x,
+                       uint16_t scroll_y,
+                       MjkActionResult* out_res) {
+    /* MainSub_1 (prg.asm:1304-1366, 1460-1545): velocidad X estrictamente 0 al morir. */
+    p->vel_x = 0;
+
+    if (p->death_grounded) {
+        p->vel_y = 0;
         p->sprite_id = 0x2Au;
+        p->death_timer++;
+        if (p->death_timer >= 64u) { /* $40 frames tendido en el suelo (prg.asm:1348) */
+            *out_res = MJK_ACTION_PLAYER_DIED;
+        }
+        return;
     }
-    if (p->death_timer >= 96u) {
-        *out_res = MJK_ACTION_PLAYER_DIED;
+
+    int32_t cx = (int32_t)MjkUQ8_Int(p->pos_x) + (int32_t)scroll_x;
+    int32_t cy = (int32_t)MjkUQ8_Int(p->pos_y) + (int32_t)scroll_y;
+    bool on_ground = (MjkUQ8_Int(p->pos_y) >= 0xE0u) ||
+                     is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, NULL) ||
+                     is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL);
+    if (on_ground && p->vel_y >= 0) {
+        p->death_grounded = true;
+        p->death_timer = 0u;
+        p->in_air = false;
+        p->vel_y = 0;
+        p->sprite_id = 0x2Au;
+        return;
+    }
+
+    /* En el aire: volteretas ($28 <-> $29 cada 6f) cayendo en vertical con gravedad neutra (X=0). */
+    p->sprite_id = ((p->death_timer / 6u) & 1u) ? 0x29u : 0x28u;
+    p->death_timer++;
+
+    if (!p->in_air) {
+        p->in_air = true;
+        p->jump_accum = 0x4000u;
+    }
+    uint16_t rate = 0x00F0u;
+    MjkAssets_ReadCpuU16(pkg, MJK_ADDR_VEL_X_TABLE_C163, &rate); /* v_idx = 0 (sin input) */
+    uint32_t next_acc = (uint32_t)p->jump_accum + (uint32_t)rate;
+    if ((next_acc >> 8u) > 0x7Fu) {
+        next_acc = (0x7Fu << 8u) | (next_acc & 0xFFu);
+    }
+    p->jump_accum = (uint16_t)next_acc;
+
+    uint8_t step = (uint8_t)(p->jump_accum >> 8u);
+    uint8_t tbl_idx = (step < 64u) ? step : (uint8_t)((step ^ 0xFFu) & 0x3Fu);
+    uint16_t mag = 0u;
+    MjkAssets_ReadCpuU16(pkg, (uint16_t)(MJK_ADDR_JUMP_TABLE_C0E3 + (uint16_t)tbl_idx * 2u), &mag);
+    p->vel_y = (step < 64u) ? (mjk_q8_8_t)(-(int16_t)mag) : (mjk_q8_8_t)mag;
+
+    p->pos_y = MjkUQ8_AddSigned(p->pos_y, p->vel_y);
+    cy = (int32_t)MjkUQ8_Int(p->pos_y) + (int32_t)scroll_y;
+
+    if (p->vel_y < 0) {
+        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[1], cy + k_probe_dy[1], false, NULL) ||
+            is_probe_solid(cur_room, right_room, cx + k_probe_dx[2], cy + k_probe_dy[2], false, NULL)) {
+            p->jump_accum = 0x4000u;
+            int32_t snap_wy = ((cy + k_probe_dy[1]) & ~7) + 15;
+            int32_t new_sy = snap_wy - (int32_t)scroll_y;
+            if (new_sy < 0) { new_sy = 0; }
+            if (new_sy > 255) { new_sy = 255; }
+            p->pos_y = MjkUQ8_FromInt((uint8_t)new_sy);
+            p->vel_y = 0;
+        }
+    } else if (MjkUQ8_Int(p->pos_y) >= 0xE0u) {
+        p->pos_y = MjkUQ8_FromInt(0xE0u);
+        p->death_grounded = true;
+        p->death_timer = 0u;
+        p->in_air = false;
+        p->vel_y = 0;
+        p->sprite_id = 0x2Au;
+    } else if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, NULL) ||
+               is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL)) {
+        int32_t snap_wy = ((cy + k_probe_dy[3]) & ~7) - 8;
+        int32_t new_sy = snap_wy - (int32_t)scroll_y;
+        if (new_sy < 0) { new_sy = 0; }
+        if (new_sy > 255) { new_sy = 255; }
+        p->pos_y = MjkUQ8_FromInt((uint8_t)new_sy);
+        p->death_grounded = true;
+        p->death_timer = 0u;
+        p->in_air = false;
+        p->vel_y = 0;
+        p->sprite_id = 0x2Au;
     }
 }
 
@@ -138,7 +218,7 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
 
     if (p->is_dying) {
         MjkActionResult res = MJK_ACTION_CONTINUE;
-        step_death(p, &res);
+        step_death(p, pkg, cur_room, right_room, scroll_x, scroll_y, &res);
         return res;
     }
 
@@ -233,7 +313,11 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
             is_probe_solid(cur_room, right_room, cx + k_probe_dx[2], cy + k_probe_dy[2], false, NULL)) {
             p->collision_flags |= MJK_CF_CEILING;
             p->jump_accum = 0x4000u;
-            p->pos_y = (mjk_uq8_8_t)((p->pos_y & 0xF800u) | 0x0700u);
+            int32_t snap_wy = ((cy + k_probe_dy[1]) & ~7) + 15;
+            int32_t new_sy = snap_wy - (int32_t)scroll_y;
+            if (new_sy < 0) { new_sy = 0; }
+            if (new_sy > 255) { new_sy = 255; }
+            p->pos_y = MjkUQ8_FromInt((uint8_t)new_sy);
             p->vel_y = 0;
         }
     } else {
@@ -241,7 +325,11 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
             is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL)) {
             p->collision_flags |= MJK_CF_GROUND;
             p->in_air = false;
-            p->pos_y = (mjk_uq8_8_t)(p->pos_y & 0xF800u);
+            int32_t snap_wy = ((cy + k_probe_dy[3]) & ~7) - 8;
+            int32_t new_sy = snap_wy - (int32_t)scroll_y;
+            if (new_sy < 0) { new_sy = 0; }
+            if (new_sy > 255) { new_sy = 255; }
+            p->pos_y = MjkUQ8_FromInt((uint8_t)new_sy);
             p->vel_y = 0;
         } else {
             p->in_air = true;
@@ -260,7 +348,9 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
                    &fire_tile);
     if (fire_tile != 0u) {
         p->is_dying = true;
+        p->death_grounded = false;
         p->death_timer = 0u;
+        p->vel_x = 0;
         p->fire_tile_died_to = fire_tile;
         if (out_sfx) { *out_sfx = MJK_SND_DEATH; }
     }

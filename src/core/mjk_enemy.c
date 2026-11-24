@@ -71,10 +71,21 @@ uint8_t MjkEnemyInternal_ArchetypePalette(uint8_t t) {
 }
 
 static bool probe_enemy_solid(const MjkGame* game, int32_t wx, int32_t wy) {
-    if (wy < 16 || wy >= 240) { return true; }
+    if (wy < 16) { return true; }
     if (wx < 0 || wx >= 512) { return false; }
-    if (wx >= 256 && game->camera.neighbor_room_id == 0u) { return false; }
-    const MjkRoomState* src = (wx >= 256) ? &game->right_room : &game->room;
+    const MjkRoomState* src = &game->room;
+    if (!game->room.is_horizontal && wy >= 240) {
+        if (game->camera.neighbor_room_id == 0u || wy >= 480) { return true; }
+        src = &game->right_room;
+        wy -= 240;
+        if (wx >= 256) { return false; }
+    } else {
+        if (wy >= 240) { return true; }
+        if (wx >= 256) {
+            if (game->camera.neighbor_room_id == 0u) { return false; }
+            src = &game->right_room;
+        }
+    }
     uint8_t mx = (uint8_t)(((uint32_t)wx & 255u) >> 4u);
     uint8_t my = (uint8_t)((uint32_t)wy >> 4u);
     if (my >= MJK_ROOM_MT_ROWS) { return true; }
@@ -412,7 +423,9 @@ MjkActionResult MjkEnemy_UpdateAll(MjkEnemyManager* mgr, MjkGame* game) {
             } else if (!game->player.is_dying && e->spawn_flash_timer == 0u &&
                        mgr->post_transmute_grace == 0u) {
                 game->player.is_dying = true;
+                game->player.death_grounded = false;
                 game->player.death_timer = 0u;
+                game->player.vel_x = 0;
                 MjkGame_QueueSound(game, MJK_SND_DEATH);
             }
         }

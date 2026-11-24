@@ -237,8 +237,9 @@ static void step_channel(MjkApu* apu, const MjkAssetPackage* pkg, uint8_t ch_idx
     MjkApuChannel* ch = &apu->channels[ch_idx];
     maybe_update_vol_delay(apu, pkg, ch_idx);
 
-    if (ch->duration_counter > 1u) {
-        ch->duration_counter--;
+    /* HandleSoundChannel (music-engine.asm:142-148): SBC #1 envuelve 0 -> 0xFF (256 frames para $80). */
+    ch->duration_counter = (uint8_t)(ch->duration_counter - 1u);
+    if (ch->duration_counter != 0u) {
         return;
     }
 

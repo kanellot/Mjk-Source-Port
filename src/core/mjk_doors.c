@@ -112,7 +112,8 @@ void MjkDoors_OpenDoorInRoom(MjkGame* game,
     if ((ro->opcode & 0xF0u) != 0x80u) {
         return;
     }
-    ro->ram_state = (uint8_t)((ro->ram_state | 0x40u) & 0x7Fu);
+    /* HandleOpenDoorMaybe / OpenBombRoomDoor (prg.asm:5362, 7070): $52 limpia bits 7 y 5 (oculta) y marca bit 6. */
+    ro->ram_state = 0x52u;
     sync_door_persist(game, target_room->room_id, ro->ram_index, ro->ram_state);
 
     uint8_t yx0 = 0u;
@@ -134,6 +135,58 @@ void MjkDoors_OpenRoomDoor(MjkGame* game, uint8_t door_obj_idx) {
     MjkDoors_OpenDoorInRoom(game, &game->room, 0u, door_obj_idx);
 }
 
+static bool trigger_door_event(MjkGame* game, uint8_t event_idx, bool check_sphinx_flag) {
+    if (!game || event_idx >= 32u) {
+        return false;
+    }
+    if (check_sphinx_flag && (game->persist.sphinx_flags[event_idx] & 0x80u) == 0u) {
+        return false;
+    }
+    game->persist.sphinx_flags[event_idx] = 0x52u;
+    MjkGame_QueueSound(game, MJK_SND_DOOR);
+
+    uint8_t val = k_unknown_door_table_us[event_idx];
+    if ((val & 0x10u) == 0u) {
+        return false;
+    }
+
+    uint8_t door_idx = (uint8_t)(val & 0x0Fu);
+    int32_t wx = (int32_t)MjkUQ8_Int(game->player.pos_x) + (int32_t)(game->camera.scroll_x_fixed >> 8);
+    int32_t wy = (int32_t)MjkUQ8_Int(game->player.pos_y) + (int32_t)(game->camera.scroll_y_fixed >> 8);
+    bool in_neighbor = (game->camera.neighbor_room_id != 0u) &&
+                       ((!game->room.is_horizontal && wy >= 240) ||
+                        (game->room.is_horizontal && wx >= 256));
+
+    MjkRoomState* rooms[2];
+    uint8_t nts[2];
+    if (in_neighbor) {
+        rooms[0] = &game->right_room; nts[0] = 1u;
+        rooms[1] = &game->room;       nts[1] = 0u;
+    } else {
+        rooms[0] = &game->room;       nts[0] = 0u;
+        rooms[1] = (game->camera.neighbor_room_id != 0u) ? &game->right_room : NULL; nts[1] = 1u;
+    }
+
+    for (uint8_t r = 0u; r < 2u; ++r) {
+        MjkRoomState* tr = rooms[r];
+        if (!tr) {
+            continue;
+        }
+        for (uint8_t i = 0u; i < tr->object_count; ++i) {
+            const MjkRoomObject* ro = &tr->objects[i];
+            if ((ro->opcode & 0xF0u) == 0x80u && (ro->opcode & 0x0Fu) == door_idx) {
+                MjkDoors_OpenDoorInRoom(game, tr, nts[r], i);
+                game->entry_door_type = door_idx;
+                game->state = MJK_GS_ANIMATE_DOOR_OPEN;
+                game->state_timer = 72u;
+                game->sub_state = 1u;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool MjkDoors_Update(MjkGame* game) {
     if (!game || game->room.object_count == 0u) {
         return false;
@@ -142,51 +195,16 @@ bool MjkDoors_Update(MjkGame* game) {
     if (cond < 0 || !MjkDoors_EvaluateCondition(game, (uint8_t)cond)) {
         return false;
     }
-    bool opened = false;
-    for (uint8_t i = 0u; i < game->room.object_count; ++i) {
-        const MjkRoomObject* ro = &game->room.objects[i];
-        if ((ro->opcode & 0xF0u) == 0x80u && (ro->ram_state & 0x40u) == 0u) {
-            MjkDoors_OpenDoorInRoom(game, &game->room, 0u, i);
-            opened = true;
-        }
-    }
-    if (opened) {
-        game->state = MJK_GS_ANIMATE_DOOR_OPEN;
-        game->sub_state = 0u;
-    }
-    return opened;
+    /* HandleOpenDoorMaybe (prg.asm:7030-7088): actualiza sphinx_flags[cond] = $52 y abre solo la puerta de UnknownDoorTable. */
+    return trigger_door_event(game, (uint8_t)cond, true);
 }
 
 void MjkDoors_HandleSphinxEvent(MjkGame* game, uint8_t event_idx) {
-    if (!game || event_idx >= 32u) {
-        return;
-    }
-    if ((game->persist.sphinx_flags[event_idx] & 0x80u) == 0u) {
-        return;
-    }
-    game->persist.sphinx_flags[event_idx] = 0x52u;
-    uint8_t val = k_unknown_door_table_us[event_idx];
-    if ((val & 0x10u) != 0u) {
-        uint8_t door_idx = (uint8_t)(val & 0x0Fu);
-        MjkRoomState* rooms[2] = { &game->room, (game->camera.neighbor_room_id != 0u) ? &game->right_room : NULL };
-        for (uint8_t r = 0u; r < 2u; ++r) {
-            MjkRoomState* tr = rooms[r];
-            if (!tr) {
-                continue;
-            }
-            for (uint8_t i = 0u; i < tr->object_count; ++i) {
-                const MjkRoomObject* ro = &tr->objects[i];
-                if ((ro->opcode & 0xF0u) == 0x80u && (ro->opcode & 0x0Fu) == door_idx) {
-                    MjkDoors_OpenDoorInRoom(game, tr, r, i);
-                    game->entry_door_type = door_idx;
-                    game->state = MJK_GS_ANIMATE_DOOR_OPEN;
-                    game->state_timer = 72u;
-                    game->sub_state = 1u;
-                    return;
-                }
-            }
-        }
-    }
+    (void)trigger_door_event(game, event_idx, true);
+}
+
+bool MjkDoors_TriggerEventDirect(MjkGame* game, uint8_t event_idx) {
+    return trigger_door_event(game, event_idx, false);
 }
 
 static void resolve_door_probe(MjkGame* game, int32_t px, int32_t py,

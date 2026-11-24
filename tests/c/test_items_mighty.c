@@ -85,6 +85,7 @@ static void test_item_and_bomb_feedback(const MjkAssetPackage* pkg) {
         g.sound_queue_count = 0u;
         g.mighty_coins = 0u;
         g.stage_timer_bcd = 0x50u;
+        g.persist.sphinx_flags[0] = 0x92u;
         g.room.objects[0].ram_state = k_cases[i].item;
         g.room.objects[0].yx = 0x55u;
         g.player.pos_x = MjkUQ8_FromInt(0x58u);
@@ -109,7 +110,7 @@ static void test_item_and_bomb_feedback(const MjkAssetPackage* pkg) {
         g_failures++;
     }
 
-    /* Test collecting 2 bombs in < 32f emits both popups, and Bomb Room br_tile 0x3C..0x3F */
+    /* Test collecting 2 bombs in < 32f overwrites puff slot (sub_A270/sub_A29C) and shows Bomb Room mult_tile */
     init_room_main(&g, pkg, 0x01u);
     memset(g.popups, 0, sizeof(g.popups));
     g.room.is_bomb_room = true;
@@ -123,16 +124,19 @@ static void test_item_and_bomb_feedback(const MjkAssetPackage* pkg) {
     MjkObjects_Update(&g.objects, &g, &in);
     g.player.pos_x = MjkUQ8_FromInt(0x78u);
     MjkObjects_Update(&g.objects, &g, &in);
-    if (!g.popups[0].active || g.popups[0].br_tile != 0x3Cu) {
-        fprintf(stderr, "[FAIL] Bomba 1 no volco popup x2 (active=%d, br=0x%02X)\n",
-                g.popups[0].active ? 1 : 0, g.popups[0].br_tile);
+    if (!g.objects.puff.active || g.objects.puff.phase != 0u ||
+        MjkUQ8_Int(g.objects.puff.x) != 0x78u || g.popups[0].active) {
+        fprintf(stderr, "[FAIL] Bomba 2 no sobrescribio el puff de Bomba 1 (active=%d phase=%u x=0x%02X pop=%d)\n",
+                g.objects.puff.active ? 1 : 0, g.objects.puff.phase,
+                MjkUQ8_Int(g.objects.puff.x), g.popups[0].active ? 1 : 0);
         g_failures++;
     }
     for (int f = 0; f < 32; ++f) {
         MjkObjects_Update(&g.objects, &g, &in);
     }
-    if (!g.popups[1].active) {
-        fprintf(stderr, "[FAIL] Bomba 2 no emitio popup tras 32f\n");
+    if (!g.objects.puff.active || g.objects.puff.phase != 1u || g.objects.puff.mult_tile != 0x3Cu) {
+        fprintf(stderr, "[FAIL] Bomba 2 no paso a fase popup x2 tras 32f (active=%d phase=%u mult=0x%02X)\n",
+                g.objects.puff.active ? 1 : 0, g.objects.puff.phase, g.objects.puff.mult_tile);
         g_failures++;
     }
     for (uint8_t m = 1u; m <= 4u; ++m) {
@@ -383,6 +387,28 @@ static void test_collectibles_secret_captive_balloon_bonus(const MjkAssetPackage
     MjkEnemy_UpdateAll(&g.enemies, &g);
     if (g.score_multiplier != 1u || !has_sound(&g, MJK_SND_COIN_COLLECTED)) {
         fprintf(stderr, "[FAIL] BonusCoin no incremento multiplicador / SFX\n");
+        g_failures++;
+    }
+
+    /* BonusCoin en Bomb Room cae y camina horizontalmente (ObjCode_9_E_ExtraBonusCoin) */
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.is_bomb_room = true;
+    for (uint8_t x = 0u; x < MJK_ROOM_MT_COLS; ++x) {
+        g.room.static_metatiles[13][x] = 0x01u;
+    }
+    g.jack_x = 0xC0u;
+    g.jack_y = 0x20u;
+    MjkEnemy_SpawnCollectible(&g.enemies, MJK_ENEMY_BONUS_COIN, 0x80u, 0xA0u);
+    for (int f = 0; f < 60; ++f) {
+        MjkEnemy_UpdateAll(&g.enemies, &g);
+    }
+    if (!g.enemies.slots[0].active ||
+        MjkUQ8_Int(g.enemies.slots[0].pos_y) <= 0xA0u ||
+        MjkUQ8_Int(g.enemies.slots[0].pos_x) <= 0x80u) {
+        fprintf(stderr, "[FAIL] BonusCoin en Royal Room no cayo y camino (act=%d x=0x%02X y=0x%02X)\n",
+                g.enemies.slots[0].active ? 1 : 0,
+                MjkUQ8_Int(g.enemies.slots[0].pos_x),
+                MjkUQ8_Int(g.enemies.slots[0].pos_y));
         g_failures++;
     }
 }

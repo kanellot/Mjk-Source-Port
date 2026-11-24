@@ -135,6 +135,75 @@ int main(void) {
         g_failures++;
     }
 
+    /* 5. Regresión scroll vertical: aterrizaje sin glitch de sprite (scroll_y % 8 != 0) + bombas en sala inferior */
+    MjkGame_Init(&g, &pkg);
+    g.state = MJK_GS_MAIN;
+    g.current_room_id = 0x07u; /* Pasillo vertical */
+    memset(&g.room, 0, sizeof(g.room));
+    g.room.room_id = 0x07u;
+    g.room.is_horizontal = false;
+    g.room.adj.flags = 0x00u;
+    g.room.adj.down = 0x08u;
+    memset(&g.right_room, 0, sizeof(g.right_room));
+    g.right_room.room_id = 0x08u;
+    g.right_room.is_horizontal = false;
+    /* Suelo en wy = 144 (fila 9 de room) y bomba en sala inferior (right_room, my=2 -> wy=272) */
+    for (uint8_t x = 0u; x < MJK_ROOM_MT_COLS; ++x) {
+        g.room.static_metatiles[9][x] = 0x01u;
+    }
+    g.camera.room_flags = 0u; /* Activo (sin AT_SCROLL_EDGE) */
+    g.camera.current_room_id = 0x07u;
+    g.camera.neighbor_room_id = 0x08u;
+    g.camera.scroll_y_fixed = (5 << 8); /* scroll_y = 5 (no múltiplo de 8) */
+    MjkPlayer_Init(&g.player, 128u, 120u);
+    g.player.in_air = true;
+    g.player.jump_accum = 0x5000u;
+    MjkInputState vin;
+    memset(&vin, 0, sizeof(vin));
+    MjkInput_Update(&vin, 0u);
+    bool landed = false;
+    for (int f = 0; f < 30; ++f) {
+        MjkPlayer_Update(&g.player, &vin, &pkg, &g.room, &g.right_room,
+                         g.camera.room_flags, 0u, (uint16_t)(g.camera.scroll_y_fixed >> 8),
+                         false, NULL, NULL, NULL, NULL, NULL);
+        MjkCamera_Update(&g.camera, &g.player, &pkg);
+        if (!g.player.in_air) {
+            landed = true;
+            break;
+        }
+    }
+    if (!landed) {
+        fprintf(stderr, "[FAIL] Scroll vertical: Jack no aterrizo en suelo\n");
+        g_failures++;
+    }
+    /* Durante 10 frames quieto tras aterrizar, in_air debe ser false y sprite_id == 0x00 (cero parpadeo) */
+    for (int f = 0; f < 10; ++f) {
+        MjkPlayer_Update(&g.player, &vin, &pkg, &g.room, &g.right_room,
+                         g.camera.room_flags, 0u, (uint16_t)(g.camera.scroll_y_fixed >> 8),
+                         false, NULL, NULL, NULL, NULL, NULL);
+        MjkCamera_Update(&g.camera, &g.player, &pkg);
+        if (g.player.in_air || g.player.sprite_id != 0x00u) {
+            fprintf(stderr, "[FAIL] Scroll vertical: glitch de sprite al aterrizar (f=%d in_air=%d spr=0x%02X sy=%d)\n",
+                    f, g.player.in_air ? 1 : 0, g.player.sprite_id, (int)(g.camera.scroll_y_fixed >> 8));
+            g_failures++;
+            break;
+        }
+    }
+    /* Bomba en sala inferior (right_room, yx=0x24 -> wy=240+32=272) con scroll_y=152 y pos_y=120 -> wy=272 */
+    g.camera.scroll_y_fixed = (152 << 8);
+    g.player.pos_x = MjkUQ8_FromInt(0x48u);
+    g.player.pos_y = MjkUQ8_FromInt(120u);
+    g.right_room.object_count = 1u;
+    g.right_room.objects[0].yx = 0x24u;
+    g.right_room.objects[0].ram_state = 0x05u;
+    g.right_room.objects[0].ram_index = 0u;
+    MjkObjects_Update(&g.objects, &g, &vin);
+    if (g.right_room.objects[0].ram_state != 0x0Fu || MjkUQ8_Int(g.objects.puff.y) != 128u) {
+        fprintf(stderr, "[FAIL] Scroll vertical: bomba en sala inferior no recogida o puff.y mal (st=0x%02X py=%u)\n",
+                g.right_room.objects[0].ram_state, MjkUQ8_Int(g.objects.puff.y));
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_camera: %d fallo(s).\n", g_failures);

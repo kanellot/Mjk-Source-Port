@@ -55,7 +55,10 @@ void MjkObjects_InitForRoom(MjkObjectSystem* obj, MjkGame* game) {
     if (!obj) {
         return;
     }
+    /* O-05 (prg.asm:423-427, 4980-5006): conservar power_coin_acc entre salas si no está armada. */
+    uint8_t saved_acc = (obj->power_coin_armed == 0u) ? obj->power_coin_acc : 0u;
     memset(obj, 0, sizeof(*obj));
+    obj->power_coin_acc = saved_acc;
     if (!game) {
         return;
     }
@@ -110,16 +113,36 @@ static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
         obj->maybe_bomb_thing |= 2u;
     }
 
-    if (!target_room->is_bomb_room && !was_first_bomb && st == 0xC5u && obj->maybe_bomb_thing == 1u) {
+    bool is_final_order_bonus = (!target_room->is_bomb_room && !was_first_bomb &&
+                                 st == 0xC5u && obj->maybe_bomb_thing == 1u);
+    /* O-05 (prg.asm:4980-5006): congelar power_coin_acc mientras PowerCoin armada o activa. */
+    bool triggered_power_coin = false;
+    if (obj->power_coin_armed == 0u && game->enemies.transmute_timer == 0u) {
+        obj->power_coin_acc += lit ? 2u : 1u;
+        if (obj->power_coin_acc >= 20u) {
+            obj->power_coin_acc = 0u;
+            triggered_power_coin = true;
+        }
+    }
+
+    if (is_final_order_bonus) {
+        /* O-04 (prg.asm:5009-5010, 5041-5059): $C5 final suma Score_200 + Score_10000 (10.200). */
+        MjkGame_AddScore(game, MJK_SCORE_200);
         MjkGame_AddScore(game, MJK_SCORE_10000);
         obj->maybe_bomb_thing |= 0x80u;
-        play_sfx(game, MJK_SND_BOMB_BONUS);
+        if (!triggered_power_coin) {
+            play_sfx(game, MJK_SND_BOMB_BONUS);
+        }
     } else if (lit) {
         MjkGame_AddScore(game, MJK_SCORE_200);
-        play_sfx(game, MJK_SND_BOMB_LIT);
+        if (!triggered_power_coin) {
+            play_sfx(game, MJK_SND_BOMB_LIT);
+        }
     } else {
         MjkGame_AddScore(game, MJK_SCORE_100);
-        play_sfx(game, MJK_SND_BOMB_UNLIT);
+        if (!triggered_power_coin) {
+            play_sfx(game, MJK_SND_BOMB_UNLIT);
+        }
     }
 
     ro->ram_state = 0x0Fu;
@@ -128,16 +151,10 @@ static void collect_bomb(MjkObjectSystem* obj, MjkGame* game,
     }
     MjkObjects_SetRoomMetatile(game, target_room, target_nt, ro->yx, 0x2Fu);
 
-    if (lit) {
-        if (target_room->is_bomb_room) {
-            game->fire_bombs_collected++;
-        }
-        obj->power_coin_acc += 2u;
-    } else {
-        obj->power_coin_acc += 1u;
+    if (lit && target_room->is_bomb_room) {
+        game->fire_bombs_collected++;
     }
-    if (obj->power_coin_acc >= 20u) {
-        obj->power_coin_acc = 0u;
+    if (triggered_power_coin) {
         if (target_room->is_bomb_room) {
             MjkEnemy_SpawnPowerCoinBombRoom(&game->enemies, game);
             play_sfx(game, MJK_SND_POWER_COIN_SPAWN);
@@ -359,6 +376,7 @@ static MjkActionResult pickup_item(MjkGame* game, MjkRoomState* target_room, uin
             game->lives++;
             game->extra_lives_found++;
             game->collected_1up = 1u;
+            game->one_up_timer = 0x40u;
             play_sfx(game, MJK_SND_1UP_CAPTIVE);
             break;
         case MJK_ITEM_MIGHTY_COIN:
@@ -537,6 +555,18 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
                     }
                     MjkObjects_SetRoomMetatile(game, chest_room, chest_nt, ro->yx,
                                                is_orange ? 0x4Au : 0x28u);
+                    /* O-06 (prg.asm:5392-5431): revelar cofre oculto también spawnea PowerCoin armada. */
+                    if (obj->power_coin_armed != 0u) {
+                        obj->power_coin_armed = 0u;
+                        int32_t scx = (int32_t)(game->camera.scroll_x_fixed >> 8);
+                        int32_t scy = (int32_t)(game->camera.scroll_y_fixed >> 8);
+                        bool horiz = game->room.is_horizontal;
+                        int32_t cx = (int32_t)(((ro->yx & 0x0Fu) << 4u) + 8u) + ((chest_in_right && horiz) ? 256 : 0) - scx;
+                        int32_t cy = (int32_t)((ro->yx & 0xF0u) + 8u) + ((chest_in_right && !horiz) ? 240 : 0) - scy;
+                        if (cx < 0) { cx = 0; } else if (cx > 255) { cx = 255; }
+                        if (cy < 0) { cy = 0; } else if (cy > 239) { cy = 239; }
+                        MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_POWER_COIN, (uint8_t)cx, (uint8_t)cy);
+                    }
                 } else {
                     open_chest(obj, game, chest_room, chest_nt, chest_in_right, chest_slot, i);
                 }

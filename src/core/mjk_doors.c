@@ -9,14 +9,28 @@
 #include "mjk_doors.h"
 #include "mjk_game.h"
 
+static uint8_t resolve_active_room_id(const MjkGame* game) {
+    uint8_t active_id = game->current_room_id;
+    if (game->camera.neighbor_room_id != 0u) {
+        int32_t wx = (int32_t)MjkUQ8_Int(game->player.pos_x) + (int32_t)(game->camera.scroll_x_fixed >> 8);
+        int32_t wy = (int32_t)MjkUQ8_Int(game->player.pos_y) + (int32_t)(game->camera.scroll_y_fixed >> 8);
+        if ((!game->room.is_horizontal && wy >= 240) ||
+            (game->room.is_horizontal && wx >= 256)) {
+            active_id = game->right_room.room_id;
+        }
+    }
+    return active_id;
+}
+
 int MjkDoors_RoomConditionIndex(const MjkGame* game) {
     if (!game || !game->pkg) {
         return -1;
     }
-    if (game->current_room_id == 0x61u) {
+    uint8_t active_id = resolve_active_room_id(game);
+    if (active_id == 0x61u) {
         return (int)MJK_DOOR_COND_R11_TO_R6;
     }
-    const uint8_t* rdata = MjkAssets_GetRoomDataPtr(game->pkg, game->current_room_id, NULL);
+    const uint8_t* rdata = MjkAssets_GetRoomDataPtr(game->pkg, active_id, NULL);
     if (!rdata || (rdata[0] & 0xF0u) != 0xE0u) {
         return -1;
     }
@@ -187,12 +201,53 @@ static bool trigger_door_event(MjkGame* game, uint8_t event_idx, bool check_sphi
     return false;
 }
 
+static bool player_touching_door_for_cond(const MjkGame* game, uint8_t cond) {
+    int32_t wx = (int32_t)MjkUQ8_Int(game->player.pos_x) + (int32_t)(game->camera.scroll_x_fixed >> 8);
+    int32_t wy = (int32_t)MjkUQ8_Int(game->player.pos_y) + (int32_t)(game->camera.scroll_y_fixed >> 8);
+    int32_t px[5] = { wx, wx - 8, wx + 8, wx, wx };
+    int32_t py[5] = { wy, wy, wy, wy - 8, wy + 8 };
+
+    for (uint8_t p = 0u; p < 5u; ++p) {
+        int32_t x = px[p];
+        int32_t y = py[p];
+        if (x < 0) { x = 0; }
+        if (y < 0) { y = 0; }
+        const MjkRoomState* tr = &game->room;
+        if (!game->room.is_horizontal && y >= 240 && game->camera.neighbor_room_id != 0u) {
+            tr = &game->right_room;
+            y -= 240;
+        } else if (game->room.is_horizontal && x >= 256 && game->camera.neighbor_room_id != 0u) {
+            tr = &game->right_room;
+            x -= 256;
+        }
+        if (x >= 256) { x = 255; }
+        if (y >= 240) { y = 239; }
+        uint8_t cell = (uint8_t)((((uint8_t)y >> 4u) << 4u) | ((uint8_t)x >> 4u));
+        for (uint8_t i = 0u; i < tr->object_count; ++i) {
+            const MjkRoomObject* ro = &tr->objects[i];
+            if ((ro->opcode & 0xF0u) != 0x80u) {
+                continue;
+            }
+            if ((cell == ro->yx || cell == ro->yx2) && (uint8_t)(ro->extra >> 3u) == cond) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool MjkDoors_Update(MjkGame* game) {
-    if (!game || game->room.object_count == 0u) {
+    if (!game || (game->room.object_count == 0u && game->right_room.object_count == 0u)) {
         return false;
     }
     int cond = MjkDoors_RoomConditionIndex(game);
     if (cond < 0 || !MjkDoors_EvaluateCondition(game, (uint8_t)cond)) {
+        return false;
+    }
+    /* MaybeDontOpenDoors (prg.asm:6832-6837, 6903-6909, 7010-7026): cond $02 y Mighty3 exigen tocar la puerta. */
+    if ((cond == 0x02 || cond == 0x07 || cond == 0x0E ||
+         cond == 0x17 || cond == 0x18 || cond == 0x1B) &&
+        !player_touching_door_for_cond(game, (uint8_t)cond)) {
         return false;
     }
     /* HandleOpenDoorMaybe (prg.asm:7030-7088): actualiza sphinx_flags[cond] = $52 y abre solo la puerta de UnknownDoorTable. */

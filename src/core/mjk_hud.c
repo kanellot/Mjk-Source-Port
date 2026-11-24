@@ -160,14 +160,23 @@ uint8_t MjkHud_RenderOam(MjkGame* game, uint8_t start_slot) {
         return start_slot;
     }
     uint8_t slot = MjkPpu_DrawHudScore(&game->ppu, game->score_bcd, start_slot);
-    slot = MjkPpu_DrawHudTimer(&game->ppu,
-                               (game->torture_scene_flag != 0u) ? game->greedy_jumps_bcd
-                                                                : game->stage_timer_bcd,
-                               slot);
+    if (game->torture_scene_flag != 0u) {
+        /* DrawTimerOrTortureJumps (prg.asm:1871-1897): contador centrado ($84,$44) sin 'T'. */
+        slot = MjkPpu_DrawBcdByte(&game->ppu, game->greedy_jumps_bcd, 0x84u, 0x44u, true, slot);
+    } else {
+        slot = MjkPpu_DrawHudTimer(&game->ppu, game->stage_timer_bcd, slot);
+    }
     slot = MjkPpu_DrawHudMightyOrMult(&game->ppu, game->room.is_bomb_room,
                                       game->room.is_bomb_room ? game->score_multiplier
                                                               : game->mighty_coins,
                                       slot);
+    if (game->one_up_timer > 0u && (size_t)slot + 2u <= MJK_PPU_OAM_COUNT) {
+        /* MaybeAward1UP (prg.asm:5797-5855): sprite flotante "1UP" ($82/$83) sobre Jack 64f. */
+        uint8_t uy = (game->jack_y >= 16u) ? (uint8_t)(game->jack_y - 16u) : 0u;
+        uint8_t ux = (game->jack_x >= 8u) ? (uint8_t)(game->jack_x - 8u) : 0u;
+        MjkPpu_SetOam(&game->ppu, slot++, ux, uy, 0x82u, 0x01u);
+        MjkPpu_SetOam(&game->ppu, slot++, (uint8_t)(ux + 8u), uy, 0x83u, 0x01u);
+    }
     for (size_t i = 0u; i < MJK_FLOAT_SCORE_SLOTS; ++i) {
         const MjkFloatingScore* p = &game->popups[i];
         if (!p->active || (size_t)slot + 4u > MJK_PPU_OAM_COUNT) {

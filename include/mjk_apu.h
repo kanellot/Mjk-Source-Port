@@ -49,6 +49,8 @@ typedef struct {
 
     double   tri_phase;
     uint8_t  tri_step;
+    uint8_t  tri_linear_counter;
+    bool     tri_linear_reload;
 
     double   noise_phase;
     uint16_t noise_lfsr;
@@ -94,6 +96,7 @@ MJK_CORE_API void MjkApuSynth_OnRegWrite(MjkApuSynth* synth,
                                          const MjkApuRegs* regs,
                                          uint8_t voice_idx,
                                          bool reload_hi);
+MJK_CORE_API void MjkApuSynth_ClockQuarterFrame(MjkApuSynth* synth, const MjkApuRegs* regs);
 MJK_CORE_API void MjkApuSynth_ClockSweep(MjkApuSynth* synth, const MjkApuRegs* regs);
 MJK_CORE_API void MjkApuSynth_RenderSamples(MjkApuSynth* synth,
                                             const MjkApuRegs* regs,

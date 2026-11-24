@@ -341,15 +341,18 @@ void MjkApu_StepFrame(MjkApu* apu,
         write_sound_registers(apu, active_mask);
     }
 
-    uint32_t half = sample_count / 2u;
-    uint32_t rem = sample_count - half;
-    MjkApuSynth_ClockSweep(&apu->synth, &apu->regs);
-    if (half > 0u) {
-        MjkApuSynth_RenderSamples(&apu->synth, &apu->regs, out_samples, half);
-    }
-    MjkApuSynth_ClockSweep(&apu->synth, &apu->regs);
-    if (rem > 0u) {
-        MjkApuSynth_RenderSamples(&apu->synth, &apu->regs, out_samples + half, rem);
+    uint32_t q = sample_count / 4u;
+    uint32_t offset = 0u;
+    for (uint8_t step = 0u; step < 4u; ++step) {
+        uint32_t n = (step == 3u) ? (sample_count - offset) : q;
+        MjkApuSynth_ClockQuarterFrame(&apu->synth, &apu->regs);
+        if (step == 1u || step == 3u) {
+            MjkApuSynth_ClockSweep(&apu->synth, &apu->regs);
+        }
+        if (n > 0u) {
+            MjkApuSynth_RenderSamples(&apu->synth, &apu->regs, out_samples + offset, n);
+            offset += n;
+        }
     }
 
     uint32_t energy = 0u;

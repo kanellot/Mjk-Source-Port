@@ -39,21 +39,40 @@ void MjkApuSynth_Init(MjkApuSynth* synth) {
     }
     memset(synth, 0, sizeof(*synth));
     synth->noise_lfsr = 1u;
+    synth->tri_linear_counter = 0x7Fu;
 }
 
 void MjkApuSynth_OnRegWrite(MjkApuSynth* synth,
                             const MjkApuRegs* regs,
                             uint8_t voice_idx,
                             bool reload_hi) {
-    if (!synth || !regs || voice_idx >= 2u) {
+    if (!synth || !regs) {
         return;
     }
-    if (reload_hi) {
+    if (voice_idx < 2u && reload_hi) {
         uint16_t lo = regs->voice[voice_idx].lo;
         uint16_t hi = (uint16_t)(regs->voice[voice_idx].hi & 0x07u);
         synth->pulse_period[voice_idx] = (uint16_t)(lo | (hi << 8));
         synth->pulse_step[voice_idx] = 0u;
         synth->pulse_sweep_reload[voice_idx] = true;
+    } else if (voice_idx == 2u && reload_hi) {
+        synth->tri_linear_reload = true;
+        synth->tri_linear_counter = (uint8_t)(regs->voice[2].vol & 0x7Fu);
+    }
+}
+
+void MjkApuSynth_ClockQuarterFrame(MjkApuSynth* synth, const MjkApuRegs* regs) {
+    if (!synth || !regs) {
+        return;
+    }
+    uint8_t ctrl = regs->voice[2].vol;
+    if (synth->tri_linear_reload) {
+        synth->tri_linear_counter = (uint8_t)(ctrl & 0x7Fu);
+    } else if (synth->tri_linear_counter > 0u) {
+        synth->tri_linear_counter--;
+    }
+    if ((ctrl & 0x80u) == 0u) {
+        synth->tri_linear_reload = false;
     }
 }
 
@@ -123,7 +142,9 @@ static double step_pulse_voice(MjkApuSynth* synth,
 static double step_triangle_voice(MjkApuSynth* synth,
                                   const MjkApuRegs* regs,
                                   double cycles_per_sample) {
-    if ((regs->snd_chn & 0x04u) == 0u || (regs->voice[2].vol & 0x7Fu) == 0u) {
+    if ((regs->snd_chn & 0x04u) == 0u ||
+        (regs->voice[2].vol & 0x7Fu) == 0u ||
+        synth->tri_linear_counter == 0u) {
         return 0.0;
     }
     uint16_t period = (uint16_t)(regs->voice[2].lo | ((uint16_t)(regs->voice[2].hi & 0x07u) << 8));

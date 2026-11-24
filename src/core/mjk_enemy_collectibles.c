@@ -204,6 +204,7 @@ void MjkEnemyInternal_HandleCollectiblePickup(MjkEnemy* e, MjkEnemyManager* mgr,
             game->lives++;
             game->extra_lives_found++;
             game->collected_1up = 1u;
+            game->one_up_timer = 0x40u;
             MjkGame_QueueSound(game, MJK_SND_1UP_CAPTIVE);
             e->active = false;
             break;

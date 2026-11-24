@@ -78,6 +78,7 @@ typedef struct MjkGame {
     uint8_t  secret_coins;
     uint8_t  gold_coins;
     uint8_t  collected_1up;
+    uint8_t  one_up_timer;
 
     bool     paused;
     uint16_t state_timer;

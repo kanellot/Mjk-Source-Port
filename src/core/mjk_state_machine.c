@@ -32,12 +32,17 @@ void MjkGame_AddScore(MjkGame* game, MjkScoreId score_id) {
     bool spawn_bonus = false;
     bool spawn_extra = false;
     MjkHud_AddScore(game, score_id, &spawn_bonus, &spawn_extra);
-    if (spawn_extra) {
-        if (MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_EXTRA_COIN, 0x80u, 0x40u)) {
-            MjkGame_QueueSound(game, MJK_SND_BONUS_COIN_SPAWN);
+    if (spawn_extra || spawn_bonus) {
+        /* AddScore (prg.asm:2521-2542): guarda byte_364 & 2 (no duplicar Bonus/ExtraCoin activa). */
+        for (size_t i = 0u; i < MJK_ENEMY_MAX_SLOTS; ++i) {
+            if (game->enemies.slots[i].active &&
+                (game->enemies.slots[i].type == MJK_ENEMY_BONUS_COIN ||
+                 game->enemies.slots[i].type == MJK_ENEMY_EXTRA_COIN)) {
+                return;
+            }
         }
-    } else if (spawn_bonus) {
-        if (MjkEnemy_SpawnCollectible(&game->enemies, MJK_ENEMY_BONUS_COIN, 0x80u, 0x40u)) {
+        MjkEnemyType coin_type = spawn_extra ? MJK_ENEMY_EXTRA_COIN : MJK_ENEMY_BONUS_COIN;
+        if (MjkEnemy_SpawnCollectible(&game->enemies, coin_type, 0x80u, 0x40u)) {
             MjkGame_QueueSound(game, MJK_SND_BONUS_COIN_SPAWN);
         }
     }
@@ -172,9 +177,15 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             game->extra_lives_found = 0u;
             game->mighty_coins = 0u;
             game->collected_1up = 0u;
+            game->one_up_timer = 0u;
             game->score_multiplier = 0u;
             game->score_5000_mark = 0u;
             game->timer_status = 0u;
+            game->door_flag_09 = 0u;
+            game->door_flag_1f = 0u;
+            game->door_1e_deaths = 0u;
+            game->entry_door_already_open = false;
+            memset(&game->objects, 0, sizeof(game->objects));
             memset(game->score_bcd, 0, sizeof(game->score_bcd));
             queue_sound(game, MJK_SND_SILENCE);
             MjkPpu_ClearNametable(&game->ppu, 0x24u);
@@ -222,6 +233,7 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             MjkObjects_InitForRoom(&game->objects, game);
             MjkEnemy_InitForRoom(&game->enemies, game->pkg, game->last_bomb_room_cleared, game->room.is_bomb_room);
             memset(game->popups, 0, sizeof(game->popups));
+            game->one_up_timer = 0u;
             const uint8_t* rdata = MjkAssets_GetRoomDataPtr(game->pkg, game->current_room_id, NULL);
             if (rdata && (rdata[0] & 0xF0u) == 0xE0u && (rdata[2] & 0x40u) != 0u) {
                 /* SpawnBrotherRoomObjects (prg.asm:6659-6694): 2 Captives ($68/$A8,$D8) + Brother ($88,$D8). */
@@ -442,6 +454,9 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
             game->jack_y = MjkUQ8_Int(game->player.pos_y);
 
             if (!game->player.is_dying) {
+                if (game->one_up_timer > 0u) {
+                    game->one_up_timer--;
+                }
                 MjkHud_TickFloating(game->popups, MJK_FLOAT_SCORE_SLOTS,
                                     game->camera.delta_cam_x, game->camera.delta_cam_y);
                 if (MjkObjects_Update(&game->objects, game, input) != MJK_ACTION_CONTINUE) {

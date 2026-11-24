@@ -43,6 +43,8 @@ void MjkState_StepRoundClear(MjkGame* game) {
     static const uint8_t k_fire_bomb_bonus[4] = { 0x10u, 0x20u, 0x30u, 0x50u };
     switch (game->sub_state) {
         case 0u: {
+            /* RoundClear_0 (prg.asm:794-800): limpiar RF_BombRoom antes de contar bonus. */
+            game->room.is_bomb_room = false;
             game->ppu.scroll_x = 0u;
             game->ppu.scroll_y = 0u;
             game->timer_status |= 0x40u;
@@ -255,10 +257,12 @@ void MjkState_StepGameOver(MjkGame* game) {
 
 void MjkState_StepEnding(MjkGame* game, const MjkInputState* input) {
     static const uint8_t k_destroy_depth[4] = { 12u, 30u, 56u, 90u };
+    static const uint8_t k_end_jack_y[4] = { 0x90u, 0xA0u, 0xB0u, 0xC0u };
     static const MjkStringId k_end_str_start[4] = {
         MJK_STR_ENDING_1A, MJK_STR_ENDING_2A, MJK_STR_ENDING_3A, MJK_STR_ENDING_4A
     };
     static const uint8_t k_end_str_count[4] = { 3u, 3u, 4u, 4u };
+    uint8_t et = game->ending_type & 3u;
 
     switch (game->ending_state) {
         case 0u:
@@ -268,21 +272,62 @@ void MjkState_StepEnding(MjkGame* game, const MjkInputState* input) {
             if (MjkRoom_DecodeGeometry(game->pkg, 0x00u, &game->room)) {
                 MjkRoom_BlitToPpu(&game->room, game->pkg, &game->ppu, 0u);
             }
+            /* EndingState_0 (prg.asm:7719-7760): limpiar las 16 filas superiores (logo de título). */
+            for (uint8_t row = 0u; row < 16u; ++row) {
+                for (uint8_t col = 0u; col < MJK_PPU_NT_COLS; ++col) {
+                    MjkPpu_SetTile(&game->ppu, 0u, col, row, 0x24u);
+                }
+            }
             game->jack_x = 0x78u;
             game->jack_y = 0xE8u;
+            game->state_timer = 0x18u;
             game->ending_state = 1u;
             break;
         case 1u:
-            game->ending_depth = k_destroy_depth[game->ending_type & 3u];
+            /* EndingState_1: Jack sube saltando hacia la pirámide. */
+            if (game->jack_y > 0x90u) {
+                game->jack_y = (uint8_t)(game->jack_y - 2u);
+            }
+            MjkPpu_ClearOam(&game->ppu);
+            MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x01u, game->jack_x, game->jack_y, 0x01u, 0u);
+            if (game->state_timer > 0u) {
+                game->state_timer--;
+                break;
+            }
+            game->ending_depth = k_destroy_depth[et];
             game->state_timer = 8u;
             game->ending_state = 2u;
             break;
-        case 2u:
+        case 2u: {
+            uint8_t total = k_destroy_depth[et];
+            uint8_t done = (total >= game->ending_depth) ? (uint8_t)(total - game->ending_depth) : 0u;
+            uint8_t carve_row = (uint8_t)(16u + (done / 10u));
+            uint8_t jack_y = (uint8_t)(0x88u + (done / 2u));
+            if (jack_y > k_end_jack_y[et]) {
+                jack_y = k_end_jack_y[et];
+            }
+            game->jack_y = jack_y;
+            MjkPpu_ClearOam(&game->ppu);
+            uint8_t slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x01u, game->jack_x, game->jack_y, 0x01u, 0u);
+            uint8_t debris_off = (uint8_t)((8u - game->state_timer) * 3u);
+            slot = MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x25u,
+                                          (uint8_t)(0x68u - debris_off), (uint8_t)(game->jack_y + debris_off), 0x00u, slot);
+            MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x25u,
+                                   (uint8_t)(0x88u + debris_off), (uint8_t)(game->jack_y + debris_off), 0x00u, slot);
             if (game->state_timer > 0u) {
                 game->state_timer--;
                 break;
             }
             if (game->ending_depth > 0u) {
+                if (carve_row < MJK_PPU_NT_ROWS) {
+                    uint8_t half_w = (uint8_t)(2u + (done / 8u));
+                    if (half_w > 14u) { half_w = 14u; }
+                    uint8_t c_start = (uint8_t)(16u - half_w);
+                    uint8_t c_end = (uint8_t)(16u + half_w);
+                    for (uint8_t c = c_start; c < c_end && c < MJK_PPU_NT_COLS; ++c) {
+                        MjkPpu_SetTile(&game->ppu, 0u, c, carve_row, 0x24u);
+                    }
+                }
                 game->ending_depth--;
                 MjkGame_QueueSound(game, MJK_SND_BOMB_BONUS);
                 game->state_timer = 8u;
@@ -290,16 +335,21 @@ void MjkState_StepEnding(MjkGame* game, const MjkInputState* input) {
                 game->ending_state = 3u;
             }
             break;
+        }
         case 3u: {
-            uint8_t et = game->ending_type & 3u;
             for (uint8_t i = 0u; i < k_end_str_count[et]; ++i) {
                 MjkPpu_WriteString(&game->ppu, game->pkg, (MjkStringId)(k_end_str_start[et] + i));
             }
+            game->jack_y = k_end_jack_y[et];
+            MjkPpu_ClearOam(&game->ppu);
+            MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x00u, game->jack_x, game->jack_y, 0x01u, 0u);
             MjkGame_QueueSound(game, MJK_MUS_ENDING);
             game->ending_state = 4u;
             break;
         }
         default:
+            MjkPpu_ClearOam(&game->ppu);
+            MjkPpu_WriteMetasprite(&game->ppu, game->pkg, 0x00u, game->jack_x, k_end_jack_y[et], 0x01u, 0u);
             if (input && (input->just_pressed & MJK_BTN_START) != 0u) {
                 MjkTitle_Init(&game->title);
                 game->state = MJK_GS_GAME_OVER;

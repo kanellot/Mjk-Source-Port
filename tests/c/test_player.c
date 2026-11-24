@@ -173,6 +173,28 @@ int main(void) {
         g_failures++;
     }
 
+    /* 6. Regresión P-01 (salir por borde resetea jump_accum a 0x4000) y P-03 (suelo $E0) */
+    memset(&room, 0, sizeof(room));
+    MjkPlayer_Init(&p, 100u, 100u);
+    p.in_air = false;
+    p.jump_accum = 0x7F00u; /* Velocidad terminal residual de una caída previa */
+    MjkInput_Update(&in, 0u);
+    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+    if (!p.in_air || p.jump_accum != 0x4000u) {
+        fprintf(stderr, "[FAIL] P-01: salir por borde no reseteo jump_accum (in_air=%d acc=0x%04X)\n",
+                p.in_air ? 1 : 0, p.jump_accum);
+        g_failures++;
+    }
+    MjkPlayer_Init(&p, 100u, 0xDFu);
+    p.in_air = true;
+    p.jump_accum = 0x7000u;
+    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+    if (p.in_air || MjkUQ8_Int(p.pos_y) != 0xE0u) {
+        fprintf(stderr, "[FAIL] P-03: suelo de seguridad $E0 fallo (in_air=%d y=0x%02X)\n",
+                p.in_air ? 1 : 0, MjkUQ8_Int(p.pos_y));
+        g_failures++;
+    }
+
     MjkAssets_Unload(&pkg);
     if (g_failures > 0) {
         fprintf(stderr, "[FAIL] test_player: %d fallo(s).\n", g_failures);

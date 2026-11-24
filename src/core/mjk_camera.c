@@ -36,26 +36,22 @@ void MjkCamera_InitForRoom(MjkCamera* cam,
     }
 
     if ((adj->flags & 0x04u) == 0u) {
-        cam->room_flags = 0u;
+        cam->room_flags = MJK_RF_AT_SCROLL_EDGE;
         if (adj->up == 0u || (adj->flags & 0x08u) != 0u) {
-            cam->room_flags |= (uint8_t)(MJK_RF_AT_SCROLL_EDGE | MJK_RF_SECTION_START);
+            cam->room_flags |= MJK_RF_SECTION_START;
         }
         if ((adj->flags & 0x0Au) != 0x02u && adj->down != 0u) {
             cam->neighbor_room_id = adj->down;
-        } else {
-            cam->room_flags |= MJK_RF_AT_SCROLL_EDGE;
         }
         return;
     }
 
-    cam->room_flags = (uint8_t)(MJK_RF_HORIZONTAL | MJK_RF_SCROLL_STOP);
+    cam->room_flags = (uint8_t)(MJK_RF_HORIZONTAL | MJK_RF_SCROLL_STOP | MJK_RF_AT_SCROLL_EDGE);
     if (adj->left == 0u || (adj->flags & 0x08u) != 0u) {
-        cam->room_flags |= (uint8_t)(MJK_RF_AT_SCROLL_EDGE | MJK_RF_SECTION_START);
+        cam->room_flags |= MJK_RF_SECTION_START;
     }
     if ((adj->flags & 0x0Au) != 0x02u && adj->right != 0u) {
         cam->neighbor_room_id = adj->right;
-    } else {
-        cam->room_flags |= MJK_RF_AT_SCROLL_EDGE;
     }
 }
 
@@ -164,10 +160,8 @@ void MjkCamera_Update(MjkCamera* cam,
         uint8_t px = MjkUQ8_Int(player->pos_x);
         if (cam->scroll_x_fixed == 0 && px >= 128u && player->vel_x > 0 && cam->neighbor_room_id != 0u) {
             cam->room_flags &= (uint8_t)0xF7u;
-            player->pos_x = MjkUQ8_FromInt(128u);
-        } else if (px <= 128u && player->vel_x < 0 && (adj.flags & 0x0Au) == 0x02u) {
+        } else if (px <= 128u && player->vel_x < 0 && adj.left != 0u && (adj.flags & 0x0Au) != 0x0Au) {
             cam->room_flags &= (uint8_t)0xF7u;
-            player->pos_x = MjkUQ8_FromInt(128u);
         } else {
             if (px < 8u) { player->pos_x = MjkUQ8_FromInt(8u); }
             if (px > 248u) { player->pos_x = MjkUQ8_FromInt(248u); }
@@ -176,7 +170,11 @@ void MjkCamera_Update(MjkCamera* cam,
     }
 
     int32_t old_sx = cam->scroll_x_fixed >> 8;
-    int32_t next_sx = cam->scroll_x_fixed + (int32_t)player->vel_x;
+    int32_t dx_fixed = (int32_t)player->pos_x - (128 << 8);
+    if (dx_fixed == 0) {
+        dx_fixed = (int32_t)player->vel_x;
+    }
+    int32_t next_sx = cam->scroll_x_fixed + dx_fixed;
     int32_t unwrapped_sx = next_sx;
     player->pos_x = MjkUQ8_FromInt(128u);
 

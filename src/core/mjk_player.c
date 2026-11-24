@@ -33,6 +33,7 @@ static void resolve_probe_cell(const MjkRoomState* cur_room,
         return;
     }
     if (wy >= 240) { wy = 239; }
+    if (wx < 0) { wx = 0; }
     uint32_t uwx = (uint32_t)(wx & 511);
     *out_src = (uwx >= 256u && right_room) ? right_room : cur_room;
     *out_mx = (uint8_t)((uwx & 255u) >> 4u);
@@ -165,8 +166,8 @@ static void step_death(MjkPlayer* p,
     if (p->vel_y < 0) {
         if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[1], cy + k_probe_dy[1], false, NULL) ||
             is_probe_solid(cur_room, right_room, cx + k_probe_dx[2], cy + k_probe_dy[2], false, NULL)) {
-            p->jump_accum = 0x4000u;
-            int32_t snap_wy = ((cy + k_probe_dy[1]) & ~7) + 15;
+            p->jump_accum = (uint16_t)(0x4000u | (p->jump_accum & 0x00FFu));
+            int32_t snap_wy = ((cy + k_probe_dy[1]) & ~7) + 16;
             int32_t new_sy = snap_wy - (int32_t)scroll_y;
             if (new_sy < 0) { new_sy = 0; }
             if (new_sy > 255) { new_sy = 255; }
@@ -312,8 +313,8 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
         if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[1], cy + k_probe_dy[1], false, NULL) ||
             is_probe_solid(cur_room, right_room, cx + k_probe_dx[2], cy + k_probe_dy[2], false, NULL)) {
             p->collision_flags |= MJK_CF_CEILING;
-            p->jump_accum = 0x4000u;
-            int32_t snap_wy = ((cy + k_probe_dy[1]) & ~7) + 15;
+            p->jump_accum = (uint16_t)(0x4000u | (p->jump_accum & 0x00FFu));
+            int32_t snap_wy = ((cy + k_probe_dy[1]) & ~7) + 16;
             int32_t new_sy = snap_wy - (int32_t)scroll_y;
             if (new_sy < 0) { new_sy = 0; }
             if (new_sy > 255) { new_sy = 255; }
@@ -321,8 +322,16 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
             p->vel_y = 0;
         }
     } else {
-        if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, NULL) ||
-            is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL)) {
+        bool clamp_bottom = ((room_flags & (MJK_RF_SINGLE_SCREEN | MJK_RF_HORIZONTAL | MJK_RF_AT_SCROLL_EDGE)) != 0u) &&
+                            (MjkUQ8_Int(p->pos_y) >= 0xE0u);
+        if (clamp_bottom) {
+            /* MainSub_1 (prg.asm:1520-1531): suelo de seguridad en Y = $E0 (224 px). */
+            p->collision_flags |= MJK_CF_GROUND;
+            p->in_air = false;
+            p->pos_y = MjkUQ8_FromInt(0xE0u);
+            p->vel_y = 0;
+        } else if (is_probe_solid(cur_room, right_room, cx + k_probe_dx[3], cy + k_probe_dy[3], true, NULL) ||
+                   is_probe_solid(cur_room, right_room, cx + k_probe_dx[4], cy + k_probe_dy[4], true, NULL)) {
             p->collision_flags |= MJK_CF_GROUND;
             p->in_air = false;
             int32_t snap_wy = ((cy + k_probe_dy[3]) & ~7) - 8;
@@ -332,8 +341,9 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
             p->pos_y = MjkUQ8_FromInt((uint8_t)new_sy);
             p->vel_y = 0;
         } else {
-            p->in_air = true;
-            if (p->jump_accum < 0x4000u && p->vel_y == 0) {
+            /* sub_A1EB (prg.asm:5565-5574): al salir por un borde (in_air 0->1), resetear a $40xx. */
+            if (!p->in_air) {
+                p->in_air = true;
                 p->jump_accum = 0x4000u;
             }
         }
@@ -355,18 +365,19 @@ MjkActionResult MjkPlayer_Update(MjkPlayer* p,
         if (out_sfx) { *out_sfx = MJK_SND_DEATH; }
     }
 
-    /* 5. Selección de sprite de Jack */
+    /* 5. Selección de sprite de Jack (loc_8A66 mantiene animación al empujar contra pared) */
+    bool pushing_h = ((held & MJK_BTN_RIGHT) != 0u) != ((held & MJK_BTN_LEFT) != 0u);
     if (!p->in_air) {
-        if (p->vel_x != 0) {
+        if (p->vel_x != 0 || pushing_h) {
             p->walk_timer++;
             p->sprite_id = ((p->walk_timer & 4u) != 0u) ? 0x05u : 0x04u;
         } else {
             p->sprite_id = 0x00u;
         }
     } else if (p->vel_y < 0) {
-        p->sprite_id = (p->vel_x != 0) ? 0x04u : 0x01u;
+        p->sprite_id = (p->vel_x != 0 || pushing_h) ? 0x04u : 0x01u;
     } else {
-        p->sprite_id = (p->vel_x != 0) ? 0x06u : 0x02u;
+        p->sprite_id = (p->vel_x != 0 || pushing_h) ? 0x06u : 0x02u;
     }
 
     return MJK_ACTION_CONTINUE;

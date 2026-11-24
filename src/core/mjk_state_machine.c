@@ -420,15 +420,12 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                 break;
             }
 
-            if (!game->player.is_dying) {
+            bool allow_cam_update = !game->player.is_dying ||
+                                    (!game->room.is_horizontal && !game->room.is_bomb_room);
+            if (allow_cam_update) {
                 MjkCamera_Update(&game->camera, &game->player, game->pkg);
                 game->ppu.scroll_x = (uint16_t)(game->camera.scroll_x_fixed >> 8);
                 game->ppu.scroll_y = (uint8_t)(game->camera.scroll_y_fixed >> 8);
-            }
-            game->jack_x = MjkUQ8_Int(game->player.pos_x);
-            game->jack_y = MjkUQ8_Int(game->player.pos_y);
-
-            if (!game->player.is_dying) {
                 if (game->camera.room_crossed) {
                     game->current_room_id = game->camera.current_room_id;
                     MjkRoom_DecodeGeometry(game->pkg, game->current_room_id, &game->room);
@@ -440,7 +437,11 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputState* input) {
                         MjkRoom_BlitToPpu(&game->right_room, game->pkg, &game->ppu, 1u);
                     }
                 }
+            }
+            game->jack_x = MjkUQ8_Int(game->player.pos_x);
+            game->jack_y = MjkUQ8_Int(game->player.pos_y);
 
+            if (!game->player.is_dying) {
                 MjkHud_TickFloating(game->popups, MJK_FLOAT_SCORE_SLOTS,
                                     game->camera.delta_cam_x, game->camera.delta_cam_y);
                 if (MjkObjects_Update(&game->objects, game, input) != MJK_ACTION_CONTINUE) {

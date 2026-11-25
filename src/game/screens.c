@@ -160,7 +160,7 @@ void MjkScreens_StepGameOver(MjkGame* game) {
         int round_bonus = (int)((game->last_bomb_room_cleared & 0x0Fu) >> 1u);
         int lives_bonus = (int)(game->extra_lives_found >> 1u);
         uint32_t score_10k = game->scoring.score / 10000u;
-        int score_bonus = (score_10k >= 100u) ? 5 : (int)((score_10k & 0xFFu) >> 5u);
+        int score_bonus = (score_10k >= 100u) ? 5 : (int)(score_10k / 20u);
         MjkScoring_AddGdv(&game->scoring, round_bonus + lives_bonus + score_bonus);
 
         game->state_timer = 256;

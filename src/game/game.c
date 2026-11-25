@@ -118,6 +118,7 @@ static void resolve_entry_door(MjkGame* game, uint8_t next_room, uint8_t exit_do
         return;
     }
     const MjkRoomTemplate* tmpl = &game->assets->rooms[next_room];
+    MjkWorld_PreloadSection(&game->world, game->assets, next_room, game->crystal_balls_mask);
     MjkPersistSlot* slot = MjkWorld_FindPersistSlot(&game->world, next_room);
 
     int found_idx = -1;
@@ -211,6 +212,7 @@ static void step_load_room(MjkGame* game) {
         game->entry_door_backup  = game->entry_door_type;
         if ((tmpl->section_raw & 0x80u) != 0u) {
             game->scoring.timer_seconds    = 0;
+            game->scoring.timer_frozen     = false;
             game->torture_return_room_id   = game->current_room_id;
             game->torture_return_door_type = game->entry_door_type;
         }

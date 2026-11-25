@@ -526,6 +526,12 @@ MjkAssetError MjkAssets_LoadFromRomFile(const char* rom_path, MjkAssets* out_ass
     if (!f) {
         return ASSET_ERR_IO;
     }
+    if (fseek(f, 0, SEEK_END) != 0) { fclose(f); return ASSET_ERR_IO; }
+    long fsz = ftell(f);
+    if (fsz != (long)MJK_ROM_EXPECTED_SIZE || fseek(f, 0, SEEK_SET) != 0) {
+        fclose(f);
+        return ASSET_ERR_BAD_SIZE;
+    }
     uint8_t* rom = (uint8_t*)malloc(MJK_ROM_EXPECTED_SIZE);
     if (!rom) { fclose(f); return ASSET_ERR_OUT_OF_MEMORY; }
     size_t got = fread(rom, 1u, MJK_ROM_EXPECTED_SIZE, f);

@@ -43,13 +43,29 @@ int main(void) {
     static MjkGame g;
     MjkInputStep empty = {0u, 0u, 0u};
 
-    /* 1. Bomb Room $90: bomba encendida (200), avance de chispa, puff 2 fases (32f+32f) */
+    /* 1. Bomb Room $90: arranca sin chispa, 1.a bomba (100) enciende la 2.a (200), puff 2 fases */
     load_room_for_test(&g, &assets, 0x90u);
-    CHECK(g.objects.spark.active, "Bomb Room $90 arranca con chispa activa");
-    g.player.x = (float)(g.objects.spark.grid_x * 16 + 8);
-    g.player.y = (float)(g.objects.spark.grid_y * 16 + 8);
-    MjkObjects_Update(&g.objects, &g, &empty);
-    CHECK(g.scoring.score == 200u && g.fire_bombs_collected == 1u, "Bomba encendida suma 200 y fire_bombs=1");
+    CHECK(!g.objects.spark.active, "Bomb Room $90 arranca sin chispa activa");
+    MjkRoomObj* first_bomb = NULL;
+    for (uint8_t i = 0u; i < g.world.current.object_count; ++i) {
+        if (g.world.current.objects[i].kind == OBJ_KIND_BOMB) {
+            first_bomb = &g.world.current.objects[i];
+            break;
+        }
+    }
+    CHECK(first_bomb != NULL, "Bomb Room $90 contiene bombas");
+    if (first_bomb) {
+        g.player.x = (float)(first_bomb->grid_x * 16 + 8);
+        g.player.y = (float)(first_bomb->grid_y * 16 + 8);
+        MjkObjects_Update(&g.objects, &g, &empty);
+        CHECK(g.scoring.score == 100u && g.fire_bombs_collected == 0u && g.objects.spark.active,
+              "1.a bomba apagada suma 100 y enciende la siguiente");
+        g.player.x = (float)(g.objects.spark.grid_x * 16 + 8);
+        g.player.y = (float)(g.objects.spark.grid_y * 16 + 8);
+        MjkObjects_Update(&g.objects, &g, &empty);
+        CHECK(g.scoring.score == 300u && g.fire_bombs_collected == 1u,
+              "2.a bomba encendida suma 200 y fire_bombs=1");
+    }
     CHECK(g.objects.puff.active && g.objects.puff.phase == 0u && g.objects.puff.timer == 32,
           "Puff fase 0 (32f) iniciada");
     for (int f = 0; f < 32; ++f) {
@@ -156,6 +172,34 @@ int main(void) {
     MjkActionResult tres = MjkObjects_Update(&g.objects, &g, &empty);
     CHECK(tres == ACTION_TORTURE_TRIGGERED && g.state == GS_TORTURE_ROOM,
           "10 Mighty Coins disparan Torture Room");
+
+    /* 5. Regresion: apertura lateral (ambos sentidos, peor alineacion subpixel) y cabezazo con Mighty >= 2 */
+    load_room_for_test(&g, &assets, 0x01u);
+    g.world.current.object_count = 3u;
+    memset(g.world.current.objects, 0, sizeof(g.world.current.objects));
+    for (int k = 0; k < 3; ++k) {
+        g.world.current.objects[k].kind      = OBJ_KIND_RED_CHEST;
+        g.world.current.objects[k].grid_x    = (uint8_t)(5 + k * 3);
+        g.world.current.objects[k].grid_y    = 6u;
+        g.world.current.objects[k].item_kind = ITEM_BAG_1000;
+    }
+    g.mighty_level = 2u;
+    /* Lateral derecha tras rollback vx=1.5: x = 16*5 - 9.5 = 70.5 */
+    g.player.facing = FACING_RIGHT;
+    g.player.x = 70.5f; g.player.y = 6 * 16 + 8.0f; g.player.vy = 0.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[0].is_revealed, "Mighty 2 abre cofre lateralmente hacia la derecha (x=70.5)");
+
+    /* Lateral izquierda tras rollback vx=-1.5: x = 16*8 + 25.0 = 153.0 */
+    g.player.facing = FACING_LEFT;
+    g.player.x = 153.0f; g.player.y = 6 * 16 + 8.0f; g.player.vy = 0.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[1].is_revealed, "Mighty 2 abre cofre lateralmente hacia la izquierda (x=153.0)");
+
+    /* Cabezazo desde abajo tras snap de techo: y = 16*6 + 24 = 120.0 */
+    g.player.x = 11 * 16 + 8.0f; g.player.y = 120.0f; g.player.vy = -1.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[2].is_revealed, "Mighty 2 abre cofre por cabezazo desde abajo (y=120.0)");
 
     MjkAssets_Unload(&assets);
     if (g_failures > 0) {

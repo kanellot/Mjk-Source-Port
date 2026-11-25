@@ -477,15 +477,15 @@ MjkActionResult MjkObjects_Update(MjkObjectSystem* obj,
     } else if (input && (input->held & MJK_INPUT_LEFT) != 0u && (input->held & MJK_INPUT_RIGHT) == 0u) {
         facing_right = false;
     }
-    int side_wx = facing_right ? (wx + 9) : (wx - 9);
+    int side_wx = facing_right ? (wx + 10) : (wx - 10);
     bool has_side = (side_wx >= 0 && side_wx < 512 &&
                      (side_wx < 256 || (game->world.current.is_horizontal && game->world.has_neighbor)));
     bool side_in_nb = (!game->world.current.is_horizontal) ? in_neighbor
                                                            : (side_wx >= 256 && game->world.has_neighbor);
     MjkRoomInstance* side_room = side_in_nb ? &game->world.neighbor : &game->world.current;
     uint8_t side_gx = (uint8_t)((side_wx & 255) >> 4);
-    bool has_head = (game->player.vy < 0.0f || (game->player.collision_flags & MJK_COLL_CEILING) != 0u) && (ly >= 8);
-    uint8_t head_gy = has_head ? (uint8_t)((ly - 8) >> 4) : 0xFFu;
+    bool has_head = (game->player.vy < 0.0f || (game->player.collision_flags & MJK_COLL_CEILING) != 0u) && (ly >= 9);
+    uint8_t head_gy = has_head ? (uint8_t)((ly - 9) >> 4) : 0xFFu;
 
     for (uint8_t i = 0u; i < room->object_count; ++i) {
         MjkRoomObj* ro = &room->objects[i];

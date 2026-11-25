@@ -175,11 +175,13 @@ static void build_playing_scene(RenderScene* sc, const MjkGame* g, const MjkAsse
 
     /* HUD: Score, Timer, Mighty/Mult, Torture jumps, 1UP y popups flotantes */
     push_score_digits(sc, g->scoring.score);
-    push_sprite(sc, 56u, 24u, 0x0Eu, 0u); /* 'T' */
-    push_two_digits(sc, g->scoring.timer_seconds, 76u, 28u, true);
     if (g->in_torture_mode) {
-        push_two_digits(sc, g->greedy_jumps_left, 196u, 28u, true);
+        push_two_digits(sc, g->greedy_jumps_left, 0x84u, 0x44u, true);
     } else {
+        push_sprite(sc, 56u, 24u, 0x0Eu, 0u); /* 'T' */
+        push_two_digits(sc, g->scoring.timer_seconds, 76u, 28u, true);
+    }
+    {
         uint8_t icon = g->world.current.is_bomb_room ? 0x0Cu : 0x0Bu;
         uint8_t val  = g->world.current.is_bomb_room
             ? (uint8_t)((g->scoring.score_multiplier % 10u) + 1u)
@@ -188,18 +190,22 @@ static void build_playing_scene(RenderScene* sc, const MjkGame* g, const MjkAsse
         push_sprite(sc, 192u, 24u, val, 0u);
     }
     if (g->one_up_timer > 0) {
-        push_sprite(sc, 120u, 24u, 0x01u, 0u);
-        push_sprite(sc, 128u, 24u, 0x0Au, 0u);
+        int jx = (int)floorf(g->player.x);
+        int jy = (int)floorf(g->player.y);
+        uint8_t ux0 = (jx >= 8) ? (uint8_t)(jx - 8) : 0u;
+        uint8_t ux1 = (jx >= 0 && jx < 256) ? (uint8_t)jx : 0u;
+        uint8_t uy  = (jy >= 16) ? (uint8_t)(jy - 16) : 0u;
+        push_sprite(sc, ux0, uy, 0x82u, 0x01u);
+        push_sprite(sc, ux1, uy, 0x83u, 0x01u);
     }
     for (size_t i = 0u; i < MJK_FLOAT_POPUP_SLOTS; ++i) {
         const MjkFloatingPopup* p = &g->scoring.popups[i];
         if (!p->active) { continue; }
         uint8_t px = (uint8_t)floorf(p->x), py = (uint8_t)floorf(p->y);
-        uint8_t lx = (px >= 8u) ? (uint8_t)(px - 8u) : 0u;
-        uint8_t ty = (py >= 8u) ? (uint8_t)(py - 8u) : 0u;
-        push_sprite(sc, lx, ty, p->tl_tile, 0u);
-        push_sprite(sc, px, ty, p->tr_tile, 0u);
-        push_sprite(sc, px, py, p->br_tile, 0u);
+        push_sprite(sc, px, py, p->tl_tile, 0u);
+        push_sprite(sc, (uint8_t)(px + 8u), py, p->tr_tile, 0u);
+        push_sprite(sc, px, (uint8_t)(py + 8u), 0x0Fu, 0u);
+        push_sprite(sc, (uint8_t)(px + 8u), (uint8_t)(py + 8u), p->br_tile, 0u);
     }
 
     /* Chispa y puff de bombas */
@@ -231,7 +237,9 @@ static void build_playing_scene(RenderScene* sc, const MjkGame* g, const MjkAsse
         if (e->transmuted) {
             uint8_t pal = (g->enemies.transmute_timer < 64) ? (uint8_t)(g->enemies.transmute_timer & 3) : 2u;
             push_metasprite(sc, a, 0x21u, ex, ey, pal);
-        } else if ((unsigned)e->kind <= (unsigned)ENEMY_HORUS && e->spawn_flash_timer > 16) {
+        } else if (((unsigned)e->kind <= (unsigned)ENEMY_HORUS ||
+                    e->kind == ENEMY_MUMMY1 || e->kind == ENEMY_MUMMY2) &&
+                   e->spawn_flash_timer > 16) {
             push_metasprite(sc, a, 0x25u, ex, ey, 0x00u);
         } else {
             uint8_t step6 = (uint8_t)(e->anim_timer / 6u);
@@ -311,7 +319,7 @@ void MjkRenderer_DrawFrame(const MjkGame* game,
     memcpy(pal_ram, assets->main_palette, 32u);
 
     if (game->mode == SCREEN_TITLE) {
-        if (game->title.state <= TITLE_COPYRIGHT_WAIT) {
+        if (game->title.state <= TITLE_MAIN_INIT) {
             write_string(&sc, assets, STR_MIGHTY_BOMB_JACK_TM);
             write_string(&sc, assets, STR_TM_AND_C_TECMO_LTD);
             write_string(&sc, assets, STR_LICENSED_BY);
@@ -370,11 +378,29 @@ void MjkRenderer_DrawFrame(const MjkGame* game,
     } else if (game->state == GS_ENDING) {
         static const MjkStringId k_end_start[4] = { STR_ENDING_1A, STR_ENDING_2A, STR_ENDING_3A, STR_ENDING_4A };
         static const uint8_t     k_end_count[4] = { 3u, 3u, 4u, 4u };
+        static const uint8_t     k_destroy_depth[4] = { 12u, 30u, 56u, 90u };
         uint8_t et = game->ending_type & 3u;
         blit_room_metatiles(&sc, assets, assets->rooms[0].static_metatiles, NULL, 0u);
         for (int r = 0; r < 16; ++r) { memset(sc.nt[0][r], 0x24u, 32u); }
+        uint8_t total = k_destroy_depth[et];
+        uint8_t done = (game->ending_state >= 3u)
+            ? total
+            : ((total >= game->ending_depth) ? (uint8_t)(total - game->ending_depth) : 0u);
+        uint8_t half_w = (uint8_t)(2u + done / 8u);
+        if (half_w > 14u) { half_w = 14u; }
         for (uint8_t r = 0u; r < game->ending_carved_rows && (16u + r) < 30u; ++r) {
-            memset(sc.nt[0][16u + r], 0x24u, 32u);
+            uint8_t c_start = (uint8_t)(16u - half_w);
+            uint8_t c_end   = (uint8_t)(16u + half_w);
+            if (c_end >= 32u) { c_end = 31u; }
+            for (uint8_t c = c_start; c <= c_end; ++c) {
+                sc.nt[0][16u + r][c] = 0x24u;
+            }
+        }
+        if (game->ending_state == 2u) {
+            uint8_t debris_off = (uint8_t)((done & 3u) * 4u);
+            uint8_t jy = (uint8_t)floorf(game->cinematic_jack_y);
+            push_metasprite(&sc, assets, 0x25u, (uint8_t)(0x68u - debris_off), (uint8_t)(jy + debris_off), 0x00u);
+            push_metasprite(&sc, assets, 0x25u, (uint8_t)(0x88u + debris_off), (uint8_t)(jy + debris_off), 0x00u);
         }
         if (game->ending_state >= 3u) {
             for (uint8_t i = 0u; i < k_end_count[et]; ++i) {
@@ -384,6 +410,8 @@ void MjkRenderer_DrawFrame(const MjkGame* game,
         uint8_t spr = (game->ending_state >= 3u) ? 0x00u : 0x01u;
         push_metasprite(&sc, assets, spr, (uint8_t)floorf(game->cinematic_jack_x),
                         (uint8_t)floorf(game->cinematic_jack_y), 0x01u);
+    } else if (game->state == GS_LOAD_ROOM || game->state == GS_DRAW_SCREEN) {
+        /* Transicion limpia de sala sin destello de sprites/HUD */
     } else {
         build_playing_scene(&sc, game, assets, pal_ram);
     }

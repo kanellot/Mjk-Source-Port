@@ -134,6 +134,12 @@ void MjkWorld_SaveObjectState(MjkWorld* world,
                               const MjkRoomInstance* room,
                               uint8_t obj_index);
 
+/** @brief Precarga la persistencia de seccion para `room_id` si aun no esta cargada. */
+void MjkWorld_PreloadSection(MjkWorld* world,
+                             const MjkAssets* assets,
+                             uint8_t room_id,
+                             uint8_t crystal_balls_mask);
+
 /** @brief Busca la ranura de persistencia de `room_id` (o NULL si no existe). */
 MjkPersistSlot* MjkWorld_FindPersistSlot(MjkWorld* world, uint8_t room_id);
 

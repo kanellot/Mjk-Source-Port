@@ -108,10 +108,16 @@ int main(void) {
         CHECK(g.state == GS_GAME_OVER, "START en final transiciona a Game Over");
     }
 
-    /* 6. Game Over -> tras 256 frames vuelve a SCREEN_TITLE */
-    g.scoring.lives = 1;
+    /* 6. Game Over -> bonus GDV por marcador (+1 por cada 200k pts) y vuelta a SCREEN_TITLE */
+    g.scoring.gdv             = 47;
+    g.scoring.score           = 800000u;
+    g.last_bomb_room_cleared  = 0u;
+    g.extra_lives_found       = 0u;
+    g.scoring.lives           = 1;
     MjkGame_LoseLife(&g);
     CHECK(g.state == GS_GAME_OVER && g.scoring.lives == 0, "0 vidas dispara Game Over");
+    step_n(&g, &latch, 0u, 1);
+    CHECK(g.scoring.gdv == 51, "Game Over suma +4 GDV por 800.000 pts (47 -> 51)");
     step_n(&g, &latch, 0u, 260);
     CHECK(g.mode == SCREEN_TITLE, "Game Over retorna a pantalla de titulo");
 

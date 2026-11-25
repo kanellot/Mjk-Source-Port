@@ -90,7 +90,8 @@ static void init_mummy_fall(MjkEnemy* e, int transform_reload) {
 }
 
 static void update_gameido_vel(MjkEnemy* e, const MjkGame* game, const MjkEnemySystem* sys, uint8_t cf) {
-    uint8_t div = game->assets->gameido_div[sys->speed_tier & 7u];
+    uint8_t tier = (sys->speed_tier >= 8u) ? 7u : sys->speed_tier;
+    uint8_t div = game->assets->gameido_div[tier];
     if (div == 0u) { div = 0x4Cu; }
     float dx = floorf(game->player.x) - floorf(e->x);
     float dy = floorf(game->player.y) - floorf(e->y);
@@ -111,7 +112,8 @@ static void transform_mummy(MjkEnemy* e, const MjkGame* game, const MjkEnemySyst
     e->falling           = false;
     e->edge_turned       = false;
 
-    float spd = game->assets->enemy_speed[sys->speed_tier & 7u];
+    uint8_t tier = (sys->speed_tier >= 8u) ? 7u : sys->speed_tier;
+    float spd = game->assets->enemy_speed[tier];
     switch (e->kind) {
         case ENEMY_HANEZO:     e->vx = spd; e->vy = spd; break;
         case ENEMY_GEJISHOGUN: e->vx = (game->player.x < e->x) ? -spd : spd;
@@ -195,7 +197,8 @@ static void step_monster_ai(MjkEnemy* e, const MjkGame* game, const MjkEnemySyst
     uint8_t cf = raw_cf;
     if (e->vx > 0.0f) { cf &= (uint8_t)~EF_LEFT; }  else if (e->vx < 0.0f) { cf &= (uint8_t)~EF_RIGHT; }
     if (e->vy > 0.0f) { cf &= (uint8_t)~EF_CEIL; }  else if (e->vy < 0.0f) { cf &= (uint8_t)~EF_FLOOR; }
-    float spd = game->assets->enemy_speed[sys->speed_tier & 7u];
+    uint8_t tier = (sys->speed_tier >= 8u) ? 7u : sys->speed_tier;
+    float spd = game->assets->enemy_speed[tier];
 
     switch (e->kind) {
         case ENEMY_MUMMY: step_mummy(e, game, sys, raw_cf); break;
@@ -248,7 +251,7 @@ static bool step_collectible_motion(MjkEnemy* e, const MjkGame* game) {
             if ((cf & EF_FLOOR) != 0u) { e->vy = -spd; } else if ((cf & EF_CEIL) != 0u) { e->vy = spd; }
             e->x += e->vx;
             e->y += e->vy;
-            if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 240.0f) {
+            if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 256.0f) {
                 e->active = false;
                 return false;
             }
@@ -274,7 +277,7 @@ static bool step_collectible_motion(MjkEnemy* e, const MjkGame* game) {
         }
         e->x += e->vx;
         e->y += e->vy;
-        if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 240.0f) {
+        if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 256.0f) {
             e->active = false;
             return false;
         }
@@ -509,7 +512,7 @@ MjkActionResult MjkEnemies_Update(MjkEnemySystem* sys, MjkGame* game) {
         if (!e->active) { continue; }
         e->x += game->world.camera.delta_x;
         e->y += game->world.camera.delta_y;
-        if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 240.0f) {
+        if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 256.0f) {
             e->active = false;
             continue;
         }
@@ -524,7 +527,7 @@ MjkActionResult MjkEnemies_Update(MjkEnemySystem* sys, MjkGame* game) {
                     step_monster_ai(e, game, sys);
                     e->x += e->vx;
                     e->y += e->vy;
-                    if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 240.0f) {
+                    if (e->x < 0.0f || e->x >= 256.0f || e->y < 0.0f || e->y >= 256.0f) {
                         e->active = false;
                         if (sys->alive_count > 0u) { sys->alive_count--; }
                         continue;

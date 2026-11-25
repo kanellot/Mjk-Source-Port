@@ -50,10 +50,13 @@ static void init_persist_slot(MjkPersistSlot* slot,
 
         if (d->kind == OBJ_KIND_BOMB) {
             bomb_seen++;
-            bool mark_first = (is_first_in_section && !tmpl->is_bomb_room && bomb_seen == 1);
-            bool mark_last  = (is_last_in_section  && !tmpl->is_bomb_room && bomb_seen == bomb_total);
-            ps->is_order_marker = (mark_first || mark_last);
-            ps->is_lit          = (tmpl->is_bomb_room && bomb_seen == 1);
+            bool is_corridor = (room_id < 0x90u);
+            if (is_first_in_section && is_corridor && bomb_seen == 1) {
+                ps->is_order_marker = true;
+            } else if (is_last_in_section && is_corridor && bomb_seen == bomb_total) {
+                ps->is_order_marker = true;
+            }
+            ps->is_lit = false;
         } else if (d->kind == OBJ_KIND_RED_CHEST || d->kind == OBJ_KIND_ORANGE_CHEST) {
             ps->is_hidden = d->starts_hidden;
         } else if (d->kind == OBJ_KIND_SECRET_BLOCK) {
@@ -72,8 +75,9 @@ static void init_persist_slot(MjkPersistSlot* slot,
             uint8_t sp_idx = (uint8_t)(d->door_arg >> 3u);
             if (ps->is_sphinx_locked && sp_idx < MJK_SPHINX_FLAG_COUNT && persist) {
                 if (persist->sphinx_opened[sp_idx] == 2u) {
-                    ps->is_open   = true;
-                    ps->is_hidden = false;
+                    ps->is_open          = true;
+                    ps->is_hidden        = false;
+                    ps->is_sphinx_locked = false;
                 } else {
                     persist->sphinx_opened[sp_idx] = 1u;
                 }
@@ -127,6 +131,16 @@ static void preload_section_if_needed(MjkWorld* world,
         init_persist_slot(&world->persist.scratch, &world->persist, assets,
                           room_id, false, false, crystal_balls_mask);
     }
+}
+
+void MjkWorld_PreloadSection(MjkWorld* world,
+                             const MjkAssets* assets,
+                             uint8_t room_id,
+                             uint8_t crystal_balls_mask) {
+    if (!world || !assets) {
+        return;
+    }
+    preload_section_if_needed(world, assets, room_id, crystal_balls_mask);
 }
 
 void MjkWorld_SetVisualMetatile(MjkRoomInstance* room,
@@ -199,8 +213,14 @@ static void instantiate_room(MjkWorld* world,
         if (d->kind == OBJ_KIND_DOOR && obj.is_sphinx_locked) {
             uint8_t sp_idx = (uint8_t)(d->door_arg >> 3u);
             if (sp_idx < MJK_SPHINX_FLAG_COUNT && world->persist.sphinx_opened[sp_idx] == 2u) {
-                obj.is_open   = true;
-                obj.is_hidden = false;
+                obj.is_open          = true;
+                obj.is_hidden        = false;
+                obj.is_sphinx_locked = false;
+                if (slot && d->is_persistent && p_idx < slot->count) {
+                    slot->objects[p_idx].is_open          = true;
+                    slot->objects[p_idx].is_hidden        = false;
+                    slot->objects[p_idx].is_sphinx_locked = false;
+                }
             }
         }
 
@@ -228,10 +248,10 @@ static void instantiate_room(MjkWorld* world,
                 }
                 MjkWorld_SetVisualMetatile(out_room, assets, obj.grid_x, obj.grid_y, mt);
 
-                /* Despejar celda estatica en bombas normales / items sueltos */
+                /* Despejar celda estatica en bombas normales, items sueltos y bloques rotos */
                 bool is_plain_item = (d->kind == OBJ_KIND_LOOSE_ITEM) ||
                                      (d->kind == OBJ_KIND_BOMB && !obj.is_order_marker) ||
-                                     obj.is_revealed;
+                                     obj.is_revealed || obj.is_collected;
                 if (is_plain_item && obj.grid_y < MJK_ROOM_ROWS && obj.grid_x < MJK_ROOM_COLS) {
                     out_room->static_metatiles[obj.grid_y][obj.grid_x] = 0x2Fu;
                 }
@@ -562,10 +582,48 @@ bool MjkWorld_IsEnemyPointSolid(const MjkWorld* world, int wx, int wy) {
     if (wx < 0 || wx >= 512) {
         return false;
     }
+
+    const MjkRoomInstance* src = &world->current;
     if (!world->current.is_horizontal && wy >= 240) {
         if (!world->has_neighbor || wy >= 480) { return true; }
-    } else if (wy >= 240) {
+        if (wx >= 256) { return false; }
+        src = &world->neighbor;
+        wy -= 240;
+    } else {
+        if (wy >= 240) { return true; }
+        if (wx >= 256) {
+            if (!world->current.is_horizontal || !world->has_neighbor) {
+                return false;
+            }
+            src = &world->neighbor;
+            wx -= 256;
+        }
+    }
+
+    uint8_t mx = (uint8_t)(wx >> 4);
+    uint8_t my = (uint8_t)(wy >> 4);
+    if (my >= MJK_ROOM_ROWS) { my = MJK_ROOM_ROWS - 1u; }
+
+    uint8_t m = src->static_metatiles[my][mx];
+    if (m >= 0x5Cu && m <= 0x62u) {
+        return false;
+    }
+    if (m != 0x00u && m != 0x27u && m != 0x2Fu) {
+        if (m >= 0x38u && m <= 0x4Bu) {
+            return test_partial_metatile(m, wx, wy);
+        }
         return true;
     }
-    return MjkWorld_IsPointSolid(world, wx, wy, false, NULL);
+
+    /* Enemigos y monedas rebotantes solo chocan con cofres/bloques visibles sin abrir (NO con puertas cerradas) */
+    for (uint8_t i = 0u; i < src->object_count; ++i) {
+        const MjkRoomObj* o = &src->objects[i];
+        if ((o->kind == OBJ_KIND_RED_CHEST || o->kind == OBJ_KIND_ORANGE_CHEST ||
+             o->kind == OBJ_KIND_SECRET_BLOCK) &&
+            !o->is_hidden && !o->is_revealed && !o->is_collected &&
+            o->grid_x == mx && o->grid_y == my) {
+            return true;
+        }
+    }
+    return false;
 }

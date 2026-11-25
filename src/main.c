@@ -98,8 +98,10 @@ static bool load_or_extract_assets(const CliOptions* opts, const char* exe_dir, 
 
     const char* found_rom = NULL;
     char exe_rom[1024];
-    if (opts->rom_path && file_exists(opts->rom_path)) {
-        found_rom = opts->rom_path;
+    if (opts->rom_path) {
+        if (file_exists(opts->rom_path)) {
+            found_rom = opts->rom_path;
+        }
     } else if (file_exists("mbj-us.nes")) {
         found_rom = "mbj-us.nes";
     } else if (exe_dir && join_path(exe_rom, sizeof(exe_rom), exe_dir, "mbj-us.nes") && file_exists(exe_rom)) {

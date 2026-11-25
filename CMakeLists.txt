@@ -19,6 +19,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 option(MJK_BUILD_SHARED_CORE "Build shared core library (mjk_core.dll / libmjk_core.so)" ON)
+option(MJK_ENABLE_SANITIZERS "Enable ASan + UBSan on GCC/Clang" OFF)
+set(MJK_TEST_ROM_PATH "" CACHE FILEPATH "Optional path to mbj-us.nes for ROM-backed unit tests")
 
 function(mjk_apply_warnings target_name)
     if(MSVC)
@@ -26,6 +28,10 @@ function(mjk_apply_warnings target_name)
         target_compile_definitions(${target_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
     elseif(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(${target_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        if(MJK_ENABLE_SANITIZERS)
+            target_compile_options(${target_name} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+            target_link_options(${target_name} PRIVATE -fsanitize=address,undefined)
+        endif()
     endif()
 endfunction()
 
@@ -211,4 +217,37 @@ if(BUILD_TESTING)
     add_test(NAME mjk_game_flow COMMAND test_game_flow)
 
     add_test(NAME mjk_platform_smoke COMMAND mjk --smoke-test)
+
+    # Capturador temporal de Golden Vectors (Ticket R-01; se retira en R-17)
+    add_executable(capture_golden tests/c/capture_golden.c)
+    target_link_libraries(capture_golden PRIVATE mjk_core)
+    target_compile_definitions(capture_golden PRIVATE MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    mjk_apply_warnings(capture_golden)
+
+    # =========================================================================
+    # Nuevo motor refactorizado C11 moderno (Hitos R1..R5; sustituira mjk_core en R-17)
+    # =========================================================================
+    set(MJK_ENGINE_SOURCES
+        src/game/input.c
+    )
+    add_library(mjk_engine STATIC ${MJK_ENGINE_SOURCES})
+    target_include_directories(mjk_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+    if(NOT WIN32)
+        target_link_libraries(mjk_engine PUBLIC m)
+    endif()
+    mjk_apply_warnings(mjk_engine)
+
+    function(mjk_add_unit_test target_name source_file)
+        add_executable(${target_name} ${source_file})
+        target_link_libraries(${target_name} PRIVATE mjk_engine)
+        target_compile_definitions(${target_name} PRIVATE
+            MJK_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+            MJK_TEST_ROM_PATH="${MJK_TEST_ROM_PATH}"
+        )
+        mjk_apply_warnings(${target_name})
+        add_test(NAME ${target_name} COMMAND ${target_name})
+        set_tests_properties(${target_name} PROPERTIES SKIP_RETURN_CODE 77)
+    endfunction()
+
+    mjk_add_unit_test(test_engine_input tests/c/test_input.c)
 endif()

@@ -1,60 +1,113 @@
-# Tablero Maestro de Micro-Tareas: Mighty Bomb Jack (Clean-Slate C11 Port)
+# Tablero Maestro de Tickets Nucleares — Refactor Integral C11 (`refactor`)
 
-> **CHECKPOINT ACTIVO (Última actualización: 2026-11-24)**
-> - **Último subpaso completado**: **PROYECTO FINALIZADO Y PUBLICADO — Hitos 1–7 (`T-01`..`T-30`, 30/30 `[DONE]`) + Paridad Bloques 1–5 + CI/CD Release** — 19 módulos C11 puros en `src/core/`, `18/18` CTests en verde (`0` warnings MSVC `/W4 /WX` y GCC 15 `-Wall -Wextra -Wpedantic -Werror`), `5/5` escenarios Capa 2 frente a `cynes`, `README.md`, `LICENSE` (MIT + atribución ASM) y pipeline GitHub Actions (Windows x64 + Linux x64) en `main`.
-> - **Protocolo tras fin de cuota**: Todos los hitos (`T-01`..`T-30`) y el pulido final de publicación están completados y certificados en verde.
-> - **Siguiente micro-tarea**: **Ninguna (`30/30` completadas)**.
-> - **Política de commits**: Todos los hitos (`T-03`, `T-07`, `T-11`, `T-15`, `T-24`, `T-26`, `T-30`), bloques de paridad y pipeline CI/CD cerrados con commits limpios en `main`.
+> **CHECKPOINT ACTIVO (Última actualización: 2026-11-25)**
+> - **Rama activa**: `refactor` (base `7a74c53`)
+> - **Skill obligatoria para subagentes**: `.agents/skills/mjk-clean-refactor/SKILL.md`
+> - **Último ticket completado**: **`R-02`** (Hito R1 cerrado: `golden_reference.h`, `include/mjk/types.h`, `include/mjk/input.h`, `src/game/input.c`, `mjk_engine`, `SKIP_RETURN_CODE 77` y `19/19` CTests verdes).
+> - **Siguiente ticket nuclear**: **`R-03`** (SHA-1 y Cargador BYOR en `src/assets/`).
+> - **Protocolo tras fin de cuota**: Leer únicamente este `CHECKPOINT ACTIVO`, el ticket `[TODO]` siguiente y `.agents/skills/mjk-clean-refactor/SKILL.md`. Ejecutar **estrictamente 1 ticket**, verificar compilación sin warnings + `ctest` 100% verde y actualizar este checkpoint.
+> - **Política de commits**: 1 commit limpio al cerrar cada Hito (`R-02`, `R-04`, `R-13`, `R-15`, `R-17`, `R-20`), sin binarios ni ROMs.
 
 ---
 
-## Hito 1 — Infraestructura Multiplataforma y Esqueleto Limpio
+## Hito R1 — Congelación de Comportamiento (Golden Vectors) e Infraestructura
 
-- `[DONE]` **`T-01`**: Crear `CMakeLists.txt` unificado (Windows MSVC/MinGW + Linux GCC/Clang, `-Wall -Wextra`) con targets `mjk_core`, `mjk` (SDL2) y `mjk_tests` (`CTest`), y dejar `build.bat` / `Makefile` como wrappers finos. *(Gate: compila target dummy + `ctest` pasa.)*
-- `[DONE]` **`T-02`**: Definir `include/mjk_types.h` (aritmética `Q8.8`/`BCD`, `MjkActionResult`, enums canónicos `REV_US`) e `include/mjk_platform.h` (contrato HAL limpio sin dependencias de SO). *(Gate: compila limpio + `CTest` de macros Q8.8.)*
-- `[DONE]` **`T-03`**: Adaptar `src/platform/mjk_platform_sdl.c` y `src/main.c` al contrato HAL limpio (bucle `60.0988 Hz`, gamepad/teclado, resolución de rutas vía `SDL_GetBasePath()`). *(Gate: ventana SDL2 arranca/cierra limpio en Windows y Linux.)*
+- `[DONE]` **`R-01`** *(Secuencial — Bloquea R-04..R-14)*: **Capturar Golden Vectors del motor actual (`tests/c/golden_reference.h`)**.
+  - **Alcance**: Crear un capturador temporal (fuera del ejecutable `mjk`) que enlaza contra el `mjk_core` actual y genera `tests/c/golden_reference.h` (cero bytes de ROM: solo hashes FNV-1a de geometría estática y conteo de objetos de las 256 salas, trayectorias `(x, y)` de salto neutro/Arriba/Abajo/flutter, resultados de las 33 puertas, estados de flujo completo y hashes de 5 frames clave del renderizador).
+  - **Gate**: `tests/c/golden_reference.h` generado y compilable; los `18/18` tests actuales siguen pasando.
 
-## Hito 2 — Extractor BYOR v2 Integrado en C (Cero Python al Arrancar)
+- `[DONE]` **`R-02`** *(Depende de: R-01)*: **Tipos base, `InputLatch` y CMake modular (`include/mjk/types.h`, `include/mjk/input.h`, `src/game/input.c`, `tests/c/test_input.c`)**.
+  - **Alcance**: Crear los headers modernos base (`Vec2`, `Facing`, `ActionResult`, `GameMode`, `SoundId`, `ItemKind`, `EnemyKind`, `RoomFlags`), implementar `InputLatch` (acumula flancos pendientes y los consume una sola vez por paso de simulación) y añadir en `CMakeLists.txt` el target `mjk_engine`, la opción `MJK_ENABLE_SANITIZERS`, `MJK_TEST_ROM_PATH` y `SKIP_RETURN_CODE 77` en `CTest`.
+  - **Gate**: `mjk_engine` compila sin warnings; `test_input` verifica iteraciones de `0` pasos (retiene flanco) y `2` pasos (consume flanco una sola vez). *(Commit de Hito R1.)*
 
-- `[DONE]` **`T-04`**: Implementar `mjk_sha1.c` y `mjk_crc32` en C11 puro + `CTest` verificando vectores estándar y el hash de `mbj-us.nes` (`a723e9c36f24a23b9d64c4ea2e6e61586f4f02c7`).
-- `[DONE]` **`T-05`**: Implementar primera mitad de `mjk_rom_extractor.c`: validación iNES (`65.552` B + SHA-1) y extracción de `CHR-ROM` (32 KB), tablas/bytecodes de audio (`music-data.asm`) y cadenas de texto PPU (`$C244..$C500`) + `CTest`.
-- `[DONE]` **`T-06`**: Completar `mjk_rom_extractor.c`: extracción de tablas de las 257 salas (`RoomHalfScreens`, `HalfScreenLayouts`, `LayoutChunks`, `MetatileDefinitions`, `AdjacentRoomsTable`, `RoomData_01..FF`, paletas) y tablas de sprites/spawns/dificultad -> escritura de `assets/assets.dat` v2 + `CTest`.
-- `[DONE]` **`T-07`**: Implementar `mjk_assets.c` (carga/validación CRC-32 de `assets.dat` v2) e integrar auto-extracción al arranque en `main.c` (`--rom`, ruta local/exe y cuadro de aviso SDL2 si falta ROM) + `CTest`.
+---
 
-## Hito 3 — Renderizador PPU 2C02, 257 Salas y Debug Overlay
+## Hito R2 — Frontera Única de Assets BYOR (`src/assets/`)
 
-- `[DONE]` **`T-08`**: Implementar `mjk_ppu.c` (paleta maestra 2C02 de 64 colores, decodificación planar 2bpp, blitter de metatiles 16x16 y sprites OAM sin flicker artificial de 8/scanline) + `CTest`.
-- `[DONE]` **`T-09`**: Añadir al PPU el renderizado de cadenas de texto (`WriteStringToPPU`) y dígitos/HUD directamente desde los tiles oficiales de `CHR-ROM` + `CTest`.
-- `[DONE]` **`T-10`**: Implementar `mjk_room_decoder.c` con `MjkRoomState` limpio (4-tier + paletas + persistencia de 8 salas) + `CTest` validando geometría de las **257 salas** contra fixture de `nes_oracle.py`.
-- `[DONE]` **`T-11`**: Implementar **Capa 3 Debug Overlay SDL2**: `F1` telemetría/hitboxes 9-probe, `F2` warp directo a cualquier sala `0..256`/Bomb/Torture/Final, `F3` invencibilidad/Mighty, `F4` pausa/frame-step.
+- `[TODO]` **`R-03`** *(Depende de: R-02)*: **SHA-1 y Cargador BYOR (`include/mjk/rom_loader.h`, `src/assets/sha1.c`, `src/assets/rom_loader.c`)**.
+  - **Alcance**: Implementar SHA-1, validación iNES (`mbj-us.nes`, `65.552` bytes + SHA-1 canónico), lectura/escritura de `assets.dat` v2 con CRC-32 y helper de resolución de ROM para tests (`77` skip si ausente, `1` fail si explícita inválida).
+  - **Gate**: Compila limpio sin warnings; unit tests de SHA-1 (válido/corrupto/tamaño) y round-trip `assets.dat` + CRC-32 corrupto pasan al 100%.
 
-## Hito 4 — Esqueleto Completo del Juego (Todas las Pantallas y Transiciones)
+- `[TODO]` **`R-04`** *(Depende de: R-03, R-01)*: **Decodificador Único `asset_bank.c` (`include/mjk/assets.h`, `src/assets/asset_bank.c`, `tests/c/test_assets.c`)**.
+  - **Alcance**: Decodificar **una sola vez** al cargar `mbj-us.nes`/`assets.dat`: 512 tiles `uint8_t tiles[512][8][8]` (pre-decodificados), paleta maestra NTSC y paletas de sala, `float jump_speed[64]`, `float jump_rate[3]`, `uint32_t score_table[]`, 32 cadenas `REV_US`, pistas de audio y las **256 salas (`RoomTemplate rooms[256]`)** con objetos tipados.
+  - **Gate**: `test_assets` valida las 256 salas contra `golden_reference.h`, tiles, tablas y comportamiento `SKIP (77)` / `FAIL (1)`. *(Commit de Hito R2.)*
 
-- `[DONE]` **`T-12`**: Implementar `mjk_title.c`: ciclo completo `TitleScreen_US_0/1` (Copyright 256f) $\leftrightarrow$ `TitleScreen_0/1/2` (Title Screen 512f timeout) $\to$ `TitleScreen_3` (Jack Falling 73f) $\to$ `InGameFlag=1` + `CTest`.
-- `[DONE]` **`T-13`**: Implementar `mjk_state_machine.c` para el ciclo central (`GameState 0..5, 9, B`): `Init`, `RoundIntro` (96f), `LoadRoom`, `DrawScreen`, `EnterRoom` (24f), `Main` (pausa `START`), `AnimateDoorOpen` y `ExitRoom` (`AdjacentRoomsTable` + `Entry ^ 4`) + `CTest`.
-- `[DONE]` **`T-14`**: Implementar estados `RoundClear` (`0..3`, Time Bonus + Fire Bombs Bonus >= 20), `TimeOver` (128f), pérdida de vida/checkpoint (`LoseALifeMaybeGameOver`) y `GameOver` (256f + cálculo `PlayerGDV` y `HighGDV` -> Título) + `CTest`.
-- `[DONE]` **`T-15`**: Implementar `TortureRoom` (mensaje 192f, sala `$AC`, 50 saltos BCD en US, retorno a checkpoint) y `GameState_C_Ending` (`EndingDoorChecks` en `$A0..$A3` con los **4 finales** según Crystal Balls y Secret Coins -> `GameOver`) + `CTest`.
+---
 
-## Hito 5 — Mecánicas de Gameplay Fiel por Subsistema
+## Hito R3 — Lógica Pura del Juego (`src/game/`)
 
-- `[DONE]` **`T-16`**: Implementar `mjk_player.c` (parte 1): cinemática Q8.8, tabla de salto de 64 pasos, salto alto/bajo (`Arriba`/`Abajo`), freno en aire, *flutter* y aceleración horizontal + `CTest`.
-- `[DONE]` **`T-17`**: Implementar `mjk_player.c` (parte 2): matriz de colisiones 9-probe contra metatiles sólidos/parciales y muerte/invulnerabilidad + `CTest`.
-- `[DONE]` **`T-18`**: Implementar `mjk_camera.c`: scroll horizontal en pasillos, costuras/seams entre salas de sección y clamping en fronteras + `CTest`.
-- `[DONE]` **`T-19`**: Implementar `mjk_objects.c` (parte 1): bombas `100`/`200`, cadena de mechas con chispa, animación *puff* en 2 fases y lógica de Royal Palace / Bomb Room + `CTest`.
-- `[DONE]` **`T-20`**: Implementar `mjk_objects.c` (parte 2): cofres rojos/naranjas, bloques secretos, ítems (Bags, Gold Coin, Mighty Drink, Sphinx, Extra 1UP, Bonus/Secret Coins, Crystal Balls) y niveles Mighty `0..3` con degradación por pulsaciones de `A` + `CTest`.
-- `[DONE]` **`T-21`**: Implementar `mjk_doors.c`: evaluación de las **33 condiciones de puertas** USA (incluyendo caso especial sala `$61`), apertura en `RoomState` y detección de cruce por puerta + `CTest`.
-- `[DONE]` **`T-22`**: Implementar `mjk_enemy.c` (parte 1): tabla de dificultad por ronda, spawns diferidos por sala (máx 4 vivos), patrulla de Momias y colisión letal con Jack + `CTest`.
-- `[DONE]` **`T-23`**: Implementar `mjk_enemy.c` (parte 2): los 6 arquetipos mutados (Hanezo, GejiShogun, Gameido, Dokuron, Desufa, Horus), mutación `(APressCounter % 6) + 2` y Power Ball / Power Coin de 320 frames + `CTest`.
-- `[DONE]` **`T-24`**: Implementar `mjk_hud.c`: aritmética BCD unificada little-endian (`$00A0..$00A3`), `StageTimer` (`$60` BCD, divisor 256f), sprites OAM del HUD (`Score` Y=16, `T`/`M` Y=24) y puntuación flotante + `CTest`.
+- `[TODO]` **`R-05`** *(Depende de: R-04 — Paralelizable con R-06)*: **Puntuación, GDV y Temporizador (`include/mjk/scoring.h`, `src/game/scoring.c`, `tests/c/test_scoring.c`)**.
+  - **Alcance**: Aritmética en enteros normales (`uint32_t score`, `int gdv`, `int high_gdv`, `int timer_seconds`, `int lives`), multiplicadores `×1..×5` en Bomb Room, eventos cada 5.000 pts (Bonus/Extra Coin sin duplicar), `StageTimer` (`60→0`, divisor 256f) y Time Over.
+  - **Gate**: `test_scoring` cubre toda la tabla de puntos, multiplicadores, 5.000 pts, GDV y StageTimer al 100%.
 
-## Hito 6 — Motor de Audio Chiptune APU 2A03
+- `[TODO]` **`R-06`** *(Depende de: R-04 — Paralelizable con R-05)*: **Mundo, Cámara y Persistencia (`include/mjk/world.h`, `src/game/world.c`, `tests/c/test_world.c`)**.
+  - **Alcance**: Carga de sala actual y vecina (`RoomState`), cámara en `float`, clamping en bordes (`AT_SCROLL_EDGE`/`SCROLL_STOP`), cruce de costuras (`room_crossed`) y persistencia limpia de 8 salas por sección + scratch de Bomb Room.
+  - **Gate**: `test_world` valida salas H/V/Single, scroll, seams y persistencia entre visitas al 100%.
 
-- `[DONE]` **`T-25`**: Implementar sintetizador hardware `mjk_apu_synth.c` (parte 1): osciladores Pulse 1/2 (4 duty cycles + hardware sweep `$4001/$4005`), Triangle 32 pasos y Noise LFSR de 15 bits a 44.1 kHz + `CTest`.
-- `[DONE]` **`T-26`**: Implementar intérprete de bytecode BGM/SFX en `mjk_apu.c` (parte 2) 100% alimentado desde `MjkAssetPackage` (envolventes, pitch bend, prioridad SFX sobre música, 8 canales) y conectarlo a `MjkGame_StepAudio` y `main.c` + `CTest`.
+- `[TODO]` **`R-07`** *(Depende de: R-06)*: **Física de Jack y Colisiones (`include/mjk/player.h`, `src/game/player.c`, `tests/c/test_player.c`)**.
+  - **Alcance**: Movimiento horizontal (`±1.5f` px/f y parada instantánea), curva parabólica `float` de 64 pasos, flutter por flanco de subida, 9 sondas sobre tipos semánticos (sólido, 10 parciales `8×8`, 7 fuegos `0x5C..0x62`, puertas cerradas, cofres cerrados vs ocultos) y secuencia de muerte (volteretas → suelo → 64f).
+  - **Gate**: `test_player` coincide frame a frame con `golden_reference.h` y cubre los 10 parciales, 7 fuegos, cofres y muerte.
 
-## Hito 7 — Capa 2 Semántica, Juego Completo y Certificación Multiplataforma
+- `[TODO]` **`R-08`** *(Depende de: R-05, R-06, R-07)*: **Objetos Parte 1: Bombas, Mechas y Puff (`include/mjk/objects.h`, `src/game/objects.c`, `tests/c/test_objects.c`)**.
+  - **Alcance**: Bombas apagadas (`100`) y encendidas (`200`), cadena de mechas + chispa en Bomb Room (23 bombas y apertura de puerta de salida), bonus de orden perfecto en pasillo (`10.200` pts), acumulador Power Coin (`20` pts) y animación puff+popup (`32f + 32f`).
+  - **Gate**: `test_objects` (parte 1) pasa 100% en bombas, mechas, orden perfecto y puff.
 
-- `[DONE]` **`T-27`**: Implementar `mjk_verify_api.c` (API limpia de inspección headless) + `tools/verify_scenarios.py` ejecutando micro-escenarios cortos (60–240 frames) frente a `cynes` (reglas jugables, OAM/paletas NES y eventos APU + PNG 3-paneles).
-- `[DONE]` **`T-28`**: Auditoría *Full-Game Playthrough*: recorrer con `F2` (y jugando en vivo) todos los puntos del checklist de `research/GAME_COMPLETE_FLOW.md` (Copyright -> Title -> Pasajes -> Bomb Rooms -> RoundClear -> Torture Room -> 4 Finales -> GameOver -> Title) y corregir cualquier brecha de integración.
-- `[DONE]` **`T-29`**: Pulido educativo y extensibilidad: verificar módulos < 600 líneas y comentarios didácticos con citas `asm/src/`, actualizar `research/CROSS_REFERENCE_INDEX.md` al nuevo código C, y añadir guía práctica de modding en `docs/EDUCATIONAL_ARCHITECTURE.md`.
-- `[DONE]` **`T-30`**: Certificación final multiplataforma: compilar sin warnings (`-Wall -Wextra -Werror`) en Windows y Linux, pasar `ctest` al 100%, pasar `verify_scenarios.py` al 100% y validar ejecución limpia solo con `mbj-us.nes`.
+- `[TODO]` **`R-09`** *(Depende de: R-08)*: **Objetos Parte 2: Cofres, Secretos, Ítems y Mighty (`src/game/objects.c`, `tests/c/test_objects.c`)**.
+  - **Alcance**: Cofres rojos (todos los ítems), cofres naranjas (Mighty ≥ 1), bloques secretos desde abajo, niveles Mighty `0..3` con degradación `{1,20,30,35}` y transmutación en nivel 3 (prohibido en Bomb Room).
+  - **Gate**: `test_objects` completo cubre cada ítem, cofres rojos/naranjas, secretos y Mighty 0..3.
+
+- `[TODO]` **`R-10`** *(Depende de: R-06, R-09)*: **Sistema de Puertas (`include/mjk/doors.h`, `src/game/doors.c`, `tests/c/test_doors.c`)**.
+  - **Alcance**: Las **33 condiciones de puerta (`0..32`)** con nombres claros (`DOOR_COND_*`), caso especial Sala `$61`, eventos de Esfinge, Familia Real/Beelzebub, persistencia de apertura y detección de cruce de Jack.
+  - **Gate**: `test_doors` prueba caso falso y verdadero de las 33 condiciones, Esfinge, Familia Real y cruce.
+
+- `[TODO]` **`R-11`** *(Depende de: R-06, R-07)*: **Enemigos Parte 1: Dificultad, Spawns y Momias (`include/mjk/enemies.h`, `src/game/enemies.c`, `tests/c/test_enemies.c`)**.
+  - **Alcance**: `DifficultyTable`, spawn diferido (máx. 4 vivos en 8 slots), patrulla de Momias, colisión letal con Jack y mutación determinista `(jump_press_count % 6) + 2`.
+  - **Gate**: `test_enemies` (parte 1) valida dificultad, spawns, límite de 4 vivos y mutación.
+
+- `[TODO]` **`R-12`** *(Depende de: R-11)*: **Enemigos Parte 2: 6 Arquetipos, Power Coin y Coleccionables (`src/game/enemies.c`, `tests/c/test_enemies.c`)**.
+  - **Alcance**: Los 6 arquetipos (`Hanezo`, `GejiShogun`, `Gameido`, `Dokuron`, `Desufa`, `Horus`), Power Coin (`320f`, cadena `100..2000`, gracia post-transmutación) y Bonus/Extra/Secret Coin + Captive (1UP).
+  - **Gate**: `test_enemies` completo cubre los 6 arquetipos, Power Coin y todos los coleccionables.
+
+- `[TODO]` **`R-13`** *(Depende de: R-05..R-12)*: **Pantallas y Máquina de Estados Completa (`include/mjk/game.h`, `src/game/screens.c`, `src/game/game.c`, `tests/c/test_game_flow.c`)**.
+  - **Alcance**: Integrar el ciclo completo `TITLE` (Copyright ↔ Title → Falling) → `ROUND_INTRO` → `PLAYING` (pausa, pérdida de vida/checkpoint) → `TIME_OVER` → `TORTURE` (`$AC`, 50 saltos US) → `ROUND_CLEAR` → `GAME_OVER` → **4 Finales (`$A0..$A3`)**.
+  - **Gate**: `test_game_flow` valida todo el flujo y los 4 finales contra `golden_reference.h`. *(Commit de Hito R3.)*
+
+---
+
+## Hito R4 — Renderizador Optimizado (`src/render/`) y Audio 2A03 (`src/audio/`)
+
+- `[TODO]` **`R-14`** *(Depende de: R-13 — Paralelizable con R-15)*: **Renderizador Solo-Lectura Optimizado (`include/mjk/renderer.h`, `src/render/renderer.c`, `tests/c/test_renderer.c`)**.
+  - **Alcance**: Renderizar `256×240` ARGB8888 leyendo solo `const Game*` + `const GameAssets*`, usando tiles pre-decodificados `8×8` y caché plana de paletas RGB (`bg_pal[4][4]`, `spr_pal[4][4]`).
+  - **Gate**: `test_renderer` valida Title, Sala 1, scroll, Bomb Room, Torture Room, HUD, flip H/V, Mighty 0..3 y **Golden Frame Checks** contra `golden_reference.h`.
+
+- `[TODO]` **`R-15`** *(Depende de: R-04 — Paralelizable con R-14)*: **Sintetizador 2A03 con LUTs y Motor de Audio NTSC (`include/mjk/audio.h`, `src/audio/synth_2a03.c`, `src/audio/audio_engine.c`, `tests/c/test_audio.c`)**.
+  - **Alcance**: Pulse 1/2 (duty + sweep), Triangle, Noise LFSR, tablas LUT `pulse_lut[31]`/`tnd_lut[203]`, secuenciador de 8 canales (prioridad y restauración SFX→BGM) y **acumulador fraccional NTSC (`733`/`734` muestras/frame)**.
+  - **Gate**: `test_audio` valida 4 voces, LUT, restauración BGM tras SFX, silencio, rango `int16_t` y deriva ≤ 1 muestra en 3.600 frames. *(Commit de Hito R4.)*
+
+---
+
+## Hito R5 — Plataforma Limpia y Retirada del Código Antiguo / Debug
+
+- `[TODO]` **`R-16`** *(Depende de: R-14, R-15)*: **Capa SDL2 Limpia y `src/main.c` (`include/mjk/platform.h`, `src/platform/platform_sdl.c`, `src/main.c`)**.
+  - **Alcance**: Bucle principal a `60.0988 Hz` usando `InputLatch` y acumulador fraccional de audio; solo CLI `--rom` y `--assets` con validación estricta; cero debug overlay, cero cheats, cero `--headless`/`--smoke-test`/`--frames`.
+  - **Gate**: Ejecutable `mjk` compila limpio sin warnings y arranca/cierra correctamente con `mbj-us.nes`.
+
+- `[TODO]` **`R-17`** *(Depende de: R-16)*: **Retirada de Código Viejo, Debug, DLL y Oráculo Python + `CMakeLists.txt` Final**.
+  - **Alcance**: Eliminar `src/core/*`, `include/mjk_*.h` antiguos, `src/platform/mjk_debug_overlay.c`, target `mjk_core_shared`, `tools/nes_oracle.py`, `tools/verify_scenarios.py`, el capturador temporal de `R-01` y los tests antiguos. Dejar `CMakeLists.txt` limpio con `mjk_engine`, `mjk` y las 10 suites `CTest`.
+  - **Gate**: `0` warnings (`/W4 /WX` y `-Wall -Wextra -Wpedantic -Werror`), `10/10` CTests en verde (y `Skipped (77)` verificado sin ROM). *(Commit de Hito R5.)*
+
+---
+
+## Hito R6 — Limpieza de `research/` y Documentación Técnica Humana
+
+- `[TODO]` **`R-18`** *(Depende de: R-17 — Paralelizable con R-19)*: **Limpieza de `research/` y Actualización de `research/INDEX.md`**.
+  - **Alcance**: Eliminar `RES-028`..`RES-036`, `audit/unresolved_questions.md`, `control_flow/unresolved_dependencies.md`, `inventories/unresolved_regions.md` y `architecture/verification_strategy.md`; conservar inventarios y referencias ASM y actualizar `research/INDEX.md`.
+  - **Gate**: Cero enlaces rotos dentro de `research/`.
+
+- `[TODO]` **`R-19`** *(Depende de: R-17 — Paralelizable con R-18)*: **Nueva Documentación Técnica Humana en `docs/`**.
+  - **Alcance**: Crear `docs/ARCHITECTURE.md`, `docs/GAME_SYSTEMS.md`, `docs/ASSETS_AND_AUDIO.md` y `docs/TESTING_GUIDE.md` (con diagramas Mermaid y explicaciones claras para humanos); eliminar el antiguo `docs/EDUCATIONAL_ARCHITECTURE.md`.
+  - **Gate**: Documentación completa, clara y alineada al código refactorizado.
+
+- `[TODO]` **`R-20`** *(Depende de: R-18, R-19)*: **Cierre del Refactor (`README.md`, `AGENTS.md`, `project/PROJECT_STATUS.md`) y Certificación Final**.
+  - **Alcance**: Actualizar `README.md`, `AGENTS.md` y `project/PROJECT_STATUS.md`; verificar compilación limpia + `ctest` completo (con ROM → `PASS` y sin ROM → `SKIP 77`); crear `walkthrough.md`.
+  - **Gate**: `0` warnings, `10/10` CTests verdes, árbol Git limpio listo para commit final. *(Commit de Hito R6.)*

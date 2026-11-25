@@ -27,6 +27,7 @@ enum {
     ADDR_MIGHTY_A_PRESSES   = 0xC0C8u,
     ADDR_MUSIC_OPTIONS      = 0xC0CCu,
     ADDR_DOOR_ENTRY_XY      = 0xC0D4u,
+    ADDR_VECTOR_TABLE       = 0xC0F4u,
     ADDR_MAYBE_ENTRY_TYPE   = 0xC0FCu,
     ADDR_SPRITES_TABLE      = 0xC11Cu,
     ADDR_STRING_PTR_TABLE   = 0xC202u,
@@ -363,12 +364,14 @@ static bool decode_tables_and_strings(const RawSections* s, MjkAssets* a) {
     memcpy(a->multiplied_score, resolve_cpu(s, ADDR_MULTIPLIED_SCORE, 32u), 32u);
     memcpy(a->fire_bomb_bonus, resolve_cpu(s, ADDR_FIRE_BOMB_BONUS, 4u), 4u);
     memcpy(a->door_entry_xy, resolve_cpu(s, ADDR_DOOR_ENTRY_XY, 32u), 32u);
+    memcpy(a->door_walk_vec, resolve_cpu(s, ADDR_VECTOR_TABLE, 8u), 8u);
     memcpy(a->music_options, resolve_cpu(s, ADDR_MUSIC_OPTIONS, 8u), 8u);
 
     p = resolve_cpu(s, ADDR_MAYBE_ENTRY_TYPE, 32u);
     if (!p) { return false; }
     for (uint32_t i = 0u; i < 16u; ++i) {
-        a->bomb_room_exit_door[i] = p[i * 2u + 1u];
+        a->bomb_room_entry_door[i] = p[i * 2u];
+        a->bomb_room_exit_door[i]  = p[i * 2u + 1u];
     }
 
     /* Tablas de enemigos */

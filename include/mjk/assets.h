@@ -132,6 +132,8 @@ typedef struct MjkAssets {
     uint8_t      multiplied_score[32];
     uint8_t      fire_bomb_bonus[4];
     uint8_t      door_entry_xy[16][2];
+    int8_t       door_walk_vec[4][2];
+    uint8_t      bomb_room_entry_door[16];
     uint8_t      bomb_room_exit_door[16];
     uint8_t      music_options[8];
 

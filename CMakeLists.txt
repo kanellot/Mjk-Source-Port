@@ -232,6 +232,14 @@ if(BUILD_TESTING)
         src/assets/rom_loader.c
         src/assets/asset_bank.c
         src/game/input.c
+        src/game/scoring.c
+        src/game/world.c
+        src/game/player.c
+        src/game/objects.c
+        src/game/doors.c
+        src/game/enemies.c
+        src/game/screens.c
+        src/game/game.c
     )
     add_library(mjk_engine STATIC ${MJK_ENGINE_SOURCES})
     target_include_directories(mjk_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -254,4 +262,11 @@ if(BUILD_TESTING)
 
     mjk_add_unit_test(test_engine_input tests/c/test_input.c)
     mjk_add_unit_test(test_engine_assets tests/c/test_assets_new.c)
+    mjk_add_unit_test(test_engine_scoring tests/c/test_scoring.c)
+    mjk_add_unit_test(test_engine_world tests/c/test_world.c)
+    mjk_add_unit_test(test_engine_player tests/c/test_player_new.c)
+    mjk_add_unit_test(test_engine_objects tests/c/test_objects_new.c)
+    mjk_add_unit_test(test_engine_doors tests/c/test_doors_new.c)
+    mjk_add_unit_test(test_engine_enemies tests/c/test_enemies_new.c)
+    mjk_add_unit_test(test_engine_game_flow tests/c/test_game_flow_new.c)
 endif()

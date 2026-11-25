@@ -66,7 +66,7 @@ build.bat test
 build\bin\mjk.exe --rom ruta\a\mbj-us.nes
 ```
 
-### Linux / macOS (GCC / Clang + CMake + SDL2)
+### Linux (GCC / Clang + CMake + SDL2)
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
@@ -75,6 +75,22 @@ ctest --test-dir build --output-on-failure
 ```
 
 También dispones del wrapper [`Makefile`](Makefile) (`make build`, `make test`, `make run`, `make clean`).
+
+### macOS (Apple Clang + CMake + SDL2)
+
+Usa el mismo `Makefile` que en Linux. Si aún no tienes las herramientas de línea de comandos de Xcode, instálalas con `xcode-select --install`. Instala CMake y SDL2 con Homebrew si te faltan.
+
+```bash
+brew install cmake sdl2
+make build
+make test
+
+# Con mbj-us.nes en la raíz del repositorio
+make run
+
+# O con la ROM en otra carpeta
+./build/bin/mjk --rom "/ruta/a/mbj-us.nes"
+```
 
 ---
 
@@ -105,7 +121,7 @@ También dispones del wrapper [`Makefile`](Makefile) (`make build`, `make test`,
 ├── research/            # Inventarios y referencias técnicas ASM (REV_US)
 ├── tools/               # Herramienta de consulta ASM (asm_query.py)
 ├── CMakeLists.txt       # Sistema de compilación multiplataforma
-├── build.bat / Makefile # Wrappers de compilación
+├── build.bat / Makefile # Wrappers de compilación para Windows, Linux y macOS
 └── LICENSE              # Licencia MIT + atribución del repositorio ASM
 ```
 

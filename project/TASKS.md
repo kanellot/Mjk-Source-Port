@@ -3,8 +3,8 @@
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-25)**
 > - **Rama activa**: `refactor` (base `7a74c53`)
 > - **Skill obligatoria para subagentes**: `.agents/skills/mjk-clean-refactor/SKILL.md`
-> - **Último ticket completado**: **`R-17`** (Hito R5 cerrado: capa SDL2 limpia, retirada total de código viejo/debug/DLL/oráculo Python, `CMakeLists.txt` final, `0` warnings y `11/11` CTests verdes en 0.52 s).
-> - **Siguiente ticket nuclear**: **`R-18`** (Limpieza de `research/` y actualización de `research/INDEX.md`).
+> - **Último ticket completado**: **`R-20`** (**REFACTOR COMPLETADO — `20/20` tickets `[DONE]`**: arquitectura C11 moderna en 5 capas, rendimiento optimizado, `0` warnings, `11/11` CTests verdes, `research/` depurada y documentación humana en `docs/`).
+> - **Siguiente ticket nuclear**: **Ninguno (`20/20` completados)**.
 > - **Protocolo tras fin de cuota**: Leer únicamente este `CHECKPOINT ACTIVO`, el ticket `[TODO]` siguiente y `.agents/skills/mjk-clean-refactor/SKILL.md`. Ejecutar **estrictamente 1 ticket**, verificar compilación sin warnings + `ctest` 100% verde y actualizar este checkpoint.
 > - **Política de commits**: 1 commit limpio al cerrar cada Hito (`R-02`, `R-04`, `R-13`, `R-15`, `R-17`, `R-20`), sin binarios ni ROMs.
 
@@ -100,14 +100,14 @@
 
 ## Hito R6 — Limpieza de `research/` y Documentación Técnica Humana
 
-- `[TODO]` **`R-18`** *(Depende de: R-17 — Paralelizable con R-19)*: **Limpieza de `research/` y Actualización de `research/INDEX.md`**.
+- `[DONE]` **`R-18`** *(Depende de: R-17 — Paralelizable con R-19)*: **Limpieza de `research/` y Actualización de `research/INDEX.md`**.
   - **Alcance**: Eliminar `RES-028`..`RES-036`, `audit/unresolved_questions.md`, `control_flow/unresolved_dependencies.md`, `inventories/unresolved_regions.md` y `architecture/verification_strategy.md`; conservar inventarios y referencias ASM y actualizar `research/INDEX.md`.
   - **Gate**: Cero enlaces rotos dentro de `research/`.
 
-- `[TODO]` **`R-19`** *(Depende de: R-17 — Paralelizable con R-18)*: **Nueva Documentación Técnica Humana en `docs/`**.
+- `[DONE]` **`R-19`** *(Depende de: R-17 — Paralelizable con R-18)*: **Nueva Documentación Técnica Humana en `docs/`**.
   - **Alcance**: Crear `docs/ARCHITECTURE.md`, `docs/GAME_SYSTEMS.md`, `docs/ASSETS_AND_AUDIO.md` y `docs/TESTING_GUIDE.md` (con diagramas Mermaid y explicaciones claras para humanos); eliminar el antiguo `docs/EDUCATIONAL_ARCHITECTURE.md`.
   - **Gate**: Documentación completa, clara y alineada al código refactorizado.
 
-- `[TODO]` **`R-20`** *(Depende de: R-18, R-19)*: **Cierre del Refactor (`README.md`, `AGENTS.md`, `project/PROJECT_STATUS.md`) y Certificación Final**.
+- `[DONE]` **`R-20`** *(Depende de: R-18, R-19)*: **Cierre del Refactor (`README.md`, `AGENTS.md`, `project/PROJECT_STATUS.md`) y Certificación Final**.
   - **Alcance**: Actualizar `README.md`, `AGENTS.md` y `project/PROJECT_STATUS.md`; verificar compilación limpia + `ctest` completo (con ROM → `PASS` y sin ROM → `SKIP 77`); crear `walkthrough.md`.
   - **Gate**: `0` warnings, `10/10` CTests verdes, árbol Git limpio listo para commit final. *(Commit de Hito R6.)*

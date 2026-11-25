@@ -240,6 +240,9 @@ if(BUILD_TESTING)
         src/game/enemies.c
         src/game/screens.c
         src/game/game.c
+        src/render/renderer.c
+        src/audio/synth_2a03.c
+        src/audio/audio_engine.c
     )
     add_library(mjk_engine STATIC ${MJK_ENGINE_SOURCES})
     target_include_directories(mjk_engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -269,4 +272,6 @@ if(BUILD_TESTING)
     mjk_add_unit_test(test_engine_doors tests/c/test_doors_new.c)
     mjk_add_unit_test(test_engine_enemies tests/c/test_enemies_new.c)
     mjk_add_unit_test(test_engine_game_flow tests/c/test_game_flow_new.c)
+    mjk_add_unit_test(test_engine_renderer tests/c/test_renderer.c)
+    mjk_add_unit_test(test_engine_audio tests/c/test_audio.c)
 endif()

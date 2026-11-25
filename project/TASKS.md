@@ -3,8 +3,8 @@
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-25)**
 > - **Rama activa**: `refactor` (base `7a74c53`)
 > - **Skill obligatoria para subagentes**: `.agents/skills/mjk-clean-refactor/SKILL.md`
-> - **Último ticket completado**: **`R-13`** (Hito R3 cerrado: toda la lógica pura en `src/game/` — `scoring`, `world`, `player`, `objects`, `doors`, `enemies`, `screens`, `game` — con `27/27` CTests verdes y 0 warnings).
-> - **Siguiente ticket nuclear**: **`R-14`** (Renderizador Solo-Lectura Optimizado en `src/render/renderer.c`).
+> - **Último ticket completado**: **`R-15`** (Hito R4 cerrado: renderizador solo-lectura con tiles pre-decodificados y cache RGB, y motor 2A03 con LUTs + acumulador NTSC 733/734; `29/29` CTests verdes).
+> - **Siguiente ticket nuclear**: **`R-16`** (Capa SDL2 limpia y `src/main.c` sin debug/overlay/flags de test).
 > - **Protocolo tras fin de cuota**: Leer únicamente este `CHECKPOINT ACTIVO`, el ticket `[TODO]` siguiente y `.agents/skills/mjk-clean-refactor/SKILL.md`. Ejecutar **estrictamente 1 ticket**, verificar compilación sin warnings + `ctest` 100% verde y actualizar este checkpoint.
 > - **Política de commits**: 1 commit limpio al cerrar cada Hito (`R-02`, `R-04`, `R-13`, `R-15`, `R-17`, `R-20`), sin binarios ni ROMs.
 
@@ -76,11 +76,11 @@
 
 ## Hito R4 — Renderizador Optimizado (`src/render/`) y Audio 2A03 (`src/audio/`)
 
-- `[TODO]` **`R-14`** *(Depende de: R-13 — Paralelizable con R-15)*: **Renderizador Solo-Lectura Optimizado (`include/mjk/renderer.h`, `src/render/renderer.c`, `tests/c/test_renderer.c`)**.
+- `[DONE]` **`R-14`** *(Depende de: R-13 — Paralelizable con R-15)*: **Renderizador Solo-Lectura Optimizado (`include/mjk/renderer.h`, `src/render/renderer.c`, `tests/c/test_renderer.c`)**.
   - **Alcance**: Renderizar `256×240` ARGB8888 leyendo solo `const Game*` + `const GameAssets*`, usando tiles pre-decodificados `8×8` y caché plana de paletas RGB (`bg_pal[4][4]`, `spr_pal[4][4]`).
   - **Gate**: `test_renderer` valida Title, Sala 1, scroll, Bomb Room, Torture Room, HUD, flip H/V, Mighty 0..3 y **Golden Frame Checks** contra `golden_reference.h`.
 
-- `[TODO]` **`R-15`** *(Depende de: R-04 — Paralelizable con R-14)*: **Sintetizador 2A03 con LUTs y Motor de Audio NTSC (`include/mjk/audio.h`, `src/audio/synth_2a03.c`, `src/audio/audio_engine.c`, `tests/c/test_audio.c`)**.
+- `[DONE]` **`R-15`** *(Depende de: R-04 — Paralelizable con R-14)*: **Sintetizador 2A03 con LUTs y Motor de Audio NTSC (`include/mjk/audio.h`, `src/audio/synth_2a03.c`, `src/audio/audio_engine.c`, `tests/c/test_audio.c`)**.
   - **Alcance**: Pulse 1/2 (duty + sweep), Triangle, Noise LFSR, tablas LUT `pulse_lut[31]`/`tnd_lut[203]`, secuenciador de 8 canales (prioridad y restauración SFX→BGM) y **acumulador fraccional NTSC (`733`/`734` muestras/frame)**.
   - **Gate**: `test_audio` valida 4 voces, LUT, restauración BGM tras SFX, silencio, rango `int16_t` y deriva ≤ 1 muestra en 3.600 frames. *(Commit de Hito R4.)*
 

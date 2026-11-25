@@ -228,6 +228,9 @@ if(BUILD_TESTING)
     # Nuevo motor refactorizado C11 moderno (Hitos R1..R5; sustituira mjk_core en R-17)
     # =========================================================================
     set(MJK_ENGINE_SOURCES
+        src/assets/sha1.c
+        src/assets/rom_loader.c
+        src/assets/asset_bank.c
         src/game/input.c
     )
     add_library(mjk_engine STATIC ${MJK_ENGINE_SOURCES})
@@ -250,4 +253,5 @@ if(BUILD_TESTING)
     endfunction()
 
     mjk_add_unit_test(test_engine_input tests/c/test_input.c)
+    mjk_add_unit_test(test_engine_assets tests/c/test_assets_new.c)
 endif()

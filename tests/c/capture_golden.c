@@ -129,6 +129,7 @@ int main(void) {
 
     /* 1. 256 Rooms geometry + object metadata hashes */
     fprintf(out, "typedef struct {\n");
+    fprintf(out, "    uint32_t pure_mt_hash;\n");
     fprintf(out, "    uint32_t static_mt_hash;\n");
     fprintf(out, "    uint32_t objects_hash;\n");
     fprintf(out, "    uint8_t  palette_set;\n");
@@ -146,6 +147,7 @@ int main(void) {
         memset(&room, 0, sizeof(room));
         memset(&persist, 0, sizeof(persist));
         MjkRoom_DecodeGeometry(&pkg, (uint8_t)r, &room);
+        uint32_t pure_mt_hash = fnv1a_32(room.static_metatiles, sizeof(room.static_metatiles));
         if (r > 0) {
             MjkRoom_PreloadSection(&pkg, (uint8_t)r, &persist, 0u);
             MjkRoom_DecodeObjects(&pkg, (uint8_t)r, &persist, &room);
@@ -160,8 +162,8 @@ int main(void) {
             obj_pack[i * 5u + 4u] = room.objects[i].ram_state;
         }
         uint32_t obj_hash = fnv1a_32(obj_pack, (size_t)room.object_count * 5u);
-        fprintf(out, "    { 0x%08Xu, 0x%08Xu, %uu, %uu, %uu, %uu, %uu, %uu }%s\n",
-                mt_hash, obj_hash,
+        fprintf(out, "    { 0x%08Xu, 0x%08Xu, 0x%08Xu, %uu, %uu, %uu, %uu, %uu, %uu }%s\n",
+                pure_mt_hash, mt_hash, obj_hash,
                 (unsigned)room.palette_set, (unsigned)room.music_id,
                 (unsigned)room.section_id, room.is_horizontal ? 1u : 0u,
                 room.is_bomb_room ? 1u : 0u, (unsigned)room.object_count,

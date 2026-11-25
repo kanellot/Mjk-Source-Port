@@ -3,8 +3,8 @@
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-25)**
 > - **Rama activa**: `refactor` (base `7a74c53`)
 > - **Skill obligatoria para subagentes**: `.agents/skills/mjk-clean-refactor/SKILL.md`
-> - **Último ticket completado**: **`R-02`** (Hito R1 cerrado: `golden_reference.h`, `include/mjk/types.h`, `include/mjk/input.h`, `src/game/input.c`, `mjk_engine`, `SKIP_RETURN_CODE 77` y `19/19` CTests verdes).
-> - **Siguiente ticket nuclear**: **`R-03`** (SHA-1 y Cargador BYOR en `src/assets/`).
+> - **Último ticket completado**: **`R-04`** (Hito R2 cerrado: `src/assets/sha1.c`, `rom_loader.c`, `asset_bank.c`, 256 salas y 512 tiles pre-decodificados verificados, `20/20` CTests verdes).
+> - **Siguiente ticket nuclear**: **`R-05`** (Puntuación, GDV y Temporizador en `src/game/scoring.c`).
 > - **Protocolo tras fin de cuota**: Leer únicamente este `CHECKPOINT ACTIVO`, el ticket `[TODO]` siguiente y `.agents/skills/mjk-clean-refactor/SKILL.md`. Ejecutar **estrictamente 1 ticket**, verificar compilación sin warnings + `ctest` 100% verde y actualizar este checkpoint.
 > - **Política de commits**: 1 commit limpio al cerrar cada Hito (`R-02`, `R-04`, `R-13`, `R-15`, `R-17`, `R-20`), sin binarios ni ROMs.
 
@@ -24,11 +24,11 @@
 
 ## Hito R2 — Frontera Única de Assets BYOR (`src/assets/`)
 
-- `[TODO]` **`R-03`** *(Depende de: R-02)*: **SHA-1 y Cargador BYOR (`include/mjk/rom_loader.h`, `src/assets/sha1.c`, `src/assets/rom_loader.c`)**.
+- `[DONE]` **`R-03`** *(Depende de: R-02)*: **SHA-1 y Cargador BYOR (`include/mjk/rom_loader.h`, `src/assets/sha1.c`, `src/assets/rom_loader.c`)**.
   - **Alcance**: Implementar SHA-1, validación iNES (`mbj-us.nes`, `65.552` bytes + SHA-1 canónico), lectura/escritura de `assets.dat` v2 con CRC-32 y helper de resolución de ROM para tests (`77` skip si ausente, `1` fail si explícita inválida).
   - **Gate**: Compila limpio sin warnings; unit tests de SHA-1 (válido/corrupto/tamaño) y round-trip `assets.dat` + CRC-32 corrupto pasan al 100%.
 
-- `[TODO]` **`R-04`** *(Depende de: R-03, R-01)*: **Decodificador Único `asset_bank.c` (`include/mjk/assets.h`, `src/assets/asset_bank.c`, `tests/c/test_assets.c`)**.
+- `[DONE]` **`R-04`** *(Depende de: R-03, R-01)*: **Decodificador Único `asset_bank.c` (`include/mjk/assets.h`, `src/assets/asset_bank.c`, `tests/c/test_assets.c`)**.
   - **Alcance**: Decodificar **una sola vez** al cargar `mbj-us.nes`/`assets.dat`: 512 tiles `uint8_t tiles[512][8][8]` (pre-decodificados), paleta maestra NTSC y paletas de sala, `float jump_speed[64]`, `float jump_rate[3]`, `uint32_t score_table[]`, 32 cadenas `REV_US`, pistas de audio y las **256 salas (`RoomTemplate rooms[256]`)** con objetos tipados.
   - **Gate**: `test_assets` valida las 256 salas contra `golden_reference.h`, tiles, tablas y comportamiento `SKIP (77)` / `FAIL (1)`. *(Commit de Hito R2.)*
 

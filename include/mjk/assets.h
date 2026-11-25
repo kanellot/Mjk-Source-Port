@@ -163,6 +163,6 @@ void          MjkAssets_Unload(MjkAssets* assets);
 void MjkAssets_GetDoorLayout(uint8_t door_slot,
                              uint8_t* out_x0, uint8_t* out_y0,
                              uint8_t* out_x1, uint8_t* out_y1,
-                             uint8_t* out_closed_mt, uint8_t* out_open_mt);
+                             uint8_t* out_normal_mt, uint8_t* out_sealed_mt);
 
 #endif /* MJK_ENGINE_ASSETS_H */

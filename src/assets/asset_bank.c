@@ -556,12 +556,12 @@ void MjkAssets_Unload(MjkAssets* assets) {
 void MjkAssets_GetDoorLayout(uint8_t door_slot,
                              uint8_t* out_x0, uint8_t* out_y0,
                              uint8_t* out_x1, uint8_t* out_y1,
-                             uint8_t* out_closed_mt, uint8_t* out_open_mt) {
+                             uint8_t* out_normal_mt, uint8_t* out_sealed_mt) {
     uint8_t idx = (uint8_t)(door_slot & 0x0Fu);
     if (out_x0)        { *out_x0        = (uint8_t)(k_door_layout[idx][0] & 0x0Fu); }
     if (out_y0)        { *out_y0        = (uint8_t)((k_door_layout[idx][0] >> 4u) & 0x0Fu); }
     if (out_x1)        { *out_x1        = (uint8_t)(k_door_layout[idx][1] & 0x0Fu); }
     if (out_y1)        { *out_y1        = (uint8_t)((k_door_layout[idx][1] >> 4u) & 0x0Fu); }
-    if (out_closed_mt) { *out_closed_mt = k_door_layout[idx][2]; }
-    if (out_open_mt)   { *out_open_mt   = k_door_layout[idx][3]; }
+    if (out_normal_mt) { *out_normal_mt = k_door_layout[idx][2]; }
+    if (out_sealed_mt) { *out_sealed_mt = k_door_layout[idx][3]; }
 }

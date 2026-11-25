@@ -221,12 +221,14 @@ MjkActionResult MjkDoors_CheckPlayerEntry(MjkGame* game) {
     int wx = (int)floorf(game->player.x) + (int)floorf(game->world.camera.scroll_x);
     int wy = (int)floorf(game->player.y) + (int)floorf(game->world.camera.scroll_y);
 
-    int vy = wy + ((game->player.vy < 0.0f) ? -9 : (game->player.vy > 0.0f) ? 9 : 0);
     int hx = wx + ((game->player.facing == FACING_RIGHT) ? 10 : -10);
-    const int px[3] = { wx, wx, hx };
-    const int py[3] = { wy, vy, wy };
+    /* 4 sondas: centro, abajo (puertas de suelo), arriba (puertas de techo), lateral (pared) */
+    const int px[4] = { wx, wx, wx, hx };
+    const int py[4] = { wy, wy + 9, wy - 9, wy };
 
-    for (int p = 0; p < 3; ++p) {
+    for (int p = 0; p < 4; ++p) {
+        if (p == 1 && game->player.vy < 0.0f) { continue; }
+        if (p == 2 && game->player.vy > 0.0f) { continue; }
         int x = px[p] < 0 ? 0 : px[p];
         int y = py[p] < 0 ? 0 : py[p];
         MjkRoomInstance* tr = &game->world.current;
@@ -247,6 +249,10 @@ MjkActionResult MjkDoors_CheckPlayerEntry(MjkGame* game) {
             if (ro->kind != OBJ_KIND_DOOR || !ro->is_open || ro->is_hidden) {
                 continue;
             }
+            /* La sonda inferior (p=1) solo abre puertas de suelo (slots 4..7);
+             * la superior (p=2) solo puertas de techo (slots 0..3). */
+            if (p == 1 && (ro->door_slot < 4u || ro->door_slot > 7u)) { continue; }
+            if (p == 2 && ro->door_slot > 3u)                         { continue; }
             if ((ro->grid_x == gx && ro->grid_y == gy) || (ro->grid_x2 == gx && ro->grid_y2 == gy)) {
                 if ((ro->door_arg & 1u) == 0u) {
                     ro->is_open = false;

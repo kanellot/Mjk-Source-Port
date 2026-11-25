@@ -207,9 +207,10 @@ static void instantiate_room(MjkWorld* world,
         /* Pintar el metatile visual correspondiente si el objeto es visible */
         if (d->is_persistent && !obj.is_hidden) {
             if (d->kind == OBJ_KIND_DOOR) {
-                uint8_t closed_mt = 0u, open_mt = 0u;
-                MjkAssets_GetDoorLayout(d->door_slot, NULL, NULL, NULL, NULL, &closed_mt, &open_mt);
-                uint8_t base_mt = obj.is_open ? open_mt : closed_mt;
+                uint8_t normal_mt = 0u, sealed_mt = 0u;
+                MjkAssets_GetDoorLayout(d->door_slot, NULL, NULL, NULL, NULL, &normal_mt, &sealed_mt);
+                uint8_t base_mt = (uint8_t)((obj.is_sphinx_locked ? sealed_mt : normal_mt) +
+                                            (obj.is_open ? 2u : 0u));
                 MjkWorld_SetVisualMetatile(out_room, assets, obj.grid_x, obj.grid_y, base_mt);
                 MjkWorld_SetVisualMetatile(out_room, assets, obj.grid_x2, obj.grid_y2, (uint8_t)(base_mt + 1u));
             } else if (d->raw_yx != 0u) {
@@ -288,6 +289,7 @@ bool MjkWorld_LoadRoom(MjkWorld* world,
     }
     preload_section_if_needed(world, assets, room_id, crystal_balls_mask);
     instantiate_room(world, assets, room_id, &world->current);
+    world->active_palette_set = world->current.palette_set;
     init_camera_for_room(&world->camera, &world->current);
 
     if (world->camera.neighbor_room_id != 0u) {

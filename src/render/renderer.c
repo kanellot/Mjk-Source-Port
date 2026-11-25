@@ -141,8 +141,8 @@ static void push_score_digits(RenderScene* sc, uint32_t score) {
 }
 
 static void build_playing_scene(RenderScene* sc, const MjkGame* g, const MjkAssets* a, uint8_t pal_ram[32]) {
-    if (g->world.current.palette_set < 9u) {
-        const uint8_t* src = a->room_palettes[g->world.current.palette_set];
+    if (g->world.active_palette_set < 9u) {
+        const uint8_t* src = a->room_palettes[g->world.active_palette_set];
         memcpy(pal_ram + 4u, src, 12u);
         for (size_t i = 0u; i < 32u; i += 4u) { pal_ram[i] = src[0]; }
     }

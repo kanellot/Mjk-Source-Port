@@ -108,6 +108,7 @@ typedef struct {
     MjkRoomInstance   current;
     MjkRoomInstance   neighbor;
     bool              has_neighbor;
+    uint8_t           active_palette_set; /**< Paleta fija del pasillo/seccion (no cambia al hacer scroll). */
     MjkSectionPersist persist;
     MjkCamera         camera;
 } MjkWorld;

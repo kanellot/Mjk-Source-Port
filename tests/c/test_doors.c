@@ -101,6 +101,37 @@ int main(void) {
               "Puerta abierta dispara ACTION_ROOM_CHANGED");
     }
 
+    /* 5. Regresion: Pasillo 1 (Sala $06) y Pasillo 2 vertical (Sala $07 -> $0B) */
+    MjkWorld_LoadRoom(&g.world, &assets, 0x01u, 0u);
+    MjkWorld_LoadRoom(&g.world, &assets, 0x06u, 0u);
+    CHECK(g.world.current.objects[0].kind == OBJ_KIND_DOOR && g.world.current.objects[0].is_open,
+          "Sala $06 puerta de salida esta abierta");
+    CHECK(g.world.current.visual_metatiles[g.world.current.objects[0].grid_y][g.world.current.objects[0].grid_x] == 0x8Du,
+          "Sala $06 puerta abierta usa metatile abierto 0x8D (no 0x97 cerrada)");
+
+    MjkWorld_LoadRoom(&g.world, &assets, 0x07u, 0u);
+    uint8_t pal_c2 = g.world.active_palette_set;
+    float px = 128.0f, py = 120.0f;
+    for (int f = 0; f < 1000 && g.world.current.room_id != 0x0Bu; ++f) {
+        py += 2.0f;
+        MjkWorld_UpdateCamera(&g.world, &assets, &px, &py, 0.0f, 2.0f, 0u);
+    }
+    CHECK(g.world.current.room_id == 0x0Bu, "Descenso vertical llega a Sala $0B");
+    CHECK(g.world.active_palette_set == pal_c2, "Paleta del pasillo 2 NO cambia al descender");
+    const MjkRoomObj* d0b = &g.world.current.objects[0];
+    CHECK(d0b->kind == OBJ_KIND_DOOR && d0b->is_open, "Sala $0B puerta de salida esta abierta");
+    CHECK(g.world.current.visual_metatiles[d0b->grid_y][d0b->grid_x] == 0x89u,
+          "Sala $0B puerta abierta usa metatile abierto 0x89");
+
+    /* Jack de pie sobre el suelo solido encima de la puerta inferior de Sala $0B (vy=0) */
+    g.state = GS_PLAYING;
+    g.player.x = (float)(d0b->grid_x * 16 + 8);
+    g.player.y = 200.0f;
+    g.player.vx = 0.0f;
+    g.player.vy = 0.0f;
+    CHECK(MjkDoors_CheckPlayerEntry(&g) == ACTION_ROOM_CHANGED && g.state == GS_EXIT_ROOM,
+          "Jack de pie sobre puerta de suelo en Sala $0B puede entrar");
+
     MjkAssets_Unload(&assets);
     if (g_failures > 0) {
         fprintf(stderr, "[ERROR] test_doors_new fallo con %d errores.\n", g_failures);

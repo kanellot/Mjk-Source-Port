@@ -1,392 +1,218 @@
 /**
  * @file main.c
- * @brief Punto de entrada multiplataforma (Windows/Linux) del port Mighty Bomb Jack.
+ * @brief Punto de entrada limpio de Mighty Bomb Jack (C11 + SDL2).
  *
- * [ESTÁNDAR EDUCATIVO]:
- * Orquesta únicamente argumentos CLI, la capa HAL (`MjkPlatform_*`) y el bucle
- * principal de paso fijo a 60.0988 Hz (NTSC NES). Cero llamadas Win32/POSIX directas.
+ * Orquesta unicamente:
+ *  1. Argumentos CLI (`--rom <ruta>`, `--assets <ruta>`).
+ *  2. Carga o auto-extraccion Clean-Room BYOR v2 de `assets/assets.dat`.
+ *  3. Bucle principal a paso fijo NTSC (60.0988 Hz) con `MjkInputLatch` y
+ *     acumulador fraccional de muestras de audio (733/734 muestras/frame).
  */
 
 #include <SDL_main.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include "mjk_assets.h"
-#include "mjk_build_info.h"
-#include "mjk_debug_overlay.h"
-#include "mjk_game.h"
-#include "mjk_platform.h"
-#include "mjk_rom_extractor.h"
-
-#define MJK_SAMPLES_PER_NTSC_FRAME 735u
+#include "mjk/assets.h"
+#include "mjk/audio.h"
+#include "mjk/game.h"
+#include "mjk/input.h"
+#include "mjk/platform.h"
+#include "mjk/renderer.h"
+#include "mjk/rom_loader.h"
 
 typedef struct {
     const char* rom_path;
     const char* assets_path;
-    bool        headless;
-    bool        smoke_test;
-    uint32_t    max_frames;
-} MjkCliOptions;
+} CliOptions;
 
-static void render_hal_test_pattern(MjkFrameOutput* out, uint32_t frame_index) {
-    static const uint32_t k_bg_blue = 0xFF2038ECu;
-    static const uint32_t k_bar_gold = 0xFFFCA044u;
-    static const uint32_t k_border_white = 0xFFFCFCFCu;
-
-    uint32_t bar_y = (frame_index * 2u) % (uint32_t)MJK_SCREEN_HEIGHT;
-    for (int y = 0; y < MJK_SCREEN_HEIGHT; ++y) {
-        for (int x = 0; x < MJK_SCREEN_WIDTH; ++x) {
-            bool is_border = (x == 0 || x == MJK_SCREEN_WIDTH - 1 ||
-                              y == 0 || y == MJK_SCREEN_HEIGHT - 1);
-            uint32_t color = k_bg_blue;
-            if (is_border) {
-                color = k_border_white;
-            } else if ((uint32_t)y >= bar_y && (uint32_t)y < bar_y + 4u) {
-                color = k_bar_gold;
-            }
-            out->framebuffer[y * MJK_SCREEN_WIDTH + x] = color;
-        }
-    }
-
-    out->audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
-    memset(out->audio_samples, 0, MJK_SAMPLES_PER_NTSC_FRAME * sizeof(int16_t));
-}
-
-static bool parse_cli_options(int argc, char* argv[], MjkCliOptions* opts) {
-    opts->rom_path = NULL;
-    opts->assets_path = NULL;
-    opts->headless = false;
-    opts->smoke_test = false;
-    opts->max_frames = 0u;
-
+static bool parse_cli(int argc, char* argv[], CliOptions* opts) {
+    memset(opts, 0, sizeof(*opts));
     for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "--headless") == 0) {
-            opts->headless = true;
-        } else if (strcmp(argv[i], "--smoke-test") == 0) {
-            opts->headless = true;
-            opts->smoke_test = true;
-            opts->max_frames = 5u;
-        } else if (strcmp(argv[i], "--rom") == 0) {
-            if ((i + 1) >= argc) {
-                fprintf(stderr, "[ERROR CLI]: Falta ruta tras --rom.\n");
+        if (strcmp(argv[i], "--rom") == 0) {
+            if ((i + 1) >= argc || argv[i + 1][0] == '\0') {
+                fprintf(stderr, "[ERROR CLI]: Falta una ruta valida tras --rom.\n");
                 return false;
             }
             opts->rom_path = argv[++i];
         } else if (strcmp(argv[i], "--assets") == 0) {
-            if ((i + 1) >= argc) {
-                fprintf(stderr, "[ERROR CLI]: Falta ruta tras --assets.\n");
+            if ((i + 1) >= argc || argv[i + 1][0] == '\0') {
+                fprintf(stderr, "[ERROR CLI]: Falta una ruta valida tras --assets.\n");
                 return false;
             }
             opts->assets_path = argv[++i];
-        } else if (strcmp(argv[i], "--frames") == 0) {
-            if ((i + 1) >= argc) {
-                fprintf(stderr, "[ERROR CLI]: Falta número tras --frames.\n");
-                return false;
-            }
-            char* end = NULL;
-            unsigned long parsed = strtoul(argv[++i], &end, 10);
-            if (!end || *end != '\0') {
-                fprintf(stderr, "[ERROR CLI]: Valor inválido para --frames.\n");
-                return false;
-            }
-            opts->max_frames = (uint32_t)parsed;
         } else {
-            fprintf(stderr, "[ERROR CLI]: Opción desconocida: %s\n", argv[i]);
+            fprintf(stderr, "[ERROR CLI]: Opcion desconocida: %s\nUso: mjk [--rom <mbj-us.nes>] [--assets <assets.dat>]\n",
+                    argv[i]);
             return false;
         }
     }
     return true;
 }
 
-static bool join_path(char* out, size_t out_size, const char* dir, const char* rel) {
-    if (!out || out_size == 0u || !dir || !rel) {
-        return false;
-    }
-    size_t dir_len = strlen(dir);
-    bool has_sep = (dir_len > 0u && (dir[dir_len - 1u] == '/' || dir[dir_len - 1u] == '\\'));
-    int n = snprintf(out, out_size, has_sep ? "%s%s" : "%s/%s", dir, rel);
-    return n >= 0 && (size_t)n < out_size;
+static bool join_path(char* out, size_t out_sz, const char* dir, const char* rel) {
+    size_t len = strlen(dir);
+    bool sep = (len > 0u && (dir[len - 1u] == '/' || dir[len - 1u] == '\\'));
+    int n = snprintf(out, out_sz, sep ? "%s%s" : "%s/%s", dir, rel);
+    return n >= 0 && (size_t)n < out_sz;
 }
 
 static bool file_exists(const char* path) {
-    if (!path || path[0] == '\0') {
-        return false;
-    }
+    if (!path || path[0] == '\0') { return false; }
     FILE* f = fopen(path, "rb");
-    if (!f) {
-        return false;
-    }
+    if (!f) { return false; }
     fclose(f);
     return true;
 }
 
-static bool ensure_parent_dir(const char* file_path) {
-    if (!file_path) {
-        return false;
-    }
+static bool ensure_parent_dir(const char* path) {
     const char* last_sep = NULL;
-    for (const char* p = file_path; *p != '\0'; ++p) {
-        if (*p == '/' || *p == '\\') {
-            last_sep = p;
-        }
+    for (const char* p = path; *p != '\0'; ++p) {
+        if (*p == '/' || *p == '\\') { last_sep = p; }
     }
-    if (!last_sep) {
-        return true;
-    }
-    size_t dir_len = (size_t)(last_sep - file_path);
-    if (dir_len == 0u) {
-        return true;
-    }
-    char dir_buf[1024];
-    if (dir_len >= sizeof(dir_buf)) {
-        return false;
-    }
-    memcpy(dir_buf, file_path, dir_len);
-    dir_buf[dir_len] = '\0';
-    return MjkPlatform_EnsureDir(dir_buf);
+    if (!last_sep || last_sep == path) { return true; }
+    size_t dlen = (size_t)(last_sep - path);
+    char buf[1024];
+    if (dlen >= sizeof(buf)) { return false; }
+    memcpy(buf, path, dlen);
+    buf[dlen] = '\0';
+    return MjkPlatform_EnsureDir(buf);
 }
 
-static bool load_or_extract_assets(const MjkCliOptions* opts,
-                                   const char* exe_dir,
-                                   MjkAssetPackage* out_assets) {
-    char exe_assets_path[1024];
-    MjkAssetError load_err = MJK_ASSET_ERR_IO;
+static bool load_or_extract_assets(const CliOptions* opts, const char* exe_dir, MjkAssets* out_assets) {
+    char exe_buf[1024];
+    MjkAssetError err = ASSET_ERR_IO;
 
     if (opts->assets_path) {
-        load_err = MjkAssets_LoadFromFile(opts->assets_path, out_assets);
-        if (load_err == MJK_ASSET_OK) {
-            printf("  Assets   : %s (CRC-32 0x%08X)\n",
-                   opts->assets_path, (unsigned)out_assets->payload_crc32);
-            return true;
-        }
+        err = MjkAssets_LoadFromAssetsFile(opts->assets_path, out_assets);
+        if (err == ASSET_OK) { return true; }
     } else {
-        load_err = MjkAssets_LoadFromFile("assets/assets.dat", out_assets);
-        if (load_err == MJK_ASSET_OK) {
-            printf("  Assets   : assets/assets.dat (CRC-32 0x%08X)\n",
-                   (unsigned)out_assets->payload_crc32);
-            return true;
-        }
-        if (exe_dir && join_path(exe_assets_path, sizeof(exe_assets_path), exe_dir, "assets/assets.dat")) {
-            load_err = MjkAssets_LoadFromFile(exe_assets_path, out_assets);
-            if (load_err == MJK_ASSET_OK) {
-                printf("  Assets   : %s (CRC-32 0x%08X)\n",
-                       exe_assets_path, (unsigned)out_assets->payload_crc32);
-                return true;
-            }
+        err = MjkAssets_LoadFromAssetsFile("assets/assets.dat", out_assets);
+        if (err == ASSET_OK) { return true; }
+        if (exe_dir && join_path(exe_buf, sizeof(exe_buf), exe_dir, "assets/assets.dat")) {
+            err = MjkAssets_LoadFromAssetsFile(exe_buf, out_assets);
+            if (err == ASSET_OK) { return true; }
         }
     }
 
     const char* found_rom = NULL;
-    char exe_rom_path[1024];
-    if (opts->rom_path) {
-        if (file_exists(opts->rom_path)) {
-            found_rom = opts->rom_path;
-        }
+    char exe_rom[1024];
+    if (opts->rom_path && file_exists(opts->rom_path)) {
+        found_rom = opts->rom_path;
     } else if (file_exists("mbj-us.nes")) {
         found_rom = "mbj-us.nes";
-    } else if (exe_dir && join_path(exe_rom_path, sizeof(exe_rom_path), exe_dir, "mbj-us.nes") &&
-               file_exists(exe_rom_path)) {
-        found_rom = exe_rom_path;
+    } else if (exe_dir && join_path(exe_rom, sizeof(exe_rom), exe_dir, "mbj-us.nes") && file_exists(exe_rom)) {
+        found_rom = exe_rom;
     }
 
     if (!found_rom) {
         char msg[1024];
         snprintf(msg, sizeof(msg),
-                 "No se encontró assets.dat válido (%s) ni la ROM mbj-us.nes.\n"
-                 "Proporciona --rom <ruta_mbj-us.nes> o coloca mbj-us.nes junto al ejecutable.\n"
+                 "No se encontro assets.dat valido (%s) ni la ROM mbj-us.nes.\n"
+                 "Indica --rom <ruta_mbj-us.nes> o coloca mbj-us.nes junto al ejecutable.\n"
                  "SHA-1 esperado: %s",
-                 MjkAssets_ErrorString(load_err), MJK_ROM_EXPECTED_SHA1);
+                 MjkRom_ErrorString(err), MJK_ROM_EXPECTED_SHA1);
         fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
         MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Falta ROM", msg, true);
         return false;
     }
 
-    const char* target_assets = opts->assets_path ? opts->assets_path : "assets/assets.dat";
-    if (!ensure_parent_dir(target_assets)) {
-        char msg[512];
-        snprintf(msg, sizeof(msg), "No se pudo crear el directorio padre para '%.256s'.", target_assets);
-        fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
-        MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Error de Directorio", msg, true);
+    const char* target = opts->assets_path ? opts->assets_path : "assets/assets.dat";
+    if (!ensure_parent_dir(target)) {
+        MjkPlatform_ShowMessageBox("Mighty Bomb Jack", "No se pudo crear el directorio assets/.", true);
         return false;
     }
 
     char sha1_hex[MJK_SHA1_HEX_LEN + 1u];
-    memset(sha1_hex, 0, sizeof(sha1_hex));
-    MjkAssetError ext_err = MjkRom_ExtractFileToAssetsDat(found_rom, target_assets, sha1_hex);
-    if (ext_err == MJK_ASSET_OK) {
-        ext_err = MjkAssets_LoadFromFile(target_assets, out_assets);
+    MjkAssetError ext_err = MjkRom_ExtractFile(found_rom, target, sha1_hex);
+    if (ext_err == ASSET_OK) {
+        ext_err = MjkAssets_LoadFromAssetsFile(target, out_assets);
     }
-
-    if (ext_err != MJK_ASSET_OK) {
+    if (ext_err != ASSET_OK) {
         char msg[1024];
-        if (sha1_hex[0] != '\0' && strcmp(sha1_hex, MJK_ROM_EXPECTED_SHA1) != 0) {
-            snprintf(msg, sizeof(msg),
-                     "Error al extraer '%.256s': %.128s.\n"
-                     "SHA-1 esperado: %s\n"
-                     "SHA-1 obtenido: %s",
-                     found_rom, MjkAssets_ErrorString(ext_err),
-                     MJK_ROM_EXPECTED_SHA1, sha1_hex);
-        } else {
-            snprintf(msg, sizeof(msg),
-                     "Error al extraer '%.256s' hacia '%.256s': %.128s.\n"
-                     "SHA-1 esperado: %s",
-                     found_rom, target_assets, MjkAssets_ErrorString(ext_err),
-                     MJK_ROM_EXPECTED_SHA1);
-        }
+        snprintf(msg, sizeof(msg), "Error BYOR al procesar '%s': %s.\nSHA-1 esperado: %s",
+                 found_rom, MjkRom_ErrorString(ext_err), MJK_ROM_EXPECTED_SHA1);
         fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
         MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Error BYOR", msg, true);
         return false;
     }
-
-    printf("  BYOR v2  : Extraído %s <- %s (SHA-1 %s)\n",
-           target_assets, found_rom, sha1_hex);
     return true;
 }
 
-static void render_game_frame(const MjkGame* game,
-                              const MjkDebugOverlayState* dbg,
-                              MjkFrameOutput* out) {
-    MjkGame_Render(game, out->framebuffer);
-    MjkDebugTelemetry tel;
-    memset(&tel, 0, sizeof(tel));
-    tel.room_id = game->current_room_id;
-    tel.game_state = (uint8_t)game->state;
-    tel.lives = game->lives;
-    tel.mighty_level = (dbg->cheat_mode == 2u) ? 3u : game->mighty_level;
-    tel.timer_bcd = game->stage_timer_bcd;
-    tel.camera_x = game->ppu.scroll_x;
-    tel.jack_x = (int16_t)game->jack_x;
-    tel.jack_y = (int16_t)game->jack_y;
-    tel.has_jack = (game->top_mode == MJK_MODE_INGAME);
-    MjkDebugOverlay_Render(dbg, &tel, out->framebuffer);
-}
-
 int main(int argc, char* argv[]) {
-    MjkCliOptions opts;
-    if (!parse_cli_options(argc, argv, &opts)) {
+    CliOptions opts;
+    if (!parse_cli(argc, argv, &opts)) {
         return 1;
     }
 
     MjkPlatformConfig cfg;
     cfg.window_title = "Mighty Bomb Jack (NES 1987) - Source Port C11";
     cfg.window_scale = 3;
-    cfg.headless = opts.headless;
-    cfg.enable_audio = !opts.headless;
-
     if (!MjkPlatform_Init(&cfg)) {
         return 1;
     }
 
     char exe_dir[512];
-    bool exe_dir_ok = MjkPlatform_GetExecutableDir(exe_dir, sizeof(exe_dir));
-    if (!exe_dir_ok) {
-        snprintf(exe_dir, sizeof(exe_dir), "(desconocido)");
+    bool has_exe_dir = MjkPlatform_GetExecutableDir(exe_dir, sizeof(exe_dir));
+
+    static MjkAssets assets;
+    if (!load_or_extract_assets(&opts, has_exe_dir ? exe_dir : NULL, &assets)) {
+        MjkPlatform_Shutdown();
+        return 1;
     }
 
-    printf("Mighty Bomb Jack C11 Port (%s, ABI v%u)\n",
-           MjkCore_Version(), (unsigned)MjkCore_AbiVersion());
-    printf("  Dir base : %s\n", exe_dir);
-    printf("  Modo     : %s | ROM CLI: %s\n",
-           opts.headless ? "headless" : "SDL2",
-           opts.rom_path ? opts.rom_path : "(auto)");
+    static MjkGame        game;
+    static MjkAudioEngine audio;
+    static uint32_t       framebuffer[MJK_SCREEN_WIDTH * MJK_SCREEN_HEIGHT];
+    static int16_t        audio_samples[MJK_AUDIO_MAX_SAMPLES_STEP];
 
-    MjkAssetPackage assets;
-    memset(&assets, 0, sizeof(assets));
-    bool has_assets = false;
-    if (!opts.smoke_test) {
-        if (!load_or_extract_assets(&opts, exe_dir_ok ? exe_dir : NULL, &assets)) {
-            MjkPlatform_Shutdown();
-            return 1;
-        }
-        has_assets = true;
-    }
+    MjkGame_Init(&game, &assets);
+    MjkAudio_Init(&audio);
 
-    static MjkGame game;
-    MjkDebugOverlayState dbg;
-    MjkDebugOverlay_Init(&dbg);
-    if (has_assets) {
-        MjkGame_Init(&game, &assets);
-    }
+    MjkInputLatch input_latch;
+    MjkInputLatch_Init(&input_latch);
 
-    static MjkFrameOutput frame_output;
-    memset(&frame_output, 0, sizeof(frame_output));
-
-    MjkInputState inputs = {0u, 0u, 0u};
-    uint32_t debug_keys = MJK_DBG_NONE;
-    uint32_t simulated_frames = 0u;
-
-    const double seconds_per_frame = 1.0 / MJK_NTSC_FPS;
-    double accumulator = 0.0;
-    uint64_t previous_time = MjkPlatform_GetTimeMicroseconds();
+    const double step_seconds = 1.0 / MJK_NTSC_FPS;
+    double accumulator        = 0.0;
+    uint64_t prev_us          = MjkPlatform_GetTimeMicroseconds();
 
     while (MjkPlatform_IsRunning()) {
-        if (opts.headless) {
-            MjkPlatform_PollInputs(&inputs, &debug_keys);
-            if (has_assets) {
-                MjkGame_StepFrame(&game, &inputs);
-                MjkGame_StepAudio(&game, frame_output.audio_samples, MJK_SAMPLES_PER_NTSC_FRAME);
-                frame_output.audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
-                render_game_frame(&game, &dbg, &frame_output);
-            } else {
-                render_hal_test_pattern(&frame_output, simulated_frames);
+        uint64_t now_us = MjkPlatform_GetTimeMicroseconds();
+        double dt = (double)(now_us - prev_us) / 1000000.0;
+        prev_us = now_us;
+        if (dt > 0.1) { dt = 0.1; }
+        accumulator += dt;
+
+        /* Acumular flancos de entrada sin perderlos ni duplicarlos entre pasos fijos */
+        MjkInputLatch_Poll(&input_latch, MjkPlatform_PollRawButtons());
+
+        bool stepped = false;
+        while (accumulator >= step_seconds) {
+            MjkInputStep step_in;
+            MjkInputLatch_ConsumeStep(&input_latch, &step_in);
+            MjkGame_StepFrame(&game, &step_in);
+
+            for (uint8_t i = 0u; i < game.sound_queue_count; ++i) {
+                MjkAudio_Play(&audio, game.sound_queue[i]);
             }
-            simulated_frames++;
-            if (opts.max_frames > 0u && simulated_frames >= opts.max_frames) {
-                MjkPlatform_RequestQuit();
-            }
-            continue;
+            uint32_t n_samples = MjkAudio_NextFrameSampleCount(&audio);
+            MjkAudio_StepFrame(&audio, &assets, audio_samples, n_samples);
+            MjkPlatform_QueueAudioSamples(audio_samples, n_samples);
+
+            accumulator -= step_seconds;
+            stepped = true;
         }
 
-        uint64_t current_time = MjkPlatform_GetTimeMicroseconds();
-        double delta_time = (double)(current_time - previous_time) / 1000000.0;
-        previous_time = current_time;
-        if (delta_time > 0.1) {
-            delta_time = 0.1;
+        if (stepped) {
+            MjkRenderer_DrawFrame(&game, &assets, framebuffer);
+            MjkPlatform_PresentFramebuffer(framebuffer);
+        } else {
+            MjkPlatform_SleepMilliseconds(1u);
         }
-        accumulator += delta_time;
-
-        MjkPlatform_PollInputs(&inputs, &debug_keys);
-        if (has_assets) {
-            uint8_t warp_target = 0u;
-            if (MjkDebugOverlay_HandleKeys(&dbg, debug_keys, &warp_target)) {
-                MjkGame_WarpToRoom(&game, warp_target);
-            }
-        }
-
-        while (accumulator >= seconds_per_frame) {
-            if (has_assets) {
-                if (!dbg.paused || dbg.step_requested) {
-                    MjkGame_StepFrame(&game, &inputs);
-                    MjkGame_StepAudio(&game, frame_output.audio_samples, MJK_SAMPLES_PER_NTSC_FRAME);
-                    frame_output.audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
-                    dbg.step_requested = false;
-                    simulated_frames++;
-                } else {
-                    frame_output.audio_sample_count = MJK_SAMPLES_PER_NTSC_FRAME;
-                    memset(frame_output.audio_samples, 0, MJK_SAMPLES_PER_NTSC_FRAME * sizeof(int16_t));
-                }
-                render_game_frame(&game, &dbg, &frame_output);
-            } else {
-                render_hal_test_pattern(&frame_output, simulated_frames);
-                simulated_frames++;
-            }
-            MjkPlatform_QueueAudioSamples(frame_output.audio_samples, frame_output.audio_sample_count);
-            accumulator -= seconds_per_frame;
-
-            if (opts.max_frames > 0u && simulated_frames >= opts.max_frames) {
-                MjkPlatform_RequestQuit();
-                break;
-            }
-        }
-
-        MjkPlatform_PresentFramebuffer(frame_output.framebuffer);
-        MjkPlatform_SleepMilliseconds(1u);
     }
 
     MjkAssets_Unload(&assets);
     MjkPlatform_Shutdown();
-    printf("[OK] %u frame(s) a %.4f Hz completados.\n", (unsigned)simulated_frames, MJK_NTSC_FPS);
     return 0;
 }

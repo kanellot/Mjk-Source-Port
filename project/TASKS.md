@@ -3,8 +3,8 @@
 > **CHECKPOINT ACTIVO (Última actualización: 2026-11-25)**
 > - **Rama activa**: `refactor` (base `7a74c53`)
 > - **Skill obligatoria para subagentes**: `.agents/skills/mjk-clean-refactor/SKILL.md`
-> - **Último ticket completado**: **`R-15`** (Hito R4 cerrado: renderizador solo-lectura con tiles pre-decodificados y cache RGB, y motor 2A03 con LUTs + acumulador NTSC 733/734; `29/29` CTests verdes).
-> - **Siguiente ticket nuclear**: **`R-16`** (Capa SDL2 limpia y `src/main.c` sin debug/overlay/flags de test).
+> - **Último ticket completado**: **`R-17`** (Hito R5 cerrado: capa SDL2 limpia, retirada total de código viejo/debug/DLL/oráculo Python, `CMakeLists.txt` final, `0` warnings y `11/11` CTests verdes en 0.52 s).
+> - **Siguiente ticket nuclear**: **`R-18`** (Limpieza de `research/` y actualización de `research/INDEX.md`).
 > - **Protocolo tras fin de cuota**: Leer únicamente este `CHECKPOINT ACTIVO`, el ticket `[TODO]` siguiente y `.agents/skills/mjk-clean-refactor/SKILL.md`. Ejecutar **estrictamente 1 ticket**, verificar compilación sin warnings + `ctest` 100% verde y actualizar este checkpoint.
 > - **Política de commits**: 1 commit limpio al cerrar cada Hito (`R-02`, `R-04`, `R-13`, `R-15`, `R-17`, `R-20`), sin binarios ni ROMs.
 
@@ -88,11 +88,11 @@
 
 ## Hito R5 — Plataforma Limpia y Retirada del Código Antiguo / Debug
 
-- `[TODO]` **`R-16`** *(Depende de: R-14, R-15)*: **Capa SDL2 Limpia y `src/main.c` (`include/mjk/platform.h`, `src/platform/platform_sdl.c`, `src/main.c`)**.
+- `[DONE]` **`R-16`** *(Depende de: R-14, R-15)*: **Capa SDL2 Limpia y `src/main.c` (`include/mjk/platform.h`, `src/platform/platform_sdl.c`, `src/main.c`)**.
   - **Alcance**: Bucle principal a `60.0988 Hz` usando `InputLatch` y acumulador fraccional de audio; solo CLI `--rom` y `--assets` con validación estricta; cero debug overlay, cero cheats, cero `--headless`/`--smoke-test`/`--frames`.
   - **Gate**: Ejecutable `mjk` compila limpio sin warnings y arranca/cierra correctamente con `mbj-us.nes`.
 
-- `[TODO]` **`R-17`** *(Depende de: R-16)*: **Retirada de Código Viejo, Debug, DLL y Oráculo Python + `CMakeLists.txt` Final**.
+- `[DONE]` **`R-17`** *(Depende de: R-16)*: **Retirada de Código Viejo, Debug, DLL y Oráculo Python + `CMakeLists.txt` Final**.
   - **Alcance**: Eliminar `src/core/*`, `include/mjk_*.h` antiguos, `src/platform/mjk_debug_overlay.c`, target `mjk_core_shared`, `tools/nes_oracle.py`, `tools/verify_scenarios.py`, el capturador temporal de `R-01` y los tests antiguos. Dejar `CMakeLists.txt` limpio con `mjk_engine`, `mjk` y las 10 suites `CTest`.
   - **Gate**: `0` warnings (`/W4 /WX` y `-Wall -Wextra -Wpedantic -Werror`), `10/10` CTests en verde (y `Skipped (77)` verificado sin ROM). *(Commit de Hito R5.)*
 

@@ -83,7 +83,10 @@ int main(void) {
     for (int i = 0; i < 255; ++i) {
         CHECK(!MjkScoring_TickTimer(&sc), "Timer no expira antes de 256f");
     }
-    CHECK(MjkScoring_TickTimer(&sc) && sc.timer_seconds == 0, "Timer expira exactamente en frame 256");
+    CHECK(!MjkScoring_TickTimer(&sc) && sc.timer_seconds == 0,
+          "Frame 256 baja timer a 0 dejando ventana de 1 frame (prg.asm:1216)");
+    CHECK(MjkScoring_TickTimer(&sc) && sc.timer_seconds == 0,
+          "Frame 257 dispara Time Over");
 
     /* 8. Popups flotantes */
     MjkScoring_SpawnPopup(&sc, 80.0f, 100.0f, SCORE_200, 2u, true);

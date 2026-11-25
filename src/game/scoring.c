@@ -93,8 +93,11 @@ int MjkScoring_AddGdv(MjkScoring* sc, int delta) {
 }
 
 bool MjkScoring_TickTimer(MjkScoring* sc) {
-    if (!sc || sc->timer_frozen || sc->timer_seconds <= 0) {
+    if (!sc || sc->timer_frozen) {
         return false;
+    }
+    if (sc->timer_seconds <= 0) {
+        return true; /* Ventana de 1 frame en timer=0 para DOOR_COND_ZERO_TIMER (prg.asm:1211-1228) */
     }
     if (sc->timer_frames > 0) {
         sc->timer_frames--;
@@ -102,7 +105,6 @@ bool MjkScoring_TickTimer(MjkScoring* sc) {
     if (sc->timer_frames == 0) {
         sc->timer_frames = MJK_TIMER_FRAMES_STEP;
         sc->timer_seconds--;
-        return (sc->timer_seconds == 0);
     }
     return false;
 }

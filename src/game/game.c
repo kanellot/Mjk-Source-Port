@@ -206,15 +206,18 @@ static void step_load_room(MjkGame* game) {
         MjkEnemies_Spawn(&game->enemies,
                          game->collected_1up ? ENEMY_CAPTIVE : ENEMY_BROTHER, 136.0f, 216.0f);
     }
-    if (tmpl->has_header && tmpl->section_raw != 0u && (tmpl->section_raw & 0x40u) == 0u &&
-        game->current_room_id != 0xFCu) {
-        game->checkpoint_room_id = game->current_room_id;
-        game->entry_door_backup  = game->entry_door_type;
+    if (tmpl->has_header && tmpl->section_raw != 0u && (tmpl->section_raw & 0x40u) == 0u) {
+        game->scoring.timer_frozen = false;
+        if (game->current_room_id != 0xFCu) {
+            game->checkpoint_room_id = game->current_room_id;
+            game->entry_door_backup  = game->entry_door_type;
+        }
         if ((tmpl->section_raw & 0x80u) != 0u) {
-            game->scoring.timer_seconds    = 0;
-            game->scoring.timer_frozen     = false;
-            game->torture_return_room_id   = game->current_room_id;
-            game->torture_return_door_type = game->entry_door_type;
+            game->scoring.timer_seconds = 0;
+            if (game->current_room_id != 0xFCu) {
+                game->torture_return_room_id   = game->current_room_id;
+                game->torture_return_door_type = game->entry_door_type;
+            }
         }
     }
     game->state     = GS_DRAW_SCREEN;
@@ -370,6 +373,8 @@ void MjkGame_StepFrame(MjkGame* game, const MjkInputStep* input) {
             memset(&game->objects, 0, sizeof(game->objects));
             memset(&game->enemies, 0, sizeof(game->enemies));
             memset(&game->player, 0, sizeof(game->player));
+            game->paused                    = false;
+            game->fire_bombs_collected      = 0u;
             game->checkpoint_room_id        = 0u;
             game->crystal_balls_mask        = 0u;
             game->secret_coins              = 0u;

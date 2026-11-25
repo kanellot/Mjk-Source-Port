@@ -79,17 +79,30 @@ int main(void) {
     CHECK(g.greedy_jumps_left == 0 && !g.in_torture_mode && g.current_room_id == 0x05u && g.state == GS_LOAD_ROOM,
           "50.o salto sale de Torture Room a sala origen");
 
-    /* 4. Round Clear desde Bomb Room $90 con >= 20 Fire Bombs -> Special Bonus */
+    /* 4. Round Clear desde Bomb Room $90: flujo normal (-> Pasillo 2 $07) y warp secreto de 1 Fire Bomb (-> $91) */
     g.current_room_id      = 0x90u;
     g.exit_source_room_id  = 0x90u;
+    g.entry_door_type      = 0x0Au; /* Puerta derecha de salida de $90 */
     g.fire_bombs_collected = 23u;
     g.scoring.timer_seconds = 10;
     g.scoring.score = 0u;
-    MjkGame_ExitRoom(&g, 0u);
-    CHECK(g.state == GS_ROUND_CLEAR && g.last_bomb_room_cleared == 0x90u, "Exit desde $90 entra a Round Clear");
+    MjkGame_ExitRoom(&g, 2u);
+    CHECK(g.state == GS_ROUND_CLEAR && g.last_bomb_room_cleared == 0x90u && g.current_room_id == 0x07u,
+          "Exit desde $90 entra a Round Clear con destino Pasillo 2 ($07)");
     step_n(&g, &latch, 0u, 700);
-    CHECK(g.state != GS_ROUND_CLEAR && g.scoring.score >= 51000u,
-          "Round Clear otorga Time Bonus (1000) + Special Bonus (50000)");
+    CHECK(g.state != GS_ROUND_CLEAR && g.current_room_id == 0x07u && g.scoring.score >= 51000u,
+          "Round Clear normal pasa a Pasillo 2 ($07) y otorga Time + Special Bonus");
+
+    /* Warp secreto autentico NES: 1 sola Fire Bomb en $90 salta a Royal Room 2 ($91) */
+    g.current_room_id      = 0x90u;
+    g.exit_source_room_id  = 0x90u;
+    g.entry_door_type      = 0x0Au;
+    g.fire_bombs_collected = 1u;
+    g.scoring.timer_seconds = 5;
+    MjkGame_ExitRoom(&g, 2u);
+    step_n(&g, &latch, 0u, 300);
+    CHECK(g.current_room_id == 0x91u && !g.entry_door_already_open,
+          "1 Fire Bomb en $90 activa warp secreto NES a Royal Room 2 ($91)");
 
     /* 5. Los 4 Finales ($A0..$A3) */
     for (uint8_t et = 0u; et < 4u; ++et) {
@@ -108,7 +121,7 @@ int main(void) {
         CHECK(g.state == GS_GAME_OVER, "START en final transiciona a Game Over");
     }
 
-    /* 6. Game Over -> bonus GDV por marcador (+1 por cada 200k pts) y vuelta a SCREEN_TITLE */
+    /* 6. Game Over -> bonus GDV por marcador (+1 por cada 100k pts, max 10) y vuelta a SCREEN_TITLE */
     g.scoring.gdv             = 47;
     g.scoring.score           = 800000u;
     g.last_bomb_room_cleared  = 0u;
@@ -117,7 +130,7 @@ int main(void) {
     MjkGame_LoseLife(&g);
     CHECK(g.state == GS_GAME_OVER && g.scoring.lives == 0, "0 vidas dispara Game Over");
     step_n(&g, &latch, 0u, 1);
-    CHECK(g.scoring.gdv == 51, "Game Over suma +4 GDV por 800.000 pts (47 -> 51)");
+    CHECK(g.scoring.gdv == 55, "Game Over suma +8 GDV por 800.000 pts (47 -> 55, prg.asm:1061)");
     step_n(&g, &latch, 0u, 260);
     CHECK(g.mode == SCREEN_TITLE, "Game Over retorna a pantalla de titulo");
 

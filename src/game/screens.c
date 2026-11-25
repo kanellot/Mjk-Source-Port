@@ -142,8 +142,9 @@ void MjkScreens_StepRoundClear(MjkGame* game) {
             MjkGame_QueueSound(game, SOUND_SILENCE);
             if (game->fire_bombs_collected == 1u && game->last_bomb_room_cleared != 0x9Fu) {
                 uint8_t next = (uint8_t)(game->last_bomb_room_cleared + 1u);
-                game->current_room_id = next;
-                game->entry_door_type = game->assets->bomb_room_entry_door[next & 0x0Fu];
+                game->current_room_id         = next;
+                game->entry_door_type         = game->assets->bomb_room_entry_door[next & 0x0Fu];
+                game->entry_door_already_open = false;
                 MjkScoring_ResetStageTimer(&game->scoring, 60);
             }
             game->state     = GS_LOAD_ROOM;
@@ -159,8 +160,8 @@ void MjkScreens_StepGameOver(MjkGame* game) {
         /* Bonificaciones finales de GDV: ronda alcanzada, vidas extra y marcador */
         int round_bonus = (int)((game->last_bomb_room_cleared & 0x0Fu) >> 1u);
         int lives_bonus = (int)(game->extra_lives_found >> 1u);
-        uint32_t score_10k = game->scoring.score / 10000u;
-        int score_bonus = (score_10k >= 100u) ? 5 : (int)(score_10k / 20u);
+        uint32_t score_100k = game->scoring.score / 100000u;
+        int score_bonus = (score_100k >= 10u) ? 10 : (int)score_100k;
         MjkScoring_AddGdv(&game->scoring, round_bonus + lives_bonus + score_bonus);
 
         game->state_timer = 256;

@@ -141,6 +141,22 @@ ctest --test-dir build --output-on-failure
 
 También dispones del wrapper [`Makefile`](Makefile) (`make build`, `make test`, `make run`, `make clean`).
 
+### macOS (Apple Clang + CMake + SDL2)
+
+Usa el mismo `Makefile` que en Linux. Si aún no tienes las herramientas de línea de comandos de Xcode, instálalas con `xcode-select --install`. Instala CMake y SDL2 con Homebrew si te faltan.
+
+```bash
+brew install cmake sdl2
+make build
+make test
+
+# Con mbj-us.nes en la raíz del repositorio
+make run
+
+# O con la ROM en otra carpeta
+./build/bin/mjk --rom "/ruta/a/mbj-us.nes"
+```
+
 ---
 
 ## Documentación de Ingeniería Inversa y Memoria de Agentes
@@ -185,7 +201,7 @@ Uno de los pilares educativos de este repositorio es conservar de forma transpar
 ├── tests/c/             # Suite de 18 tests unitarios C11 (CTest / Capa 1)
 ├── tools/               # Herramientas de consulta ASM y verificación Capa 2
 ├── CMakeLists.txt       # Sistema de compilación multiplataforma
-├── build.bat / Makefile # Wrappers rápidos de build para Windows y Linux
+├── build.bat / Makefile # Wrappers de compilación para Windows, Linux y macOS
 ├── LICENSE              # Licencia MIT + atribución del repositorio ASM
 └── README.md            # Este documento
 ```

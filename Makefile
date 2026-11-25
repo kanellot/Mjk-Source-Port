@@ -1,4 +1,4 @@
-# Wrapper fino de CMake para Linux / POSIX
+# Wrapper de CMake para Linux y macOS
 .PHONY: all build test run clean
 
 BUILD_DIR ?= build

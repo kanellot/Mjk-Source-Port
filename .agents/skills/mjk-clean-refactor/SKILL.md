@@ -4,7 +4,7 @@ description: >-
   Execute atomic refactor tickets (R-01..R-20) for Mighty Bomb Jack in modern,
   educational, high-performance C11 without 6502/ASM architectural baggage or
   debug/verification code in production. Activate when implementing any R-xx
-  ticket in src/, include/mjk/, tests/c/, docs/, or research/.
+  ticket in src/, include/mjk/, tests/c/, or docs/.
 ---
 
 # Guía de Subagente — Refactor Integral C11 (`R-01`..`R-20`)
@@ -12,11 +12,11 @@ description: >-
 ## 1. Protocolo Nuclear Anti-Agotamiento de Cuota
 
 1. **Un solo ticket por ejecución**: Ejecuta estrictamente el ticket `R-xx` asignado. No avances al siguiente sin dejar compilación y `ctest` al 100% en verde.
-2. **Reanudación quirúrgica**: Lee solo `project/TASKS.md` (`CHECKPOINT ACTIVO` + descripción de tu ticket) y los archivos fuente estrictamente necesarios para ese ticket.
+2. **Reanudación quirúrgica**: Lee solo `docs/project/TASKS.md` (`CHECKPOINT ACTIVO` + descripción de tu ticket) y los archivos fuente estrictamente necesarios para ese ticket.
 3. **Estado verde obligatorio**: Antes de cerrar tu ticket:
    - Compila sin warnings (`/W4 /WX` en MSVC; `-Wall -Wextra -Wpedantic -Werror` en GCC/Clang).
    - Ejecuta `ctest --test-dir build -C Release --output-on-failure` (o `Debug`) y verifica 100% de tests en verde.
-   - Actualiza `[DONE]` en tu ticket y el bloque `CHECKPOINT ACTIVO` en `project/TASKS.md`.
+   - Actualiza `[DONE]` en tu ticket y el bloque `CHECKPOINT ACTIVO` en `docs/project/TASKS.md`.
 
 ---
 

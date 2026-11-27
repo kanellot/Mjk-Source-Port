@@ -1,6 +1,6 @@
 # Índice de Referencias Técnicas ASM — Mighty Bomb Jack (`REV_US`)
 
-> Esta carpeta conserva únicamente **inventarios, especificaciones del juego original y referencias al desensamblado 6502** útiles para humanos. Los informes históricos de bugs/issues del agente han sido eliminados y la documentación técnica del código C11 actual vive en [`docs/`](../docs/ARCHITECTURE.md).
+> Esta carpeta conserva únicamente **inventarios, especificaciones del juego original y referencias al desensamblado 6502** útiles para humanos. Los informes históricos de bugs/issues del agente han sido eliminados y la documentación técnica del código C11 actual vive en [`docs/`](../ARCHITECTURE.md).
 
 ---
 

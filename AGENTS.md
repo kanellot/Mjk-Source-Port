@@ -21,8 +21,7 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 | `src/` + `include/` | R/W | `src/core/` (C11 puro, **cero SDL y cero APIs de SO**) y `src/platform/` (HAL SDL2 + Debug Overlay). |
 | `tests/c/` | R/W | Tests unitarios C11 deterministas con `CTest` (Capa 1). |
 | `tools/` | R/W | Consulta ASM (`asm_query.py`, `asm_inventory.json`), oráculo NES (`nes_oracle.py`) y `verify_scenarios.py` (Capa 2). |
-| `research/` | R/W | `GAME_COMPLETE_FLOW.md`, `CROSS_REFERENCE_INDEX.md`, `contracts/`, `inventories/`, `control_flow/`, `RES-012..036`, `architecture/`. |
-| `project/` | R/W | Memoria persistente ligera (`PROJECT_STATUS.md`, `TASKS.md`, `DECISIONS.md`). |
+| `docs/` | R/W | Documentación técnica (`ARCHITECTURE.md`, `GAME_SYSTEMS.md`, `ASSETS_AND_AUDIO.md`, `TESTING_GUIDE.md`), `docs/research/` (referencias ASM) y `docs/project/` (`PROJECT_STATUS.md`, `TASKS.md`, `DECISIONS.md`). |
 | `.agents/` | R/W | Skills progresivas bajo demanda y hook de protección. |
 | `scratch/` | R/W | Capturas y fixtures temporales. **Prohibidos los scripts `.py`.** |
 | `./` (raíz) | Restringido | Solo `AGENTS.md`, `CMakeLists.txt`/wrappers de build, manual PDF y vídeo original. |
@@ -32,8 +31,8 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 ## 3. Orquestación (Neon + Hydrogen) y Micro-Tareas Resilientes a Cuota
 
 ### Flujo por Defecto — Plan / Execute Nativo (`Orchestrator (Neon)`)
-1. **Planificación (`Gemini 4 Neon`)**: Consulta `GAME_COMPLETE_FLOW.md`, `asm_query.py`, `research/` y `nes_oracle.py`, y emite un plan acotado a **1 sola micro-tarea** de `project/TASKS.md` vía `exit_plan_mode`.
-2. **Ejecución (`Gemini 4 Hydrogen`)**: Implementa en C11 limpio (~150–350 líneas + test `CTest`), compila, verifica que `ctest` pasa al 100% y actualiza `CHECKPOINT ACTIVO` en `project/TASKS.md`. Si algo falla dos veces, devuelve control con `enter_plan_mode`.
+1. **Planificación (`Gemini 4 Neon`)**: Consulta `GAME_COMPLETE_FLOW.md`, `asm_query.py`, `docs/research/` y `nes_oracle.py`, y emite un plan acotado a **1 sola micro-tarea** de `docs/project/TASKS.md` vía `exit_plan_mode`.
+2. **Ejecución (`Gemini 4 Hydrogen`)**: Implementa en C11 limpio (~150–350 líneas + test `CTest`), compila, verifica que `ctest` pasa al 100% y actualiza `CHECKPOINT ACTIVO` en `docs/project/TASKS.md`. Si algo falla dos veces, devuelve control con `enter_plan_mode`.
 
 ### Regla Anti-Agotamiento de Cuota (1 Micro-Tarea = 1 Estado Verde)
 - Ejecutar **estrictamente 1 micro-tarea** por ciclo de trabajo para poder retomar en cualquier momento si se agota la cuota de tokens.
@@ -56,11 +55,11 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 
 ## 5. Reglas Invariantes (Cero Excepciones)
 
-1. **Visión global primero**: Antes de implementar pantallas, estados o transiciones, consultar [`research/GAME_COMPLETE_FLOW.md`](research/GAME_COMPLETE_FLOW.md) (y usar manual PDF / vídeo original solo para flujo/experiencia global, confirmando constantes siempre en `asm/src/`).
+1. **Visión global primero**: Antes de implementar pantallas, estados o transiciones, consultar [`docs/research/GAME_COMPLETE_FLOW.md`](docs/research/GAME_COMPLETE_FLOW.md) (y usar manual PDF / vídeo original solo para flujo/experiencia global, confirmando constantes siempre en `asm/src/`).
 2. **Evidencia antes que suposiciones**: Toda constante, fórmula o tabla debe tener estado `[CONFIRMADA]` en `asm/src/<archivo>:<líneas>` o traza de `nes_oracle.py`.
-3. **Orden de consulta ahorrador de tokens**: 1) `python tools/asm_query.py ...` -> 2) `research/GAME_COMPLETE_FLOW.md` / `CROSS_REFERENCE_INDEX.md` -> 3) `research/contracts/` -> 4) `RES-012..036` -> 5) `read_file` acotado sobre `asm/src/`. Prohibidos greps ciegos.
+3. **Orden de consulta ahorrador de tokens**: 1) `python tools/asm_query.py ...` -> 2) `docs/research/GAME_COMPLETE_FLOW.md` / `CROSS_REFERENCE_INDEX.md` -> 3) `docs/research/contracts/` -> 4) `RES-012..027` -> 5) `read_file` acotado sobre `asm/src/`. Prohibidos greps ciegos.
 4. **Prohibido `scratch/*.py`**: Usar `tools/nes_oracle.py`, `tools/asm_query.py` y `ctest`. (Bloqueado por hook.)
-5. **Reanudación quirúrgica**: Al retomar tras pausa o fin de cuota, leer únicamente `project/TASKS.md` (`CHECKPOINT ACTIVO`) y `project/PROJECT_STATUS.md`.
+5. **Reanudación quirúrgica**: Al retomar tras pausa o fin de cuota, leer únicamente `docs/project/TASKS.md` (`CHECKPOINT ACTIVO`) y `docs/project/PROJECT_STATUS.md`.
 6. **Clean-Room BYOR**: Cero `.nes`, `.dat`, `.chr` en Git ni arrays de Tecmo en C.
 
 ---

@@ -28,18 +28,18 @@ El alcance abarca:
 
 | Archivo | Rango de Líneas | Etiquetas / Símbolos Clave | Descripción |
 | :--- | :--- | :--- | :--- |
-| [`asm/src/music-engine.asm`](../asm/src/music-engine.asm#L1-L811) | 1 - 811 | `HandleSound`, `HandleSoundQueue`, `HandleSoundChannel`, `HandleSoundCommand`, `SoundCommand_8x_9x..Fx`, `MaybeUpdateVolDelay`, `MaybeResetVolDelay`, `WriteSoundRegisters`, `CheckIfSoundChannelIsActive`, `byte_B52C`, `NoteFrequencyTable`, `SoundPointersA`, `SoundPointersB` | Lógica del motor, intérprete de bytecode, máquina de estados de canales, actualización de registros APU. |
-| [`asm/src/music-data.asm`](../asm/src/music-data.asm#L1-L1760) | 1 - 1760 | `NoteLengthTable`, `SoundVolTable`, `SoundVolTable_0..7`, `SoundPointers`, `SoundData_10_Music_Main`, `SoundData_16_Music_MainIntro` | Tablas maestras de duración, envolventes de volumen, punteros a temas y flujos de bytecode de pistas. |
-| [`asm/src/ram.asm`](../asm/src/ram.asm#L158-L165) | 158 - 165 | `SoundEnginePointer` (`$60`), `SoundPointerTemp` (`$62`), `CurrentSoundChannel` (`$64`), `ActiveSoundChannels` (`$65`) | Punteros y variables de control en Zero-Page. |
-| [`asm/src/ram.asm`](../asm/src/ram.asm#L1354-L1675) | 1354 - 1675 | `SoundQueue` (`$0433`), `SoundChannelA_Mus0..3` (`$0452..$04B1`), `SoundChannelA_Sfx0..3` (`$04B2..$0511`), `SoundChannelB_Mus0..Sfx3` (`$0512..$0551`), `SoundRegIndex`, `SoundReg_Vol..Hi` | Estructuras de 24 bytes por canal, buffers de hardware y call stacks. |
-| [`asm/src/macros.asm`](../asm/src/macros.asm#L14-L60) | 14 - 60 | `MACRO SoundData`, `MACRO SndJmpF0`, `MACRO SndJmpF3` | Definición de estructuras de cabecera y saltos de bytecode. |
+| [`asm/src/music-engine.asm`](../../asm/src/music-engine.asm#L1-L811) | 1 - 811 | `HandleSound`, `HandleSoundQueue`, `HandleSoundChannel`, `HandleSoundCommand`, `SoundCommand_8x_9x..Fx`, `MaybeUpdateVolDelay`, `MaybeResetVolDelay`, `WriteSoundRegisters`, `CheckIfSoundChannelIsActive`, `byte_B52C`, `NoteFrequencyTable`, `SoundPointersA`, `SoundPointersB` | Lógica del motor, intérprete de bytecode, máquina de estados de canales, actualización de registros APU. |
+| [`asm/src/music-data.asm`](../../asm/src/music-data.asm#L1-L1760) | 1 - 1760 | `NoteLengthTable`, `SoundVolTable`, `SoundVolTable_0..7`, `SoundPointers`, `SoundData_10_Music_Main`, `SoundData_16_Music_MainIntro` | Tablas maestras de duración, envolventes de volumen, punteros a temas y flujos de bytecode de pistas. |
+| [`asm/src/ram.asm`](../../asm/src/ram.asm#L158-L165) | 158 - 165 | `SoundEnginePointer` (`$60`), `SoundPointerTemp` (`$62`), `CurrentSoundChannel` (`$64`), `ActiveSoundChannels` (`$65`) | Punteros y variables de control en Zero-Page. |
+| [`asm/src/ram.asm`](../../asm/src/ram.asm#L1354-L1675) | 1354 - 1675 | `SoundQueue` (`$0433`), `SoundChannelA_Mus0..3` (`$0452..$04B1`), `SoundChannelA_Sfx0..3` (`$04B2..$0511`), `SoundChannelB_Mus0..Sfx3` (`$0512..$0551`), `SoundRegIndex`, `SoundReg_Vol..Hi` | Estructuras de 24 bytes por canal, buffers de hardware y call stacks. |
+| [`asm/src/macros.asm`](../../asm/src/macros.asm#L14-L60) | 14 - 60 | `MACRO SoundData`, `MACRO SndJmpF0`, `MACRO SndJmpF3` | Definición de estructuras de cabecera y saltos de bytecode. |
 
 ---
 
 ## 3. Tabla de Períodos de 11 Bits (Frecuencias Base)
 
 ### 3.1 Ubicación en Ensamblador
-- **Archivo**: [`asm/src/music-engine.asm`](../asm/src/music-engine.asm#L776-L792)
+- **Archivo**: [`asm/src/music-engine.asm`](../../asm/src/music-engine.asm#L776-L792)
 - **Líneas**: 776 a 792
 - **Etiqueta**: `NoteFrequencyTable`
 
@@ -64,7 +64,7 @@ NoteFrequencyTable:
 ```
 
 ### 3.2 Algoritmo de Octava por Desplazamiento (`LSR`/`ROR`)
-En [`asm/src/music-engine.asm:220-248`](../asm/src/music-engine.asm#L220-L248):
+En [`asm/src/music-engine.asm:220-248`](../../asm/src/music-engine.asm#L220-L248):
 1. **Extracción de semitono**: `semitone = byte & 0x0F`. Se indexa `NoteFrequencyTable[semitone * 2]` en un valor de 16 bits `off_4`.
 2. **Extracción de octava**: `octave = (byte >> 4)`.
 3. **Cálculo de período según octava**:
@@ -141,7 +141,7 @@ Adicionalmente, cada canal dispone de 8 bytes de stack en RAM para subrutinas (`
 | `+0x17` | `unused_17` | `uint8_t` | Reservado (limpiado a 0). |
 
 ### 4.3 Formato de Cabecera de Pista (`SoundData`)
-Definido en [`asm/src/macros.asm:14-17`](../asm/src/macros.asm#L14-L17) y procesado en `HandleSoundQueue` ([`asm/src/music-engine.asm:84-129`](../asm/src/music-engine.asm#L84-L129)):
+Definido en [`asm/src/macros.asm:14-17`](../../asm/src/macros.asm#L14-L17) y procesado en `HandleSoundQueue` ([`asm/src/music-engine.asm:84-129`](../../asm/src/music-engine.asm#L84-L129)):
 
 Cada entrada de cabecera consta de bloques de 3 bytes:
 ```
@@ -159,10 +159,10 @@ La lista de canales termina con el centinela `$FF`.
 5. Se inicializa `duration_counter (+0x01) = 1`. De este modo, en el primer frame de reproducción, `duration_counter - 1 == 0`, disparando inmediatamente la lectura del flujo de notas sin latencia.
 
 ### 4.4 Mecanismo de Mutación y Multiplexado SFX sobre BGM
-En [`asm/src/music-engine.asm:751-771`](../asm/src/music-engine.asm#L751-L771) (`CheckIfSoundChannelIsActive`):
+En [`asm/src/music-engine.asm:751-771`](../../asm/src/music-engine.asm#L751-L771) (`CheckIfSoundChannelIsActive`):
 - Cuando el canal procesado es un canal BGM (`CurrentSoundChannel < 4`), la rutina verifica si su canal SFX hermano (`CurrentSoundChannel + 4`) está activo (`status & 1`).
 - Si el SFX está activo, se inhibe la escritura de registros APU del canal BGM (`sub_B285`, `locret_B2A8`).
-- Cuando el SFX finaliza (`SoundCommand_F6_F7`, [`asm/src/music-engine.asm:605-626`](../asm/src/music-engine.asm#L605-L626)):
+- Cuando el SFX finaliza (`SoundCommand_F6_F7`, [`asm/src/music-engine.asm:605-626`](../../asm/src/music-engine.asm#L605-L626)):
   - Se desactiva el canal SFX (`status = 0`).
   - Se recupera el puntero del canal BGM hermano.
   - Se fuerza la reescritura de los registros APU del canal BGM restaurado (`ORA #$20` en `SoundReg_Vol`).
@@ -172,7 +172,7 @@ En [`asm/src/music-engine.asm:751-771`](../asm/src/music-engine.asm#L751-L771) (
 ## 5. Tablas de Soporte Musical (Duraciones, Envolventes y Pitch)
 
 ### 5.1 Tabla de Duraciones de Nota (`NoteLengthTable`)
-- **Archivo**: [`asm/src/music-data.asm:5-37`](../asm/src/music-data.asm#L5-L37)
+- **Archivo**: [`asm/src/music-data.asm:5-37`](../../asm/src/music-data.asm#L5-L37)
 - 32 entradas de 1 byte en frames NTSC (60 Hz):
 
 ```c
@@ -189,7 +189,7 @@ static const uint8_t kNoteLengthTable[32] = {
 - `$92` -> Índice 18 = **28 frames** (el cuádruple de 7 frames).
 
 ### 5.2 Tabla de Envolventes de Volumen (`SoundVolTable`)
-- **Archivo**: [`asm/src/music-data.asm:38-125`](../asm/src/music-data.asm#L38-L125)
+- **Archivo**: [`asm/src/music-data.asm:38-125`](../../asm/src/music-data.asm#L38-L125)
 - Consta de 8 envolventes predefinidas. Cada entrada posee pares `(volumen_y_flags, duración_frames)`. La duración `$FF` representa un estado final sostenido (HOLD) hasta el fin de la nota:
 
 ```c
@@ -239,7 +239,7 @@ static const uint8_t kSoundVolTable_7[] = {
 ```
 
 ### 5.3 Tabla de Pasos de Pitch Bend (`byte_B52C`)
-- **Archivo**: [`asm/src/music-engine.asm:774-775`](../asm/src/music-engine.asm#L774-L775)
+- **Archivo**: [`asm/src/music-engine.asm:774-775`](../../asm/src/music-engine.asm#L774-L775)
 - 4 valores con signo utilizados para modular el tono:
 ```c
 static const int8_t kPitchBendSteps[4] = { 1, 2, -1, -2 };
@@ -296,10 +296,10 @@ flowchart TD
 ## 7. Extracción de Pistas Canónicas: Música de Round 1
 
 ### 7.1 `SoundData_16_Music_MainIntro` (Fanfarria de Introducción)
-- **Cabecera**: [`asm/src/music-data.asm:1650-1654`](../asm/src/music-data.asm#L1650-L1654)
+- **Cabecera**: [`asm/src/music-data.asm:1650-1654`](../../asm/src/music-data.asm#L1650-L1654)
 - Canales activos: **0 (Pulse 1)**, **1 (Pulse 2)**, **2 (Triangle)**. Canal 3 (Noise) inactivo.
 
-#### Secuencia Canal 0 (Pulse 1) — [`asm/src/music-data.asm:1655-1679`](../asm/src/music-data.asm#L1655-L1679)
+#### Secuencia Canal 0 (Pulse 1) — [`asm/src/music-data.asm:1655-1679`](../../asm/src/music-data.asm#L1655-L1679)
 ```asm
 SoundTrack_16_0:
 	.BYTE $A0          ; CMD_SET_VOL_ENV (0: decay lineal 15->0)
@@ -328,7 +328,7 @@ SoundTrack_16_0:
 	SndJmpF0 SoundTrack_10_0 ; JUMP $F0 -> Enlace fluido con Canal 0 de SoundData_10_Music_Main
 ```
 
-#### Secuencia Canal 1 (Pulse 2) — [`asm/src/music-data.asm:1680-1704`](../asm/src/music-data.asm#L1680-L1704)
+#### Secuencia Canal 1 (Pulse 2) — [`asm/src/music-data.asm:1680-1704`](../../asm/src/music-data.asm#L1680-L1704)
 ```asm
 SoundTrack_16_1:
 	.BYTE $A0          ; CMD_SET_VOL_ENV (0)
@@ -357,7 +357,7 @@ SoundTrack_16_1:
 	SndJmpF0 SoundTrack_10_1 ; JUMP $F0 -> Enlace con Canal 1 de SoundData_10_Music_Main
 ```
 
-#### Secuencia Canal 2 (Triangle) — [`asm/src/music-data.asm:1705-1732`](../asm/src/music-data.asm#L1705-L1732)
+#### Secuencia Canal 2 (Triangle) — [`asm/src/music-data.asm:1705-1732`](../../asm/src/music-data.asm#L1705-L1732)
 ```asm
 SoundTrack_16_2:
 	.BYTE $A4          ; CMD_SET_VOL_ENV (4: volumen máximo constante)
@@ -392,10 +392,10 @@ SoundTrack_16_2:
 ---
 
 ### 7.2 `SoundData_10_Music_Main` (Tema Principal del Juego / Round 1)
-- **Cabecera**: [`asm/src/music-data.asm:595-599`](../asm/src/music-data.asm#L595-L599)
+- **Cabecera**: [`asm/src/music-data.asm:595-599`](../../asm/src/music-data.asm#L595-L599)
 - Canales activos: **0 (Pulse 1)**, **1 (Pulse 2)**, **2 (Triangle)**.
 
-#### Secuencia Canal 0 (Pulse 1 - Melodía Líder) — [`asm/src/music-data.asm:600-725`](../asm/src/music-data.asm#L600-L725)
+#### Secuencia Canal 0 (Pulse 1 - Melodía Líder) — [`asm/src/music-data.asm:600-725`](../../asm/src/music-data.asm#L600-L725)
 ```asm
 SoundTrack_10_0:
 	.BYTE $A0          ; CMD_SET_VOL_ENV 0
@@ -465,7 +465,7 @@ SoundTrack_F7AB:
 	.BYTE $F4          ; RET ($F4)
 ```
 
-#### Secuencia Canal 1 (Pulse 2 - Armonía) — [`asm/src/music-data.asm:726-851`](../asm/src/music-data.asm#L726-L851)
+#### Secuencia Canal 1 (Pulse 2 - Armonía) — [`asm/src/music-data.asm:726-851`](../../asm/src/music-data.asm#L726-L851)
 ```asm
 SoundTrack_10_1:
 	.BYTE $A0          ; CMD_SET_VOL_ENV 0
@@ -535,7 +535,7 @@ SoundTrack_F82F:
 	.BYTE $F4          ; RET ($F4)
 ```
 
-#### Secuencia Canal 2 (Triangle - Línea de Bajo) — [`asm/src/music-data.asm:852-963`](../asm/src/music-data.asm#L852-L963)
+#### Secuencia Canal 2 (Triangle - Línea de Bajo) — [`asm/src/music-data.asm:852-963`](../../asm/src/music-data.asm#L852-L963)
 ```asm
 SoundTrack_10_2:
 	.BYTE $A4          ; CMD_SET_VOL_ENV 4 (Triangle volumen constante)

@@ -61,4 +61,5 @@ En `src/main.c`:
 - [Sistemas de Juego](GAME_SYSTEMS.md) — Física, mundo, objetos, 33 puertas, 6 enemigos y finales.
 - [Assets, Renderizado y Audio 2A03](ASSETS_AND_AUDIO.md) — Clean-Room BYOR, optimizaciones de render y síntesis 2A03.
 - [Guía de Compilación y Testing](TESTING_GUIDE.md) — CMake, CTest, `SKIP_RETURN_CODE 77` y sanitizers.
-- [Referencias ASM originales](../research/INDEX.md) — Inventarios y especificaciones 6502.
+- [Referencias ASM originales](research/INDEX.md) — Inventarios y especificaciones 6502.
+- [Estado y Decisiones del Proyecto](project/PROJECT_STATUS.md) — Estado del workspace, ADRs e historial de tareas.

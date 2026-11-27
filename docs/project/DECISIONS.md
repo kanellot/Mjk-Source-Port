@@ -129,7 +129,7 @@ Este registro documenta las decisiones arquitectónicas, metodológicas e invari
   1. Expresar física en punto fijo `Q8.8` (`mjk_q8_8_t` / `mjk_uq8_8_t`) y marcadores en `BCD` little-endian (`MjkBcd_*`) mediante helpers seguros sin UB en `include/mjk_types.h`.
   2. Reemplazar los saltos destructivos de pila `PLA; PLA` por el retorno explícito `MjkActionResult`.
   3. Omitir quirks puramente de hardware sin beneficio jugable (límite artificial de 8 sprites/scanline con flicker, stalls de PPU apagada).
-  4. Documentar el diseño en [`docs/EDUCATIONAL_ARCHITECTURE.md`](../docs/EDUCATIONAL_ARCHITECTURE.md).
+  4. Documentar el diseño en [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md).
 - **Consecuencias**:
   Código claro para estudiar arquitectura de videojuegos retro y base limpia para mods o extensiones.
 
@@ -170,7 +170,7 @@ Este registro documenta las decisiones arquitectónicas, metodológicas e invari
 - **Contexto**:
   Los usuarios deben poder descargar ejecutables listos para usar en Windows y Linux sin compilar manualmente, manteniendo la política Clean-Room BYOR.
 - **Decisión**:
-  Configurar [`.github/workflows/release.yml`](../.github/workflows/release.yml) disparado en `push` a `main` (y `workflow_dispatch`) para:
+  Configurar [`.github/workflows/release.yml`](../../.github/workflows/release.yml) disparado en `push` a `main` (y `workflow_dispatch`) para:
   1. Compilar en `Release` y ejecutar `CTest` en `windows-latest` (MSVC + SDL2 2.30.8 cacheado) y `ubuntu-latest` (GCC + `libsdl2-dev` + Ninja).
   2. Empaquetar `mighty-bomb-jack-<tag>-windows-x64.zip` (`mjk.exe` + `SDL2.dll` + `README.txt`) y `mighty-bomb-jack-<tag>-linux-x64.tar.gz` (`mjk` + `README.txt`), más `SHA256SUMS.txt`.
   3. Publicar automáticamente la GitHub Release con aviso BYOR.

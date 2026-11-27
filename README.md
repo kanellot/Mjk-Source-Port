@@ -100,7 +100,8 @@ make run
 - [`docs/GAME_SYSTEMS.md`](docs/GAME_SYSTEMS.md) — Explicación de cada subsistema de gameplay (`src/game/`).
 - [`docs/ASSETS_AND_AUDIO.md`](docs/ASSETS_AND_AUDIO.md) — Clean-Room BYOR, renderizador con tiles en L1 y síntesis 2A03 con LUTs.
 - [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md) — Guía de compilación, `CTest`, `SKIP_RETURN_CODE 77` y sanitizers.
-- [`research/INDEX.md`](research/INDEX.md) — Inventarios y referencias técnicas del desensamblado 6502 original.
+- [`docs/research/INDEX.md`](docs/research/INDEX.md) — Inventarios y referencias técnicas del desensamblado 6502 original.
+- [`docs/project/PROJECT_STATUS.md`](docs/project/PROJECT_STATUS.md) — Estado del proyecto, decisiones de arquitectura (`DECISIONS.md`) e historial de tareas (`TASKS.md`).
 
 ---
 
@@ -108,7 +109,7 @@ make run
 
 ```text
 .
-├── docs/                # Documentación técnica clara para humanos
+├── docs/                # Documentación técnica, referencias ASM (research/) y estado (project/)
 ├── include/mjk/         # Cabeceras C11 públicas del motor y plataforma
 ├── src/
 │   ├── assets/          # SHA-1, extractor BYOR v2 y decodificador único
@@ -118,7 +119,6 @@ make run
 │   ├── platform/        # Capa mínima SDL2 (vídeo, audio, input)
 │   └── main.c           # Punto de entrada CLI y bucle 60.0988 Hz
 ├── tests/c/             # 11 suites exhaustivas de unit tests C11 (CTest)
-├── research/            # Inventarios y referencias técnicas ASM (REV_US)
 ├── tools/               # Herramienta de consulta ASM (asm_query.py)
 ├── CMakeLists.txt       # Sistema de compilación multiplataforma
 ├── build.bat / Makefile # Wrappers de compilación para Windows, Linux y macOS

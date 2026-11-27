@@ -10,7 +10,7 @@
 
 ## 1. Resumen Ejecutivo y Alcance
 
-El objetivo de esta investigación es formalizar matemáticamente, documentar y desensamblar el subsistema integral de puertas, la evaluación de condiciones de apertura y la secuencia de transición de salas en *Mighty Bomb Jack* (NES), a partir de las fuentes autoritativas de código ensamblador 6502 en [`asm/src/prg.asm`](../asm/src/prg.asm), [`asm/src/data.asm`](../asm/src/data.asm), [`asm/src/roomdata-us.asm`](../asm/src/roomdata-us.asm) y las declaraciones de memoria en [`asm/src/ram.asm`](../asm/src/ram.asm).
+El objetivo de esta investigación es formalizar matemáticamente, documentar y desensamblar el subsistema integral de puertas, la evaluación de condiciones de apertura y la secuencia de transición de salas en *Mighty Bomb Jack* (NES), a partir de las fuentes autoritativas de código ensamblador 6502 en [`asm/src/prg.asm`](../../asm/src/prg.asm), [`asm/src/data.asm`](../../asm/src/data.asm), [`asm/src/roomdata-us.asm`](../../asm/src/roomdata-us.asm) y las declaraciones de memoria en [`asm/src/ram.asm`](../../asm/src/ram.asm).
 
 ### Preguntas Técnicas Abordadas:
 1. **Evaluación de Condiciones**: ¿Cómo y cuándo evalúa el motor la apertura de puertas? ¿Cómo se extrae el índice de condición desde el encabezado de la sala y qué verifica cada una de las 33 entradas ($00..$20)?
@@ -23,22 +23,22 @@ El objetivo de esta investigación es formalizar matemáticamente, documentar y 
 
 | Archivo | Rango de Líneas | Símbolos / Funciones Analizadas | Propósito en el Motor |
 | :--- | :--- | :--- | :--- |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L6696-L6740) | `6696 - 6740` | `MaybeHandleDoorOpening`, `loc_A95E`, `loc_A977` | Punto de entrada por frame para comprobar si la sala actual tiene condición de apertura de puerta. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L6741-L6820) | `6741 - 6820` | `CheckAndMaybeOpenDoor` | Tabla de salto canónica de 33 condiciones (US) y 32 condiciones (JP). |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L6830-L7005) | `6830 - 7005` | Rutinas `DoorCond_*` | Implementación 6502 de cada condición (saltos, Mighty 3, temporizador, warps, muertes). |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L7030-L7088) | `7030 - 7088` | `HandleOpenDoorMaybe`, `HandleSphinxEvent` | Desencadena la apertura de la puerta física, modifica `RoomDataRAM`, encola sonido y setea estado $B. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L5312-L5346) | `5312 - 5346` | `JTPickup_Door` | Detección de colisión/contacto de Jack con el metatile de puerta abierta y cambio a `GameState = 9`. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L5352-L5365) | `5352 - 5365` | `OpenBombRoomDoor` | Apertura automática de puerta en salas de bombas tras recolectar 23 bombas. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L7219-L7290) | `7219 - 7290` | `AnimateDoor`, `AnimateDoorOpen`, `AnimateDoorClose` | Animador temporal de 3 fases que transmuta los metatiles de puerta en el buffer PPU. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L7294-L7372) | `7294 - 7372` | `GameState_9_ExitRoom` | Proceso de salida: oculta sprites, cierra puerta, indexa `AdjacentRoomsTable` y prepara carga de sala. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L3130-L3225) | `3130 - 3225` | `GameState_2_LoadRoom`, `_RoomHeaderPresent` | Carga de cabecera de sala, música, paleta y asignación de sección. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L379-L440) | `379 - 440` | `GameState_3_DrawScreen` | Purga total de sprites, enemigos (`Object0Struct`), flags de puertas y renderizado de pantalla completa. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L445-L540) | `445 - 540` | `GameState_4_EnterRoom` | Posicionamiento de Jack según `DoorEntryXYPositionTable`, animación de apertura y caminata de salida. |
-| [`asm/src/prg.asm`](../asm/src/prg.asm#L3823-L3839) | `3823 - 3839` | `DoorPositionTileTable` | Coordenadas $(Y, X)$ y metatiles base de puertas en el tilemap. |
-| [`asm/src/data.asm`](../asm/src/data.asm#L322-L339) | `322 - 339` | `DoorEntryXYPositionTable` | Coordenadas mundo $(Y, X)$ de spawn de Jack al cruzar cada puerta. |
-| [`asm/src/data.asm`](../asm/src/data.asm#L1704-L1800) | `1704 - 1800` | `AdjacentRoomsTable` | Matriz topológica de salas contiguas: 5 bytes por sala `[Flag, Up, Down, Right, Left]`. |
-| [`asm/src/data.asm`](../asm/src/data.asm#L1685-L1702) | `1685 - 1702` | `MetatileDefinitions` | Definición de cuadrantes $8 \times 8$ para los metatiles de puerta `$87..$8E` y `$95..$98`. |
-| [`asm/src/ram.asm`](../asm/src/ram.asm) | Varias | Declaraciones de RAM | Mapa de variables RAM del subsistema de puertas. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L6696-L6740) | `6696 - 6740` | `MaybeHandleDoorOpening`, `loc_A95E`, `loc_A977` | Punto de entrada por frame para comprobar si la sala actual tiene condición de apertura de puerta. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L6741-L6820) | `6741 - 6820` | `CheckAndMaybeOpenDoor` | Tabla de salto canónica de 33 condiciones (US) y 32 condiciones (JP). |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L6830-L7005) | `6830 - 7005` | Rutinas `DoorCond_*` | Implementación 6502 de cada condición (saltos, Mighty 3, temporizador, warps, muertes). |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L7030-L7088) | `7030 - 7088` | `HandleOpenDoorMaybe`, `HandleSphinxEvent` | Desencadena la apertura de la puerta física, modifica `RoomDataRAM`, encola sonido y setea estado $B. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L5312-L5346) | `5312 - 5346` | `JTPickup_Door` | Detección de colisión/contacto de Jack con el metatile de puerta abierta y cambio a `GameState = 9`. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L5352-L5365) | `5352 - 5365` | `OpenBombRoomDoor` | Apertura automática de puerta en salas de bombas tras recolectar 23 bombas. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L7219-L7290) | `7219 - 7290` | `AnimateDoor`, `AnimateDoorOpen`, `AnimateDoorClose` | Animador temporal de 3 fases que transmuta los metatiles de puerta en el buffer PPU. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L7294-L7372) | `7294 - 7372` | `GameState_9_ExitRoom` | Proceso de salida: oculta sprites, cierra puerta, indexa `AdjacentRoomsTable` y prepara carga de sala. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L3130-L3225) | `3130 - 3225` | `GameState_2_LoadRoom`, `_RoomHeaderPresent` | Carga de cabecera de sala, música, paleta y asignación de sección. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L379-L440) | `379 - 440` | `GameState_3_DrawScreen` | Purga total de sprites, enemigos (`Object0Struct`), flags de puertas y renderizado de pantalla completa. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L445-L540) | `445 - 540` | `GameState_4_EnterRoom` | Posicionamiento de Jack según `DoorEntryXYPositionTable`, animación de apertura y caminata de salida. |
+| [`asm/src/prg.asm`](../../asm/src/prg.asm#L3823-L3839) | `3823 - 3839` | `DoorPositionTileTable` | Coordenadas $(Y, X)$ y metatiles base de puertas en el tilemap. |
+| [`asm/src/data.asm`](../../asm/src/data.asm#L322-L339) | `322 - 339` | `DoorEntryXYPositionTable` | Coordenadas mundo $(Y, X)$ de spawn de Jack al cruzar cada puerta. |
+| [`asm/src/data.asm`](../../asm/src/data.asm#L1704-L1800) | `1704 - 1800` | `AdjacentRoomsTable` | Matriz topológica de salas contiguas: 5 bytes por sala `[Flag, Up, Down, Right, Left]`. |
+| [`asm/src/data.asm`](../../asm/src/data.asm#L1685-L1702) | `1685 - 1702` | `MetatileDefinitions` | Definición de cuadrantes $8 \times 8$ para los metatiles de puerta `$87..$8E` y `$95..$98`. |
+| [`asm/src/ram.asm`](../../asm/src/ram.asm) | Varias | Declaraciones de RAM | Mapa de variables RAM del subsistema de puertas. |
 
 ---
 
@@ -48,36 +48,36 @@ El subsistema de puertas opera mediante un conjunto coordinado de variables en Z
 
 | Variable RAM | Dirección | Tamaño | Declaración en `asm/` | Propósito y Ciclo de Vida |
 | :--- | :--- | :--- | :--- | :--- |
-| `GameState` | `$0044` | 1 byte | [`ram.asm:107`](../asm/src/ram.asm#L107) | Estado global del juego: 2 (Load Room), 3 (Draw Screen), 4 (Enter Room), 5 (Gameplay), 8 (Round Clear), 9 (Exit Room), $B (Animate Door Open). |
-| `UnknownDoorFlag` | `$0057` | 1 byte | [`ram.asm:143`](../asm/src/ram.asm#L143) | Segundo byte descriptor del objeto puerta en RoomData (`off_58 + 1`). |
-| `off_58` | `$0058` | 2 bytes | [`ram.asm:145`](../asm/src/ram.asm#L145) | Puntero indirecto de lectura de datos de sala en ROM (`RoomData_XX`). |
-| `byte_5A` | `$005A` | 1 byte | [`ram.asm:147`](../asm/src/ram.asm#L147) | Puntero/índice relativo dentro de `RoomDataRAM` para la entidad actual. |
-| `byte_5C` | `$005C` | 1 byte | [`ram.asm:151`](../asm/src/ram.asm#L151) | Descriptor primario del objeto: nibble alto `$80` = puerta; nibble bajo = `EntryDoorType` ($0..$F). |
-| `MaybeCollectedThing` | `$005E` | 1 byte | [`ram.asm:154`](../asm/src/ram.asm#L154) | Copia del byte de estado del objeto almacenado en `RoomDataRAM,Y`. Bit 6 ($40) = Puerta abierta; Bit 7 ($80) = Inactiva. |
-| `StageTimer` | `$00A4` | 1 byte | [`ram.asm:245`](../asm/src/ram.asm#L245) | Temporizador BCD de la etapa (evaluado en condiciones de puerta por tiempo). |
-| `RoomStatusFlags` | `$00BC` | 1 byte | [`ram.asm:283`](../asm/src/ram.asm#L283) | Flags de sala: `$01` = SingleScreen, `$02` = ScrollStop, `$04` = Horizontal, `$08` = SectionStart, `$20` = AtScrollEdge, `$40` = BombRoom. |
-| `MaybeBombThing` | `$00F8` | 1 byte | [`ram.asm:380`](../asm/src/ram.asm#L380) | Flag de bombas de fuego: bit 7 activo indica que se recogieron todas las bombas de fuego. Evaluado por Condición 0C. |
-| `MaybeDoorReturnTwiceFlag` | `$0337` | 1 byte | [`ram.asm:999`](../asm/src/ram.asm#L999) | Flag de dirección/animación de puerta: bit 7 = 1 para apertura (`$81`), bit 7 = 0 para cierre (`$01`). Se borra a 0 al completar. |
-| `byte_338` | `$0338` | 1 byte | [`ram.asm:1001`](../asm/src/ram.asm#L1001) | Temporizador de frames por fase de la animación de puerta (cuenta regresiva de `$20` o `$08` ticks). |
-| `byte_339` | `$0339` | 1 byte | [`ram.asm:1003`](../asm/src/ram.asm#L1003) | Fase de animación de puerta (0, 1, 2; finaliza al alcanzar 3). |
-| `EntryDoorType` | `$033B` | 1 byte | [`ram.asm:1006`](../asm/src/ram.asm#L1006) | Índice/orientación de la puerta activa. Sus 2 bits altos (`>> 2`) seleccionan dirección: 0: Up, 1: Down, 2: Right, 3: Left. |
-| `byte_33C` | `$033C` | 1 byte | [`ram.asm:1008`](../asm/src/ram.asm#L1008) | Copia temporal de `MaybeCollectedThing` al cruzar sala (determina si la puerta de llegada debe animarse abierta). |
-| `EntryDoorTypeBackup` | `$033D` | 1 byte | [`ram.asm:1010`](../asm/src/ram.asm#L1010) | Respaldo del tipo de puerta al guardar checkpoint de retorno. |
-| `EntryDoorTypeBackup2` | `$033F` | 1 byte | [`ram.asm:1014`](../asm/src/ram.asm#L1014) | Segundo respaldo del tipo de puerta para warps específicos. |
-| `byte_340` | `$0340` | 1 byte | [`ram.asm:1016`](../asm/src/ram.asm#L1016) | Sub-estado de transición en `GameState_9` y `GameState_4` (bits 0, 1, 2 marcan fases de spawn y cierre). |
-| `byte_341` | `$0341` | 1 byte | [`ram.asm:1018`](../asm/src/ram.asm#L1018) | Temporizador de desplazamiento de Jack al salir de la puerta en `GameState_4` (`$18` = 24 frames). |
-| `MaybeHandleDoorFlag` | `$0369` | 1 byte | [`ram.asm:1074`](../asm/src/ram.asm#L1074) | Flag de control de evaluación de puertas por frame: Bit 0 = modo chequeo activo; Bit 7 = habilitador inicial. |
-| `CurrentRoomIDBackup4` | `$036A` | 1 byte | [`ram.asm:1076`](../asm/src/ram.asm#L1076) | ID de sala respaldado para consulta de encabezado y evaluación de warps (ej. Room `$61`). |
-| `MaybeDoorTypeOrSphinx` | `$036B` | 1 byte | [`ram.asm:1078`](../asm/src/ram.asm#L1078) | Índice normalizado ($00..$20) que desreferencia la JumpTable de 33 condiciones en `CheckAndMaybeOpenDoor`. |
-| `FireTilePlayerDiedTo` | `$0392` | 1 byte | [`ram.asm:1130`](../asm/src/ram.asm#L1130) | ID del tile de fuego que mató a Jack (usado en Condición 1E para verificar muerte contra tile `$5D`). |
-| `DoorIsAnimatingMaybe` | `$0393` | 1 byte | [`ram.asm:1132`](../asm/src/ram.asm#L1132) | Incrementado al colisionar con la puerta (`JTPickup_Door`); bloquea re-evaluaciones redundantes. |
-| `UnknownDoorFlagCopy` | `$0394` | 1 byte | [`ram.asm:1134`](../asm/src/ram.asm#L1134) | Copia de `UnknownDoorFlag` para validación cruzada en `MaybeDontOpenDoors`. |
-| `DoorCheckFlag_1E_DeathCount` | `$0395` | 1 byte | [`ram.asm:1136`](../asm/src/ram.asm#L1136) | Contador de muertes consecutivas contra fuego para el Warp Round 5 -> Round 11 (requiere 2 muertes). |
-| `DoorCheckFlag_1E_Unk` | `$0396` | 1 byte | [`ram.asm:1139`](../asm/src/ram.asm#L1139) | Cerco de reentrada para el Warp 1E. |
-| `DoorCheckFlag_19_1A` | `$0397` | 1 byte | [`ram.asm:1142`](../asm/src/ram.asm#L1142) | Flag de un solo uso para condiciones basadas en decena de puntuación (JP: 19 y 1A). |
-| `DoorCheckFlag_1F` | `$0399` | 1 byte | [`ram.asm:1146`](../asm/src/ram.asm#L1146) | Flag de un solo uso para el Warp de retorno Round 11 -> Round 6 (Room `$61`). |
-| `DoorCheckFlag_09` | `$039A` | 1 byte | [`ram.asm:1148`](../asm/src/ram.asm#L1148) | Flag bi-estable para el Reverse Crystal Warp (R4 -> R7). |
-| `RoomDataRAM` | `$0600..$06FF` | 256 bytes | [`ram.asm:1846`](../asm/src/ram.asm#L1846) | Búfer dinámico en RAM donde se instancian los objetos interactivos, puertas y cofres de la sala activa. |
+| `GameState` | `$0044` | 1 byte | [`ram.asm:107`](../../asm/src/ram.asm#L107) | Estado global del juego: 2 (Load Room), 3 (Draw Screen), 4 (Enter Room), 5 (Gameplay), 8 (Round Clear), 9 (Exit Room), $B (Animate Door Open). |
+| `UnknownDoorFlag` | `$0057` | 1 byte | [`ram.asm:143`](../../asm/src/ram.asm#L143) | Segundo byte descriptor del objeto puerta en RoomData (`off_58 + 1`). |
+| `off_58` | `$0058` | 2 bytes | [`ram.asm:145`](../../asm/src/ram.asm#L145) | Puntero indirecto de lectura de datos de sala en ROM (`RoomData_XX`). |
+| `byte_5A` | `$005A` | 1 byte | [`ram.asm:147`](../../asm/src/ram.asm#L147) | Puntero/índice relativo dentro de `RoomDataRAM` para la entidad actual. |
+| `byte_5C` | `$005C` | 1 byte | [`ram.asm:151`](../../asm/src/ram.asm#L151) | Descriptor primario del objeto: nibble alto `$80` = puerta; nibble bajo = `EntryDoorType` ($0..$F). |
+| `MaybeCollectedThing` | `$005E` | 1 byte | [`ram.asm:154`](../../asm/src/ram.asm#L154) | Copia del byte de estado del objeto almacenado en `RoomDataRAM,Y`. Bit 6 ($40) = Puerta abierta; Bit 7 ($80) = Inactiva. |
+| `StageTimer` | `$00A4` | 1 byte | [`ram.asm:245`](../../asm/src/ram.asm#L245) | Temporizador BCD de la etapa (evaluado en condiciones de puerta por tiempo). |
+| `RoomStatusFlags` | `$00BC` | 1 byte | [`ram.asm:283`](../../asm/src/ram.asm#L283) | Flags de sala: `$01` = SingleScreen, `$02` = ScrollStop, `$04` = Horizontal, `$08` = SectionStart, `$20` = AtScrollEdge, `$40` = BombRoom. |
+| `MaybeBombThing` | `$00F8` | 1 byte | [`ram.asm:380`](../../asm/src/ram.asm#L380) | Flag de bombas de fuego: bit 7 activo indica que se recogieron todas las bombas de fuego. Evaluado por Condición 0C. |
+| `MaybeDoorReturnTwiceFlag` | `$0337` | 1 byte | [`ram.asm:999`](../../asm/src/ram.asm#L999) | Flag de dirección/animación de puerta: bit 7 = 1 para apertura (`$81`), bit 7 = 0 para cierre (`$01`). Se borra a 0 al completar. |
+| `byte_338` | `$0338` | 1 byte | [`ram.asm:1001`](../../asm/src/ram.asm#L1001) | Temporizador de frames por fase de la animación de puerta (cuenta regresiva de `$20` o `$08` ticks). |
+| `byte_339` | `$0339` | 1 byte | [`ram.asm:1003`](../../asm/src/ram.asm#L1003) | Fase de animación de puerta (0, 1, 2; finaliza al alcanzar 3). |
+| `EntryDoorType` | `$033B` | 1 byte | [`ram.asm:1006`](../../asm/src/ram.asm#L1006) | Índice/orientación de la puerta activa. Sus 2 bits altos (`>> 2`) seleccionan dirección: 0: Up, 1: Down, 2: Right, 3: Left. |
+| `byte_33C` | `$033C` | 1 byte | [`ram.asm:1008`](../../asm/src/ram.asm#L1008) | Copia temporal de `MaybeCollectedThing` al cruzar sala (determina si la puerta de llegada debe animarse abierta). |
+| `EntryDoorTypeBackup` | `$033D` | 1 byte | [`ram.asm:1010`](../../asm/src/ram.asm#L1010) | Respaldo del tipo de puerta al guardar checkpoint de retorno. |
+| `EntryDoorTypeBackup2` | `$033F` | 1 byte | [`ram.asm:1014`](../../asm/src/ram.asm#L1014) | Segundo respaldo del tipo de puerta para warps específicos. |
+| `byte_340` | `$0340` | 1 byte | [`ram.asm:1016`](../../asm/src/ram.asm#L1016) | Sub-estado de transición en `GameState_9` y `GameState_4` (bits 0, 1, 2 marcan fases de spawn y cierre). |
+| `byte_341` | `$0341` | 1 byte | [`ram.asm:1018`](../../asm/src/ram.asm#L1018) | Temporizador de desplazamiento de Jack al salir de la puerta en `GameState_4` (`$18` = 24 frames). |
+| `MaybeHandleDoorFlag` | `$0369` | 1 byte | [`ram.asm:1074`](../../asm/src/ram.asm#L1074) | Flag de control de evaluación de puertas por frame: Bit 0 = modo chequeo activo; Bit 7 = habilitador inicial. |
+| `CurrentRoomIDBackup4` | `$036A` | 1 byte | [`ram.asm:1076`](../../asm/src/ram.asm#L1076) | ID de sala respaldado para consulta de encabezado y evaluación de warps (ej. Room `$61`). |
+| `MaybeDoorTypeOrSphinx` | `$036B` | 1 byte | [`ram.asm:1078`](../../asm/src/ram.asm#L1078) | Índice normalizado ($00..$20) que desreferencia la JumpTable de 33 condiciones en `CheckAndMaybeOpenDoor`. |
+| `FireTilePlayerDiedTo` | `$0392` | 1 byte | [`ram.asm:1130`](../../asm/src/ram.asm#L1130) | ID del tile de fuego que mató a Jack (usado en Condición 1E para verificar muerte contra tile `$5D`). |
+| `DoorIsAnimatingMaybe` | `$0393` | 1 byte | [`ram.asm:1132`](../../asm/src/ram.asm#L1132) | Incrementado al colisionar con la puerta (`JTPickup_Door`); bloquea re-evaluaciones redundantes. |
+| `UnknownDoorFlagCopy` | `$0394` | 1 byte | [`ram.asm:1134`](../../asm/src/ram.asm#L1134) | Copia de `UnknownDoorFlag` para validación cruzada en `MaybeDontOpenDoors`. |
+| `DoorCheckFlag_1E_DeathCount` | `$0395` | 1 byte | [`ram.asm:1136`](../../asm/src/ram.asm#L1136) | Contador de muertes consecutivas contra fuego para el Warp Round 5 -> Round 11 (requiere 2 muertes). |
+| `DoorCheckFlag_1E_Unk` | `$0396` | 1 byte | [`ram.asm:1139`](../../asm/src/ram.asm#L1139) | Cerco de reentrada para el Warp 1E. |
+| `DoorCheckFlag_19_1A` | `$0397` | 1 byte | [`ram.asm:1142`](../../asm/src/ram.asm#L1142) | Flag de un solo uso para condiciones basadas en decena de puntuación (JP: 19 y 1A). |
+| `DoorCheckFlag_1F` | `$0399` | 1 byte | [`ram.asm:1146`](../../asm/src/ram.asm#L1146) | Flag de un solo uso para el Warp de retorno Round 11 -> Round 6 (Room `$61`). |
+| `DoorCheckFlag_09` | `$039A` | 1 byte | [`ram.asm:1148`](../../asm/src/ram.asm#L1148) | Flag bi-estable para el Reverse Crystal Warp (R4 -> R7). |
+| `RoomDataRAM` | `$0600..$06FF` | 256 bytes | [`ram.asm:1846`](../../asm/src/ram.asm#L1846) | Búfer dinámico en RAM donde se instancian los objetos interactivos, puertas y cofres de la sala activa. |
 
 ---
 
@@ -85,7 +85,7 @@ El subsistema de puertas opera mediante un conjunto coordinado de variables en Z
 
 ### 4.1. Estructura Binaria de la Cabecera de Sala (`RoomData_XX`)
 
-Cada sala definida en [`asm/src/roomdata-us.asm`](../asm/src/roomdata-us.asm) (y `-jp.asm`) se compone de una secuencia de bytes con un encabezado inicial obligatorio identificado por `$E_`:
+Cada sala definida en [`asm/src/roomdata-us.asm`](../../asm/src/roomdata-us.asm) (y `-jp.asm`) se compone de una secuencia de bytes con un encabezado inicial obligatorio identificado por `$E_`:
 
 ```
 Byte 0:  %1110 PPPP      ($E0 | PaletteIndex)
@@ -97,7 +97,7 @@ Byte N:  $FF             (Marcador de Fin de Sala)
 
 ### 4.2. Algoritmo de Extracción en Ensamblador 6502
 
-La rutina `MaybeHandleDoorOpening` se ejecuta en cada frame durante el ciclo de juego activo (`GameState_5_NormalGameplay`, invocado desde `loc_843D` -> `MainSub_3` en [`asm/src/prg.asm:5906`](../asm/src/prg.asm#L5906)):
+La rutina `MaybeHandleDoorOpening` se ejecuta en cada frame durante el ciclo de juego activo (`GameState_5_NormalGameplay`, invocado desde `loc_843D` -> `MainSub_3` en [`asm/src/prg.asm:5906`](../../asm/src/prg.asm#L5906)):
 
 ```assembly
 ; asm/src/prg.asm:6696-6740
@@ -157,25 +157,25 @@ CheckAndMaybeOpenDoor:
 
 ## 5. Las 33 Condiciones Canónicas de Puerta (Índices $00..$20)
 
-La tabla `CheckAndMaybeOpenDoor` en [`asm/src/prg.asm:6745-6816`](../asm/src/prg.asm#L6745-6816) contiene las palabras de dirección a cada subrutina de validación. A continuación se detalla la totalidad de las 33 entradas, comparando las ramas compiladas para la versión US (`REV_US`) y la versión japonesa (`JP`):
+La tabla `CheckAndMaybeOpenDoor` en [`asm/src/prg.asm:6745-6816`](../../asm/src/prg.asm#L6745-6816) contiene las palabras de dirección a cada subrutina de validación. A continuación se detalla la totalidad de las 33 entradas, comparando las ramas compiladas para la versión US (`REV_US`) y la versión japonesa (`JP`):
 
 | Índice | Etiqueta Canónica | Código Ensamblador Clave | Lógica Matemática y Condiciones Evaluadas | Diferencia US vs JP |
 | :---: | :--- | :--- | :--- | :--- |
-| **`$00`** | `DoorCond_rts` | [`prg.asm:6883`](../asm/src/prg.asm#L6883)<br>`RTS` | **Cerrada / Disparador Externo**. No se abre automáticamente por condición periódica de sala. | Idéntico en ambas revisiones. |
-| **`$01`** | `DoorCond_rts` | [`prg.asm:6883`](../asm/src/prg.asm#L6883)<br>`RTS` | **Cerrada permanente**. | Idéntico. |
-| **`$02`** | `DoorCond_02_JumpedOn` | [`prg.asm:6832`](../asm/src/prg.asm#L6832)<br>`JSR MaybeDontOpenDoors`<br>`LDA JustJumpedFlag`<br>`BEQ DoorCond_rts`<br>`JMP HandleOpenDoorMaybe` | **Salto sobre plataforma / suelo**. Requiere `JustJumpedFlag != 0` (Jack acaba de ejecutar un impulso o aterrizaje en superficie). Ej: `RoomData_14` (`$19 >> 3 = 3`, $3-1 = 2$). | Idéntico. |
+| **`$00`** | `DoorCond_rts` | [`prg.asm:6883`](../../asm/src/prg.asm#L6883)<br>`RTS` | **Cerrada / Disparador Externo**. No se abre automáticamente por condición periódica de sala. | Idéntico en ambas revisiones. |
+| **`$01`** | `DoorCond_rts` | [`prg.asm:6883`](../../asm/src/prg.asm#L6883)<br>`RTS` | **Cerrada permanente**. | Idéntico. |
+| **`$02`** | `DoorCond_02_JumpedOn` | [`prg.asm:6832`](../../asm/src/prg.asm#L6832)<br>`JSR MaybeDontOpenDoors`<br>`LDA JustJumpedFlag`<br>`BEQ DoorCond_rts`<br>`JMP HandleOpenDoorMaybe` | **Salto sobre plataforma / suelo**. Requiere `JustJumpedFlag != 0` (Jack acaba de ejecutar un impulso o aterrizaje en superficie). Ej: `RoomData_14` (`$19 >> 3 = 3`, $3-1 = 2$). | Idéntico. |
 | **`$03`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$04`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$05`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$06`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
-| **`$07`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../asm/src/prg.asm#L6903)<br>`JSR MaybeDontOpenDoors`<br>`LDA PlayerMightyLevel`<br>`CMP #3`<br>`BNE DoorCond_rts`<br>`JMP HandleOpenDoorMaybe` | **Poder Máximo Mighty Level 3**. Requiere `PlayerMightyLevel == 3` (Jack azul, invulnerable / destructor de cofres). | Idéntico. |
+| **`$07`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../../asm/src/prg.asm#L6903)<br>`JSR MaybeDontOpenDoors`<br>`LDA PlayerMightyLevel`<br>`CMP #3`<br>`BNE DoorCond_rts`<br>`JMP HandleOpenDoorMaybe` | **Poder Máximo Mighty Level 3**. Requiere `PlayerMightyLevel == 3` (Jack azul, invulnerable / destructor de cofres). | Idéntico. |
 | **`$08`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
-| **`$09`** | `DoorCond_09_FBWarp2` | [`prg.asm:6845`](../asm/src/prg.asm#L6845)<br>`LDA DoorCheckFlag_09`<br>`BMI DoorCond_rts`<br>`LSR A`<br>`BCC DoorCond_rts`<br>`LDA #$80`<br>`STA DoorCheckFlag_09`<br>`JMP HandleOpenDoorMaybe` | **Warp Inverso Round 4 $\rightarrow$ Round 7 (Crystal Door)**. Verifica flag bi-estable `DoorCheckFlag_09`: bit 7 debe ser 0 y bit 0 debe ser 1 (activado previamente al cruzar el warp 1D). Al validar, fija bit 7 (`#$80`) para impedir re-ejecución y abre la puerta. | Idéntico. |
-| **`$0A`** | `DoorCond_rts` (US)<br>`DoorCond_0A_Timer30` (JP) | [`prg.asm:6858`](../asm/src/prg.asm#L6858)<br>`LDA StageTimer`<br>`CMP #$30`<br>`BNE DoorCond_rts`<br>`JMP HandleOpenDoorMaybe` | **Temporizador en 30 segundos (BCD)**. En JP, abre exactamente cuando el contador de tiempo de sala llega a 30 BCD (`StageTimer == $30`). | **Divergencia US/JP**: En US fue anulada (`DoorCond_rts`), eliminando la apertura cronometrada a 30s. |
+| **`$09`** | `DoorCond_09_FBWarp2` | [`prg.asm:6845`](../../asm/src/prg.asm#L6845)<br>`LDA DoorCheckFlag_09`<br>`BMI DoorCond_rts`<br>`LSR A`<br>`BCC DoorCond_rts`<br>`LDA #$80`<br>`STA DoorCheckFlag_09`<br>`JMP HandleOpenDoorMaybe` | **Warp Inverso Round 4 $\rightarrow$ Round 7 (Crystal Door)**. Verifica flag bi-estable `DoorCheckFlag_09`: bit 7 debe ser 0 y bit 0 debe ser 1 (activado previamente al cruzar el warp 1D). Al validar, fija bit 7 (`#$80`) para impedir re-ejecución y abre la puerta. | Idéntico. |
+| **`$0A`** | `DoorCond_rts` (US)<br>`DoorCond_0A_Timer30` (JP) | [`prg.asm:6858`](../../asm/src/prg.asm#L6858)<br>`LDA StageTimer`<br>`CMP #$30`<br>`BNE DoorCond_rts`<br>`JMP HandleOpenDoorMaybe` | **Temporizador en 30 segundos (BCD)**. En JP, abre exactamente cuando el contador de tiempo de sala llega a 30 BCD (`StageTimer == $30`). | **Divergencia US/JP**: En US fue anulada (`DoorCond_rts`), eliminando la apertura cronometrada a 30s. |
 | **`$0B`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
-| **`$0C`** | `DoorCond_0C_AllFireBombs` | [`prg.asm:6871`](../asm/src/prg.asm#L6871)<br>`LDA MaybeBombThing`<br>`BPL DoorCond_rts`<br>`AND #$7F`<br>`STA MaybeBombThing`<br>`JMP HandleOpenDoorMaybe` | **Todas las Bombas de Fuego Recogidas en Orden**. Chequea si el bit 7 de `MaybeBombThing` ($00F8) está activo (`BMI`). Si lo está, borra el bit 7 (`AND #$7F`) y abre la puerta. | Idéntico. |
+| **`$0C`** | `DoorCond_0C_AllFireBombs` | [`prg.asm:6871`](../../asm/src/prg.asm#L6871)<br>`LDA MaybeBombThing`<br>`BPL DoorCond_rts`<br>`AND #$7F`<br>`STA MaybeBombThing`<br>`JMP HandleOpenDoorMaybe` | **Todas las Bombas de Fuego Recogidas en Orden**. Chequea si el bit 7 de `MaybeBombThing` ($00F8) está activo (`BMI`). Si lo está, borra el bit 7 (`AND #$7F`) y abre la puerta. | Idéntico. |
 | **`$0D`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
-| **`$0E`** | `DoorCond_XX_Mighty3` (US)<br>`DoorCond_0E_Timer60` (JP) | [`prg.asm:6890`](../asm/src/prg.asm#L6890)<br>`LDA StageTimer`<br>`CMP #$60`<br>`BNE DoorCond_rts` (JP) | **Temporizador en 60s (JP) vs Mighty 3 (US)**. En JP abría cuando `StageTimer == $60` BCD. En la revisión US fue redirigida a requerir Mighty Level 3 (`DoorCond_XX_Mighty3`). | **Divergencia US/JP**: Cambio radical de temporizador a potenciador. |
+| **`$0E`** | `DoorCond_XX_Mighty3` (US)<br>`DoorCond_0E_Timer60` (JP) | [`prg.asm:6890`](../../asm/src/prg.asm#L6890)<br>`LDA StageTimer`<br>`CMP #$60`<br>`BNE DoorCond_rts` (JP) | **Temporizador en 60s (JP) vs Mighty 3 (US)**. En JP abría cuando `StageTimer == $60` BCD. En la revisión US fue redirigida a requerir Mighty Level 3 (`DoorCond_XX_Mighty3`). | **Divergencia US/JP**: Cambio radical de temporizador a potenciador. |
 | **`$0F`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$10`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$11`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
@@ -184,20 +184,20 @@ La tabla `CheckAndMaybeOpenDoor` en [`asm/src/prg.asm:6745-6816`](../asm/src/prg
 | **`$14`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$15`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
 | **`$16`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
-| **`$17`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../asm/src/prg.asm#L6903) | **Mighty Level 3**. | Idéntico. |
-| **`$18`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../asm/src/prg.asm#L6903) | **Mighty Level 3**. | Idéntico. |
-| **`$19`** | `DoorCond_1D_FBWarp1` (US)<br>`DoorCond_19_TensScore30` (JP) | [`prg.asm:6914`](../asm/src/prg.asm#L6914)<br>`LDA DoorCheckFlag_19_1A`<br>`BNE DoorCond_rts`<br>`INC DoorCheckFlag_19_1A`<br>`LDA PlayerScore`<br>`CMP #$30` (JP) | **Decena de Puntos == 30 (JP) vs Warp FB (US)**. En JP abre si la decena del score es exactamente 30 BCD (evaluado una sola vez vía `DoorCheckFlag_19_1A`). En US apunta al Warp FB (`DoorCond_1D_FBWarp1`). | **Divergencia US/JP**: Reemplazo de condición basada en score por warp de escape. |
-| **`$1A`** | `DoorCond_1A_US_rts` (US)<br>`DoorCond_1A_TensScore70` (JP) | [`prg.asm:6990`](../asm/src/prg.asm#L6990)<br>`LDA DoorCheckFlag_19_1A`<br>`BNE locret_AAB3`<br>`INC DoorCheckFlag_19_1A`<br>`LDA PlayerScore`<br>`CMP #$70` (JP) | **Decena de Puntos == 70 (JP)**. En JP abre si la decena del score es 70 BCD. En US fue desactivada (`RTS`). | **Divergencia US/JP**: Desactivada en US. |
-| **`$1B`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../asm/src/prg.asm#L6903) | **Mighty Level 3**. | Idéntico. |
+| **`$17`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../../asm/src/prg.asm#L6903) | **Mighty Level 3**. | Idéntico. |
+| **`$18`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../../asm/src/prg.asm#L6903) | **Mighty Level 3**. | Idéntico. |
+| **`$19`** | `DoorCond_1D_FBWarp1` (US)<br>`DoorCond_19_TensScore30` (JP) | [`prg.asm:6914`](../../asm/src/prg.asm#L6914)<br>`LDA DoorCheckFlag_19_1A`<br>`BNE DoorCond_rts`<br>`INC DoorCheckFlag_19_1A`<br>`LDA PlayerScore`<br>`CMP #$30` (JP) | **Decena de Puntos == 30 (JP) vs Warp FB (US)**. En JP abre si la decena del score es exactamente 30 BCD (evaluado una sola vez vía `DoorCheckFlag_19_1A`). En US apunta al Warp FB (`DoorCond_1D_FBWarp1`). | **Divergencia US/JP**: Reemplazo de condición basada en score por warp de escape. |
+| **`$1A`** | `DoorCond_1A_US_rts` (US)<br>`DoorCond_1A_TensScore70` (JP) | [`prg.asm:6990`](../../asm/src/prg.asm#L6990)<br>`LDA DoorCheckFlag_19_1A`<br>`BNE locret_AAB3`<br>`INC DoorCheckFlag_19_1A`<br>`LDA PlayerScore`<br>`CMP #$70` (JP) | **Decena de Puntos == 70 (JP)**. En JP abre si la decena del score es 70 BCD. En US fue desactivada (`RTS`). | **Divergencia US/JP**: Desactivada en US. |
+| **`$1B`** | `DoorCond_XX_Mighty3` | [`prg.asm:6903`](../../asm/src/prg.asm#L6903) | **Mighty Level 3**. | Idéntico. |
 | **`$1C`** | `DoorCond_rts` | `RTS` | Cerrada. | Idéntico. |
-| **`$1D`** | `DoorCond_1D_FBWarp1` | [`prg.asm:6929`](../asm/src/prg.asm#L6929)<br>`LDA RoomStatusFlags`<br>`AND #RF_AtScrollEdge`<br>`BEQ locret_AAB3`<br>`LDA PlayerMightyCoins`<br>`BNE locret_AAB3`<br>`LDA StageTimer`<br>`BNE locret_AAB3`<br>`LDA PlayerSprite`<br>`CMP #6`<br>`BNE locret_AAB3` | **Warp Secreto Fire Bomb Room (4 Condiciones Conjuntas)**:<br>1. Jack en borde de scroll (`RoomStatusFlags & RF_AtScrollEdge`).<br>2. Cero Mighty Coins (`PlayerMightyCoins == 0`).<br>3. Tiempo en cero (`StageTimer == 0`).<br>4. Sprite de Jack en caída lateral (`PlayerSprite == 6`).<br>Al cumplirse: `TimerStatusMaybe = 0` (evita muerte por tiempo), `DoorCheckFlag_09 = 1` y abre puerta. | Idéntico. |
-| **`$1E`** | `DoorCond_1E_R5R11Warp` | [`prg.asm:6951`](../asm/src/prg.asm#L6951)<br>`LDA DoorCheckFlag_1E_DeathCount`<br>`CMP #2`<br>`BNE _DoorCond_1E_Cnd` | **Warp Secreto Round 5 $\rightarrow$ Round 11 (Room `$FC`)**:<br>1. Jack debe morir exactamente dos veces contra el tile de fuego `$5D` (`FireTilePlayerDiedTo == #$5D`), incrementando `DoorCheckFlag_1E_DeathCount`.<br>2. Al reaparecer con vida tras la 2ª muerte (`PlayerStruct >= 0`), resetea los contadores de muerte y abre la puerta de warp directo al Round 11. | Idéntico. |
-| **`$1F`** | `DoorCond_1F_R11WarpBack` | [`prg.asm:6980`](../asm/src/prg.asm#L6980)<br>`LDA DoorCheckFlag_1F`<br>`BNE locret_AAB3`<br>`INC DoorCheckFlag_1F`<br>`BNE HandleOpenDoorMaybe` | **Warp Secreto de Retorno Round 11 $\rightarrow$ Round 6 (Room `$61`)**:<br>Se ejecuta una única vez por partida (`DoorCheckFlag_1F == 0`). Al entrar a la sala $61, `loc_A977` fuerza condición `$20` ($\rightarrow `$1F`), abriendo inmediatamente la puerta hacia el Round 6. | Idéntico. |
-| **`$20`** | `DoorCond_20_US` | [`prg.asm:6779`](../asm/src/prg.asm#L6779)<br>[`prg.asm:7954`](../asm/src/prg.asm#L7954)<br>`.WORD DoorCond_20_US` | **Anomalía / Remanente de Tabla (Entrada 33)**. Puntero exclusivo del binario US que desborda el rango de 5 bits del encabezado de sala ($00..$1F). Apunta al cuerpo de `sub_AFA9:7954` (cálculo de coordenadas de entidades finales). Inalcanzable mediante el flujo estándar de juego. | Exclusivo de US (en JP la tabla finaliza estrictamente en `$1F`). |
+| **`$1D`** | `DoorCond_1D_FBWarp1` | [`prg.asm:6929`](../../asm/src/prg.asm#L6929)<br>`LDA RoomStatusFlags`<br>`AND #RF_AtScrollEdge`<br>`BEQ locret_AAB3`<br>`LDA PlayerMightyCoins`<br>`BNE locret_AAB3`<br>`LDA StageTimer`<br>`BNE locret_AAB3`<br>`LDA PlayerSprite`<br>`CMP #6`<br>`BNE locret_AAB3` | **Warp Secreto Fire Bomb Room (4 Condiciones Conjuntas)**:<br>1. Jack en borde de scroll (`RoomStatusFlags & RF_AtScrollEdge`).<br>2. Cero Mighty Coins (`PlayerMightyCoins == 0`).<br>3. Tiempo en cero (`StageTimer == 0`).<br>4. Sprite de Jack en caída lateral (`PlayerSprite == 6`).<br>Al cumplirse: `TimerStatusMaybe = 0` (evita muerte por tiempo), `DoorCheckFlag_09 = 1` y abre puerta. | Idéntico. |
+| **`$1E`** | `DoorCond_1E_R5R11Warp` | [`prg.asm:6951`](../../asm/src/prg.asm#L6951)<br>`LDA DoorCheckFlag_1E_DeathCount`<br>`CMP #2`<br>`BNE _DoorCond_1E_Cnd` | **Warp Secreto Round 5 $\rightarrow$ Round 11 (Room `$FC`)**:<br>1. Jack debe morir exactamente dos veces contra el tile de fuego `$5D` (`FireTilePlayerDiedTo == #$5D`), incrementando `DoorCheckFlag_1E_DeathCount`.<br>2. Al reaparecer con vida tras la 2ª muerte (`PlayerStruct >= 0`), resetea los contadores de muerte y abre la puerta de warp directo al Round 11. | Idéntico. |
+| **`$1F`** | `DoorCond_1F_R11WarpBack` | [`prg.asm:6980`](../../asm/src/prg.asm#L6980)<br>`LDA DoorCheckFlag_1F`<br>`BNE locret_AAB3`<br>`INC DoorCheckFlag_1F`<br>`BNE HandleOpenDoorMaybe` | **Warp Secreto de Retorno Round 11 $\rightarrow$ Round 6 (Room `$61`)**:<br>Se ejecuta una única vez por partida (`DoorCheckFlag_1F == 0`). Al entrar a la sala $61, `loc_A977` fuerza condición `$20` ($\rightarrow `$1F`), abriendo inmediatamente la puerta hacia el Round 6. | Idéntico. |
+| **`$20`** | `DoorCond_20_US` | [`prg.asm:6779`](../../asm/src/prg.asm#L6779)<br>[`prg.asm:7954`](../../asm/src/prg.asm#L7954)<br>`.WORD DoorCond_20_US` | **Anomalía / Remanente de Tabla (Entrada 33)**. Puntero exclusivo del binario US que desborda el rango de 5 bits del encabezado de sala ($00..$1F). Apunta al cuerpo de `sub_AFA9:7954` (cálculo de coordenadas de entidades finales). Inalcanzable mediante el flujo estándar de juego. | Exclusivo de US (en JP la tabla finaliza estrictamente en `$1F`). |
 
 ### 5.1. Mecánica de Puertas de Salas de Bombas (`OpenBombRoomDoor`)
 
-Las salas de bombas (`RF_BombRoom`, salas `$90..$9F`) no utilizan las 33 condiciones periódicas anteriores. En su lugar, el motor supervisa el contador de bombas en `loc_9F6D` ([`asm/src/prg.asm:5126`](../asm/src/prg.asm#L5126)):
+Las salas de bombas (`RF_BombRoom`, salas `$90..$9F`) no utilizan las 33 condiciones periódicas anteriores. En su lugar, el motor supervisa el contador de bombas en `loc_9F6D` ([`asm/src/prg.asm:5126`](../../asm/src/prg.asm#L5126)):
 
 ```assembly
 ; asm/src/prg.asm:5126-5134
@@ -232,7 +232,7 @@ OpenBombRoomDoor:
 
 ### 6.1. Tabla de Posición de Puertas en Tilemap (`DoorPositionTileTable`)
 
-En [`asm/src/prg.asm:3823-3839`](../asm/src/prg.asm#L3823-3839), cada tipo de puerta (`EntryDoorType`, 0 a 15) está parametrizado por un bloque contiguo de 4 bytes:
+En [`asm/src/prg.asm:3823-3839`](../../asm/src/prg.asm#L3823-3839), cada tipo de puerta (`EntryDoorType`, 0 a 15) está parametrizado por un bloque contiguo de 4 bytes:
 `[Y_Tile, X_Tile, BaseTile_Cerrada, BaseTile_Abierta]`
 
 ```assembly
@@ -258,7 +258,7 @@ DoorPositionTileTable:
 
 ### 6.2. Metatiles Canónicos de Puerta en `MetatileDefinitions`
 
-Cada metatile representa un bloque gráfico de $16 \times 16$ píxeles, compuesto por 4 tiles PPU de $8 \times 8$ (Top-Left, Top-Right, Bottom-Left, Bottom-Right), definidos en [`asm/src/data.asm:1685-1702`](../asm/src/data.asm#L1685-L1702):
+Cada metatile representa un bloque gráfico de $16 \times 16$ píxeles, compuesto por 4 tiles PPU de $8 \times 8$ (Top-Left, Top-Right, Bottom-Left, Bottom-Right), definidos en [`asm/src/data.asm:1685-1702`](../../asm/src/data.asm#L1685-L1702):
 
 ```assembly
 ; asm/src/data.asm:1685-1702 (MetatileDefinitions)
@@ -283,7 +283,7 @@ Cada metatile representa un bloque gráfico de $16 \times 16$ píxeles, compuest
 
 ### 6.3. Motor de Animación y Actualización de VRAM/Nametable
 
-La rutina `AnimateDoor` ([`asm/src/prg.asm:7219-7290`](../asm/src/prg.asm#L7219-L7290)) gestiona la animación temporal de apertura y cierre:
+La rutina `AnimateDoor` ([`asm/src/prg.asm:7219-7290`](../../asm/src/prg.asm#L7219-L7290)) gestiona la animación temporal de apertura y cierre:
 
 ```
 [Invocación: AnimateDoorOpen (X=$80) o AnimateDoorClose (X=$00)]
@@ -314,7 +314,7 @@ QueueSound(Sound_Door)               QueueSound(Sound_Door)
          Actualiza paleta y atributos vía HandleTileAttributes
 ```
 
-Durante el intervalo de VBlank en NMI, la rutina `sub_9729` ([`asm/src/prg.asm:3789-3820`](../asm/src/prg.asm#L3789-L3820)) lee `PPUUpdateBuffer` y escribe físicamente en `$2006`/`$2007` (PPUADDR/PPUDATA) en dos ráfagas horizontales de 2 tiles separadas por un incremento de $32$ tiles (`+$20`) en la nametable.
+Durante el intervalo de VBlank en NMI, la rutina `sub_9729` ([`asm/src/prg.asm:3789-3820`](../../asm/src/prg.asm#L3789-L3820)) lee `PPUUpdateBuffer` y escribe físicamente en `$2006`/`$2007` (PPUADDR/PPUDATA) en dos ráfagas horizontales de 2 tiles separadas por un incremento de $32$ tiles (`+$20`) en la nametable.
 
 ---
 
@@ -338,7 +338,7 @@ stateDiagram-v2
 
 ### 7.1. Detección de Colisión con la Puerta (`JTPickup_Door`)
 
-En el motor de colisiones de fondo (`BigBeefySubHandlesBGColliding`), cuando Jack intersecta un metatile de tipo `$12` (puerta), el despachador ejecuta `JTPickup_Door` ([`asm/src/prg.asm:5312-5346`](../asm/src/prg.asm#L5312-L5346)):
+En el motor de colisiones de fondo (`BigBeefySubHandlesBGColliding`), cuando Jack intersecta un metatile de tipo `$12` (puerta), el despachador ejecuta `JTPickup_Door` ([`asm/src/prg.asm:5312-5346`](../../asm/src/prg.asm#L5312-L5346)):
 
 ```assembly
 ; asm/src/prg.asm:5312-5346
@@ -379,9 +379,9 @@ locret_A0A8:
 
 ### 7.2. Despacho Topológico de Salida (`GameState_9_ExitRoom`)
 
-La subrutina `GameState_9_ExitRoom` ([`asm/src/prg.asm:7294-7372`](../asm/src/prg.asm#L7294-L7372)) ejecuta las siguientes operaciones atómicas:
-1. **Ocultamiento de Jack**: Llama a `ClearFourSpritesInY` ([`asm/src/prg.asm:7300`](../asm/src/prg.asm#L7300)) para purgar inmediatamente del OAM los 4 sprites del jugador.
-2. **Cierre de la Puerta**: Llama a `AnimateDoorClose` ([`asm/src/prg.asm:7303`](../asm/src/prg.asm#L7303)).
+La subrutina `GameState_9_ExitRoom` ([`asm/src/prg.asm:7294-7372`](../../asm/src/prg.asm#L7294-L7372)) ejecuta las siguientes operaciones atómicas:
+1. **Ocultamiento de Jack**: Llama a `ClearFourSpritesInY` ([`asm/src/prg.asm:7300`](../../asm/src/prg.asm#L7300)) para purgar inmediatamente del OAM los 4 sprites del jugador.
+2. **Cierre de la Puerta**: Llama a `AnimateDoorClose` ([`asm/src/prg.asm:7303`](../../asm/src/prg.asm#L7303)).
 3. **Consulta de `AdjacentRoomsTable`**:
    ```assembly
    LDA CurrentRoomIDBackup3
@@ -415,7 +415,7 @@ La subrutina `GameState_9_ExitRoom` ([`asm/src/prg.asm:7294-7372`](../asm/src/pr
 
 ### 7.3. Matriz Topológica de Salas (`AdjacentRoomsTable`)
 
-Ubicada en [`asm/src/data.asm:1704-1800`](../asm/src/data.asm#L1704-L1800), define un vector de 5 bytes por cada sala del juego:
+Ubicada en [`asm/src/data.asm:1704-1800`](../../asm/src/data.asm#L1704-L1800), define un vector de 5 bytes por cada sala del juego:
 
 $$\text{Entrada}(ID) = [\text{Flags}, \text{Up}, \text{Down}, \text{Right}, \text{Left}]$$
 
@@ -439,13 +439,13 @@ AdjacentRoomsTable:
 
 El protocolo de limpieza y carga garantiza que ningún estado residual de entidades o timers contamine la nueva habitación:
 
-#### Fase 1: `GameState_2_LoadRoom` ([`asm/src/prg.asm:3130`](../asm/src/prg.asm#L3130))
+#### Fase 1: `GameState_2_LoadRoom` ([`asm/src/prg.asm:3130`](../../asm/src/prg.asm#L3130))
 - Limpia variables de bombas: `MaybeBombThing = 0`, `RoomStatusFlags = 0`.
 - Invoca `LoadRoomData` para asignar `off_58` a la definición en ROM.
 - Extrae paleta de fondo (`RoomPalette`), música (`RoomMusic`) e inicializa la sección en `RoomDataRAM`.
 - Avanza a `GameState = 3`.
 
-#### Fase 2: `GameState_3_DrawScreen` ([`asm/src/prg.asm:379`](../asm/src/prg.asm#L379))
+#### Fase 2: `GameState_3_DrawScreen` ([`asm/src/prg.asm:379`](../../asm/src/prg.asm#L379))
 - **Reset de Sprites**: Ejecuta `ClearAllSprites` (pone coordenadas $Y = \$F8$ en todo el búfer de $256$ bytes del OAM).
 - **Reset de Temporizadores y Flags de Puertas**:
   - `InitFlag_LoadedDifficulty = 0`
@@ -466,12 +466,12 @@ El protocolo de limpieza y carga garantiza que ningún estado residual de entida
   	BNE loc_8287
   ```
 - **Dibujado**: Invoca `DrawFullScreen` para transferir la geometría de la sala al búfer de nametable.
-- **Spawns de Sala de Hermanos**: Si `SomeLoadFlag & 1 != 0`, invoca `SpawnBrotherRoomObjects` ([`asm/src/prg.asm:6659`](../asm/src/prg.asm#L6659)) para instanciar los 3 cofres/figuras del rescate.
+- **Spawns de Sala de Hermanos**: Si `SomeLoadFlag & 1 != 0`, invoca `SpawnBrotherRoomObjects` ([`asm/src/prg.asm:6659`](../../asm/src/prg.asm#L6659)) para instanciar los 3 cofres/figuras del rescate.
 - Avanza a `GameState = 4`.
 
-#### Fase 3: `GameState_4_EnterRoom` ([`asm/src/prg.asm:445`](../asm/src/prg.asm#L445))
+#### Fase 3: `GameState_4_EnterRoom` ([`asm/src/prg.asm:445`](../../asm/src/prg.asm#L445))
 - **Posicionamiento de Spawn**:
-  Lee `DoorEntryXYPositionTable` ([`asm/src/data.asm:322`](../asm/src/data.asm#L322)) indexado por `EntryDoorType * 2`:
+  Lee `DoorEntryXYPositionTable` ([`asm/src/data.asm:322`](../../asm/src/data.asm#L322)) indexado por `EntryDoorType * 2`:
   - `PlayerYPosHi = DoorEntryXYPositionTable[EntryDoorType * 2]`
   - `PlayerXPosHi = DoorEntryXYPositionTable[EntryDoorType * 2 + 1] + ScrollCompensation`
 - **Vector de Velocidad Inicial**:

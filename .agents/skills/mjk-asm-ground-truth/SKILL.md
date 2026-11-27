@@ -44,18 +44,14 @@ Toda constante, dirección RAM, metatile, timer o fórmula usada en diseño o c�
    # Buscar equivalencias ASM <-> C
    python tools/asm_query.py --xref StageTimer
    ```
-2. **Índice maestro ASM <-> C**: `research/CROSS_REFERENCE_INDEX.md`.
-3. **Contratos y flujo ya consolidados**:
-   - `research/contracts/state_machine.md` y `research/contracts/behavior_contracts/*.md`
-   - `research/control_flow/control_flow.md`, `data_flow.md`, `hardware_model.md`
-   - `research/inventories/memory_map.md`
-4. **Informes técnicos específicos**: `research/RES-012` a `RES-027` (especificaciones ASM profundas). Los `RES-028` a `RES-036` sirven solo como referencia histórica de tablas ASM (sus números de línea en C pueden haber variado).
-5. **Lectura directa en `asm/src/`**: Usar `read_file` con `StartLine` y `EndLine` exactos obtenidos de los pasos anteriores (< 150 líneas por lectura).
+2. **Mapa ASM <-> C**: `docs/nes-reference/asm-to-c-map.md`.
+3. **Especificación por subsistema**: `docs/nes-reference/` (`game-flow.md`, `rom-and-memory-map.md`, `graphics-and-ppu.md`, `audio-2a03.md`, `physics-and-collision.md`, `world-and-rooms.md`, `gameplay-mechanics.md`) e inventarios en `docs/nes-reference/inventories/`.
+4. **Lectura directa en `asm/src/`**: Usar `read_file` con `StartLine` y `EndLine` exactos obtenidos de los pasos anteriores (< 150 líneas por lectura).
 
 ---
 
 ## 4. Capitalización (No Repetir Trabajo)
 
 Si al investigar se descubre un mapeo nuevo o se corrige una dirección RAM errónea:
-- Actualizar `research/CROSS_REFERENCE_INDEX.md` con la cita exacta `asm/src/<archivo>:<líneas>`.
+- Actualizar `docs/nes-reference/asm-to-c-map.md` (y el documento de subsistema correspondiente) con la cita exacta `asm/src/<archivo>:<líneas>`.
 - No crear informes `RES-###` duplicados si el dato cabe en `CROSS_REFERENCE_INDEX.md` o en el contrato correspondiente.

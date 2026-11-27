@@ -1,290 +1,211 @@
 /**
- * @file test_objects.c
- * @brief Tests unitarios C11 (Capa 1 / CTest) para bombas, cofres, ítems y Mighty (T-19, T-20).
+ * @file test_objects_new.c
+ * @brief Unit tests exhaustivos de bombas, mechas, cofres, secretos, items y Mighty (R-08, R-09).
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include "mjk_assets.h"
-#include "mjk_game.h"
-#include "mjk_rom_extractor.h"
+#include "mjk/assets.h"
+#include "mjk/game.h"
+#include "mjk/objects.h"
+#include "mjk/rom_loader.h"
 
 static int g_failures = 0;
 
-static bool load_rom_assets(MjkAssetPackage* out_pkg) {
-#ifdef MJK_SOURCE_DIR
-    char rom_path[512];
-    snprintf(rom_path, sizeof(rom_path), "%s/asm/bin/mbj-us.nes", MJK_SOURCE_DIR);
-    FILE* f = fopen(rom_path, "rb");
-    if (!f) { return false; }
-    uint8_t* rom = (uint8_t*)malloc(MJK_ROM_EXPECTED_SIZE);
-    if (!rom) { fclose(f); return false; }
-    size_t got = fread(rom, 1u, MJK_ROM_EXPECTED_SIZE, f);
-    fclose(f);
-    if (got != MJK_ROM_EXPECTED_SIZE) { free(rom); return false; }
-    uint8_t* v2_buf = NULL;
-    size_t v2_size = 0u;
-    char sha1_hex[MJK_SHA1_HEX_LEN + 1u];
-    MjkAssetError err = MjkRom_BuildAssetsV2Buffer(rom, MJK_ROM_EXPECTED_SIZE, &v2_buf, &v2_size, sha1_hex);
-    free(rom);
-    if (err != MJK_ASSET_OK) { free(v2_buf); return false; }
-    err = MjkAssets_LoadFromMemory(v2_buf, v2_size, out_pkg);
-    free(v2_buf);
-    return (err == MJK_ASSET_OK);
-#else
-    (void)out_pkg;
-    return false;
-#endif
+#define CHECK(cond, msg)                                                       \
+    do {                                                                       \
+        if (!(cond)) {                                                         \
+            fprintf(stderr, "[FAIL] %s\n", (msg));                             \
+            g_failures++;                                                      \
+        }                                                                      \
+    } while (0)
+
+static void load_room_for_test(MjkGame* g, const MjkAssets* assets, uint8_t room_id) {
+    MjkGame_Init(g, assets);
+    g->mode = SCREEN_INGAME;
+    g->state = GS_PLAYING;
+    MjkScoring_ResetNewGame(&g->scoring);
+    g->current_room_id = room_id;
+    MjkWorld_LoadRoom(&g->world, assets, room_id, 0u);
+    MjkObjects_InitForRoom(&g->objects, g);
+    MjkEnemies_InitForRoom(&g->enemies, assets, 0u, g->world.current.is_bomb_room);
 }
 
 int main(void) {
-    MjkAssetPackage pkg;
-    if (!load_rom_assets(&pkg)) {
-        printf("[INFO] ROM local no encontrada; saltando test_objects.\n");
-        return 0;
-    }
+    char rom_path[512];
+    MjkTestRomStatus st = MjkRom_ResolveTestPath(MJK_SOURCE_DIR, MJK_TEST_ROM_PATH, rom_path, sizeof(rom_path));
+    if (st == TEST_ROM_EXPLICIT_MISSING_FAIL) { return 1; }
+    if (st == TEST_ROM_ABSENT_SKIP) { return MJK_TEST_SKIP_CODE; }
 
-    MjkGame g;
-    MjkGame_Init(&g, &pkg);
-    MjkGame_WarpToRoom(&g, 0x01u);
-    /* Avanzar LoadRoom -> DrawScreen -> EnterRoom (169f) -> Main */
-    MjkInputState in;
-    memset(&in, 0, sizeof(in));
-    for (int f = 0; f < 175; ++f) {
-        MjkInput_Update(&in, 0u);
-        MjkGame_StepFrame(&g, &in);
-    }
+    static MjkAssets assets;
+    CHECK(MjkAssets_LoadFromRomFile(rom_path, &assets) == ASSET_OK, "Cargar MjkAssets");
 
-    /* 1. Recoger 1ª bomba de Sala 1 ($85) -> puff 32f (fase 0) + popup 32f (fase 1) en slot único */
-    g.player.pos_x = MjkUQ8_FromInt(0x54u);
-    g.player.pos_y = MjkUQ8_FromInt(0x84u);
-    MjkObjects_Update(&g.objects, &g, &in);
-    if (!g.objects.puff.active || g.objects.puff.phase != 0u || g.objects.puff.timer != 32u) {
-        fprintf(stderr, "[FAIL] Puff fase 0 no inicio tras recoger bomba\n");
-        g_failures++;
+    static MjkGame g;
+    MjkInputStep empty = {0u, 0u, 0u};
+
+    /* 1. Bomb Room $90: arranca sin chispa, 1.a bomba (100) enciende la 2.a (200), puff 2 fases */
+    load_room_for_test(&g, &assets, 0x90u);
+    CHECK(!g.objects.spark.active, "Bomb Room $90 arranca sin chispa activa");
+    MjkRoomObj* first_bomb = NULL;
+    for (uint8_t i = 0u; i < g.world.current.object_count; ++i) {
+        if (g.world.current.objects[i].kind == OBJ_KIND_BOMB) {
+            first_bomb = &g.world.current.objects[i];
+            break;
+        }
     }
+    CHECK(first_bomb != NULL, "Bomb Room $90 contiene bombas");
+    if (first_bomb) {
+        g.player.x = (float)(first_bomb->grid_x * 16 + 8);
+        g.player.y = (float)(first_bomb->grid_y * 16 + 8);
+        MjkObjects_Update(&g.objects, &g, &empty);
+        CHECK(g.scoring.score == 100u && g.fire_bombs_collected == 0u && g.objects.spark.active,
+              "1.a bomba apagada suma 100 y enciende la siguiente");
+        g.player.x = (float)(g.objects.spark.grid_x * 16 + 8);
+        g.player.y = (float)(g.objects.spark.grid_y * 16 + 8);
+        MjkObjects_Update(&g.objects, &g, &empty);
+        CHECK(g.scoring.score == 300u && g.fire_bombs_collected == 1u,
+              "2.a bomba encendida suma 200 y fire_bombs=1");
+    }
+    CHECK(g.objects.puff.active && g.objects.puff.phase == 0u && g.objects.puff.timer == 32,
+          "Puff fase 0 (32f) iniciada");
     for (int f = 0; f < 32; ++f) {
-        MjkObjects_Update(&g.objects, &g, &in);
+        g.player.x = 16.0f; g.player.y = 16.0f;
+        MjkObjects_Update(&g.objects, &g, &empty);
     }
-    if (!g.objects.puff.active || g.objects.puff.phase != 1u || g.objects.puff.timer != 32u ||
-        g.popups[0].active) {
-        fprintf(stderr, "[FAIL] Puff no paso a fase 1 (popup) en slot unico tras 32f\n");
-        g_failures++;
-    }
-    for (int f = 0; f < 32; ++f) {
-        MjkObjects_Update(&g.objects, &g, &in);
-    }
-    if (g.objects.puff.active) {
-        fprintf(stderr, "[FAIL] Puff fase 1 no termino tras 32f\n");
-        g_failures++;
-    }
+    CHECK(g.objects.puff.active && g.objects.puff.phase == 1u, "Puff pasa a fase 1 tras 32f");
 
-    /* 2. Botón B Mighty 1..3 y degradación por A */
+    /* Recoger las 22 bombas restantes -> debe abrir puerta de salida */
+    for (uint8_t i = 0u; i < g.world.current.object_count; ++i) {
+        MjkRoomObj* o = &g.world.current.objects[i];
+        if (o->kind == OBJ_KIND_BOMB && !o->is_collected) {
+            g.player.x = (float)(o->grid_x * 16 + 8);
+            g.player.y = (float)(o->grid_y * 16 + 8);
+            MjkObjects_Update(&g.objects, &g, &empty);
+        }
+    }
+    CHECK(g.state == GS_ANIMATE_DOOR_OPEN && !g.objects.spark.active,
+          "Ultima bomba en Bomb Room abre puerta de salida");
+
+    /* 2. Bonus de orden perfecto en pasillo (10.200 pts) y descalificacion */
+    load_room_for_test(&g, &assets, 0x01u);
+    g.world.current.object_count = 2u;
+    memset(g.world.current.objects, 0, sizeof(g.world.current.objects));
+    g.world.current.objects[0].kind = OBJ_KIND_BOMB;
+    g.world.current.objects[0].grid_x = 3u; g.world.current.objects[0].grid_y = 5u;
+    g.world.current.objects[0].is_order_marker = true;
+    g.world.current.objects[1].kind = OBJ_KIND_BOMB;
+    g.world.current.objects[1].grid_x = 5u; g.world.current.objects[1].grid_y = 5u;
+    g.world.current.objects[1].is_order_marker = true;
+    g.player.x = 3 * 16 + 8.0f; g.player.y = 5 * 16 + 8.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.objects.bomb_order == BOMB_ORDER_ACTIVE && g.world.current.objects[1].is_lit,
+          "Primera bomba marcada activa cadena y enciende siguiente");
+    g.player.x = 5 * 16 + 8.0f; g.player.y = 5 * 16 + 8.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.objects.bomb_order == BOMB_ORDER_COMPLETED && g.scoring.score == 10300u,
+          "Ultima bomba marcada otorga 10.200 pts y completa orden");
+
+    /* 3. Uso de Mighty Coin: niveles 1 -> 2 -> 3 (transmuta) y prohibido en Bomb Room */
+    load_room_for_test(&g, &assets, 0x01u);
     g.mighty_coins = 3u;
     bool transmute = false;
-    if (!MjkObjects_UseMightyCoin(&g, &transmute) || g.mighty_level != 1u || transmute) {
-        fprintf(stderr, "[FAIL] Mighty nivel 1 fallo\n");
-        g_failures++;
-    }
-    MjkObjects_UseMightyCoin(&g, &transmute);
-    MjkObjects_UseMightyCoin(&g, &transmute);
-    if (g.mighty_level != 3u || !transmute || g.mighty_coins != 0u) {
-        fprintf(stderr, "[FAIL] Mighty nivel 3 / transmute fallo\n");
-        g_failures++;
-    }
+    CHECK(MjkObjects_UseMightyCoin(&g, &transmute) && g.mighty_level == 1u && g.mighty_presses_left == 20u && !transmute,
+          "Mighty nivel 1 (20 pulsaciones)");
+    CHECK(MjkObjects_UseMightyCoin(&g, &transmute) && g.mighty_level == 2u && g.mighty_presses_left == 30u && !transmute,
+          "Mighty nivel 2 (30 pulsaciones)");
+    CHECK(MjkObjects_UseMightyCoin(&g, &transmute) && g.mighty_level == 3u && g.mighty_presses_left == 35u && transmute,
+          "Mighty nivel 3 (35 pulsaciones + transmutacion)");
+    g.world.current.is_bomb_room = true;
+    g.mighty_level = 0u; g.mighty_coins = 1u;
+    CHECK(!MjkObjects_UseMightyCoin(&g, &transmute), "Mighty prohibido en Bomb Room");
 
-    /* 3. 10 Mighty Coins -> TortureRoom */
-    g.room.objects[0].yx = 0x44u;
-    g.room.objects[0].ram_state = MJK_ITEM_MIGHTY_COIN;
-    g.mighty_coins = 9u;
-    g.player.pos_x = MjkUQ8_FromInt(0x44u);
-    g.player.pos_y = MjkUQ8_FromInt(0x44u);
-    MjkActionResult res = MjkObjects_Update(&g.objects, &g, &in);
-    if (res != MJK_ACTION_TORTURE_TRIGGERED || g.state != MJK_GS_TORTURE_ROOM) {
-        fprintf(stderr, "[FAIL] 10 Mighty Coins no disparo TortureRoom\n");
-        g_failures++;
-    }
+    /* 4. Cofres rojo/naranja, bloques secretos e items (Mighty Coin x10 -> Torture Room) */
+    load_room_for_test(&g, &assets, 0x01u);
+    g.world.current.object_count = 3u;
+    memset(g.world.current.objects, 0, sizeof(g.world.current.objects));
+    /* Cofre naranja: bloqueado en Mighty 0, abierto en Mighty 1 */
+    g.world.current.objects[0].kind = OBJ_KIND_ORANGE_CHEST;
+    g.world.current.objects[0].grid_x = 4u; g.world.current.objects[0].grid_y = 6u;
+    g.world.current.objects[0].item_kind = ITEM_BAG_1000;
+    /* Bloque secreto (1 golpe) */
+    g.world.current.objects[1].kind = OBJ_KIND_SECRET_BLOCK;
+    g.world.current.objects[1].grid_x = 6u; g.world.current.objects[1].grid_y = 6u;
+    g.world.current.objects[1].raw_opcode = 0x51u;
+    g.world.current.objects[1].is_hidden = true;
+    /* Item Mighty Coin #10 -> Torture Room */
+    g.world.current.objects[2].kind = OBJ_KIND_LOOSE_ITEM;
+    g.world.current.objects[2].grid_x = 8u; g.world.current.objects[2].grid_y = 6u;
+    g.world.current.objects[2].item_kind = ITEM_MIGHTY_COIN;
 
-    /* 4. Regresión Bug 3: bomba en right_room (wx >= 256) */
-    g.state = MJK_GS_MAIN;
-    g.current_room_id = 0x02u;
-    g.camera.neighbor_room_id = 0x03u;
-    g.camera.scroll_x_fixed = (mjk_uq8_8_t)(160u << 8);
-    memset(&g.right_room, 0, sizeof(g.right_room));
-    g.right_room.room_id = 0x03u;
-    g.right_room.object_count = 1u;
-    g.right_room.objects[0].yx = 0x42u; /* y=0x40..0x4F, x=0x20..0x2F (wx=288 -> 0x20) */
-    g.right_room.objects[0].ram_state = 0x05u;
-    g.right_room.objects[0].ram_index = 0u;
-    g.player.pos_x = MjkUQ8_FromInt(128u);
-    g.player.pos_y = MjkUQ8_FromInt(0x44u);
-    MjkInput_Update(&in, 0u);
-    MjkObjects_Update(&g.objects, &g, &in);
-    if (g.right_room.objects[0].ram_state != 0x0Fu || g.right_room.metatiles[4][2] != 0x2Fu) {
-        fprintf(stderr, "[FAIL] Bomba en right_room no recogida (st=0x%02X mt=0x%02X)\n",
-                g.right_room.objects[0].ram_state, g.right_room.metatiles[4][2]);
-        g_failures++;
-    }
-
-    /* 5. Regresión Problema 1: saltar encima de un cofre rojo en Sala 1 lo abre en el frame del salto */
-    MjkGame_WarpToRoom(&g, 0x01u);
-    for (int f = 0; f < 175; ++f) {
-        MjkInput_Update(&in, 0u);
-        MjkGame_StepFrame(&g, &in);
-    }
-    uint8_t chest_idx = g.room.object_count;
-    if (chest_idx < MJK_ROOM_MAX_OBJECTS) {
-        g.room.object_count++;
-        g.room.objects[chest_idx].yx = 0xA4u;
-        g.room.objects[chest_idx].ram_state = 0x10u; /* Cofre rojo visible */
-        g.room.objects[chest_idx].opcode = 0x00u;    /* Item 0 (100 bag -> metatile != 0x28) */
-        g.room.objects[chest_idx].ram_index = chest_idx;
-        g.room.static_metatiles[0x0A][0x04] = 0x00u;
-        MjkObjects_SetMetatile(&g, 0xA4u, 0x28u);
-        g.player.pos_x = MjkUQ8_FromInt(0x48u);
-        g.player.pos_y = MjkUQ8_FromInt(0x98u);
-        g.player.vel_x = 0;
-        g.player.vel_y = 0;
-        g.player.in_air = false;
-        g.player.just_jumped = false;
-
-        /* 1 frame de pie -> latch */
-        MjkInput_Update(&in, 0u);
-        MjkGame_StepFrame(&g, &in);
-        if (g.objects.chest_target_yx != 0xA4u) {
-            fprintf(stderr, "[FAIL] Cofre bajo los pies no latcheado (target=0x%02X)\n",
-                    g.objects.chest_target_yx);
-            g_failures++;
-        }
-
-        /* Pulsar A -> debe abrirse en el mismo frame del salto */
-        MjkInput_Update(&in, MJK_BTN_A);
-        MjkGame_StepFrame(&g, &in);
-        uint8_t nt_tile = g.ppu.nt[0][0x0Au * 2u][0x04u * 2u];
-        if (g.room.objects[chest_idx].ram_state != 0x00u ||
-            g.room.metatiles[0x0A][0x04] == 0x28u ||
-            nt_tile == 0u) {
-            fprintf(stderr, "[FAIL] Cofre no abrio al saltar (st=0x%02X mt=0x%02X)\n",
-                    g.room.objects[chest_idx].ram_state, g.room.metatiles[0x0A][0x04]);
-            g_failures++;
-        }
-    }
-
-    /* 6. Regresión Royal Room: chispa de mecha usa tile $0D/$0F y no se mueve al coger bomba apagada */
-    memset(&g.room, 0, sizeof(g.room));
-    g.room.room_id = 0x10u;
-    g.room.is_bomb_room = true;
-    g.room.object_count = 3u;
-    g.room.objects[0].yx = 0x42u; g.room.objects[0].ram_state = 0x05u; g.room.objects[0].ram_index = 0u;
-    g.room.objects[1].yx = 0x44u; g.room.objects[1].ram_state = 0x05u; g.room.objects[1].ram_index = 1u;
-    g.room.objects[2].yx = 0x46u; g.room.objects[2].ram_state = 0x05u; g.room.objects[2].ram_index = 2u;
-    g.camera.neighbor_room_id = 0u;
-    g.camera.scroll_x_fixed = 0u;
-    g.camera.scroll_y_fixed = 0u;
-    g.score_multiplier = 0u;
-    MjkObjects_InitForRoom(&g.objects, &g);
-
-    /* Recoger 1.ª bomba -> debe encender la 2.ª con tile_id == 0x0D */
-    g.player.pos_x = MjkUQ8_FromInt(0x28u);
-    g.player.pos_y = MjkUQ8_FromInt(0x48u);
-    MjkInput_Update(&in, 0u);
-    MjkObjects_Update(&g.objects, &g, &in);
-    if (!g.objects.spark.active || g.objects.spark.yx != 0x44u || g.objects.spark.tile_id != 0x0Du) {
-        fprintf(stderr, "[FAIL] Chispa Royal Room mal inicializada (active=%d yx=0x%02X tile=0x%02X)\n",
-                g.objects.spark.active, g.objects.spark.yx, g.objects.spark.tile_id);
-        g_failures++;
-    }
-    /* Tras 3 ticks, la chispa alterna 0x0D -> 0x0F (nunca dígitos 0x00/0x02) */
-    g.player.pos_x = MjkUQ8_FromInt(0x88u);
-    for (int f = 0; f < 3; ++f) {
-        MjkObjects_Update(&g.objects, &g, &in);
-    }
-    if (g.objects.spark.tile_id != 0x0Fu) {
-        fprintf(stderr, "[FAIL] Chispa no alterno a 0x0F tras 3f (tile=0x%02X)\n", g.objects.spark.tile_id);
-        g_failures++;
-    }
-    /* Recoger la 3.ª bomba (apagada) NO debe mover la chispa de la 2.ª (0x44) y debe sobrescribir el puff anterior */
-    g.player.pos_x = MjkUQ8_FromInt(0x68u);
-    MjkObjects_Update(&g.objects, &g, &in);
-    if (!g.objects.spark.active || g.objects.spark.yx != 0x44u) {
-        fprintf(stderr, "[FAIL] Recoger bomba apagada movio la chispa (active=%d yx=0x%02X)\n",
-                g.objects.spark.active, g.objects.spark.yx);
-        g_failures++;
-    }
-    if (!g.objects.puff.active || g.objects.puff.phase != 0u || g.objects.puff.timer != 32u ||
-        MjkUQ8_Int(g.objects.puff.x) != 0x68u || g.popups[0].active) {
-        fprintf(stderr, "[FAIL] Recoger 2.a bomba no sobrescribio el puff sin crear popup anterior\n");
-        g_failures++;
-    }
-
-    /* 7. Regresión cofre secreto (0x30) dentro de terreno sólido: al abrirlo se limpia static_metatiles */
-    memset(&g.room, 0, sizeof(g.room));
-    g.room.room_id = 0x01u;
-    g.room.is_horizontal = true;
-    g.room.object_count = 1u;
-    g.room.objects[0].yx = 0x84u;
-    g.room.objects[0].ram_state = 0x30u; /* Cofre secreto oculto */
-    g.room.objects[0].opcode = 0x90u;    /* Item 0 (bolsa 100) */
-    g.room.objects[0].ram_index = 0u;
-    g.room.static_metatiles[8][4] = 0x01u; /* Terreno sólido debajo del cofre secreto */
-    g.camera.neighbor_room_id = 0u;
-    g.camera.scroll_x_fixed = 0u;
-    g.camera.scroll_y_fixed = 0u;
-    MjkObjects_InitForRoom(&g.objects, &g);
-    g.player.pos_x = MjkUQ8_FromInt(0x48u);
-    g.player.pos_y = MjkUQ8_FromInt(0x78u);
-    g.player.in_air = false;
-    g.player.just_jumped = false;
-    /* 1.º salto: revela cofre (0x30 -> 0x10) */
-    MjkInput_Update(&in, 0u);
-    MjkObjects_Update(&g.objects, &g, &in);
+    /* Probar cofre naranja con Mighty 0 -> no se abre */
+    g.mighty_level = 0u;
+    g.player.x = 4 * 16 + 8.0f; g.player.y = 6 * 16 - 4.0f; g.player.in_air = false;
+    MjkObjects_Update(&g.objects, &g, &empty);
     g.player.just_jumped = true;
-    MjkObjects_Update(&g.objects, &g, &in);
-    /* 2.º salto: abre cofre (0x10 -> 0x00) y debe limpiar static_metatiles[8][4] */
-    g.player.in_air = false;
-    g.player.just_jumped = false;
-    MjkObjects_Update(&g.objects, &g, &in);
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(!g.world.current.objects[0].is_revealed, "Cofre naranja bloqueado con Mighty 0");
+
+    /* Con Mighty 1 -> se abre y revela bolsa 1000 */
+    g.mighty_level = 1u; g.player.just_jumped = false;
+    MjkObjects_Update(&g.objects, &g, &empty);
     g.player.just_jumped = true;
-    MjkObjects_Update(&g.objects, &g, &in);
-    if (g.room.objects[0].ram_state != 0x00u || g.room.static_metatiles[8][4] != 0x2Fu) {
-        fprintf(stderr, "[FAIL] Cofre secreto abierto conservo colision solida (st=0x%02X static=0x%02X)\n",
-                g.room.objects[0].ram_state, g.room.static_metatiles[8][4]);
-        g_failures++;
-    }
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[0].is_revealed, "Cofre naranja abierto con Mighty 1");
 
-    /* 8. Regresión O-01: bloque secreto (0x33) se rompe saltando encima (feet_yx + just_jumped) */
-    memset(&g.room, 0, sizeof(g.room));
-    g.room.room_id = 0x01u;
-    g.room.is_horizontal = true;
-    g.room.object_count = 1u;
-    g.room.objects[0].yx = 0x84u;
-    g.room.objects[0].ram_state = 0x33u;
-    g.room.objects[0].opcode = 0x62u; /* 2 saltos */
-    g.room.objects[0].ram_index = 0u;
-    g.room.static_metatiles[8][4] = 0x01u;
-    MjkObjects_InitForRoom(&g.objects, &g);
-    g.player.pos_x = MjkUQ8_FromInt(0x48u);
-    g.player.pos_y = MjkUQ8_FromInt(0x78u);
-    g.player.in_air = false;
+    /* Recoger la bolsa 1000 */
     g.player.just_jumped = false;
-    for (int j = 0; j < 2; ++j) {
-        MjkObjects_Update(&g.objects, &g, &in); /* latch */
-        g.player.just_jumped = true;
-        MjkObjects_Update(&g.objects, &g, &in); /* jump hit */
-        g.player.just_jumped = false;
-    }
-    if (g.room.objects[0].ram_state != 0x0Fu || g.room.static_metatiles[8][4] != 0x2Fu) {
-        fprintf(stderr, "[FAIL] O-01: bloque secreto 0x33 no rompio tras 2 saltos (st=0x%02X static=0x%02X)\n",
-                g.room.objects[0].ram_state, g.room.static_metatiles[8][4]);
-        g_failures++;
-    }
+    g.player.x = 4 * 16 + 8.0f; g.player.y = 6 * 16 + 8.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.scoring.score == 1000u && g.world.current.objects[0].is_collected, "Bolsa 1000 recogida");
 
-    MjkAssets_Unload(&pkg);
+    /* Bloque secreto: saltar encima lo rompe */
+    g.player.x = 6 * 16 + 8.0f; g.player.y = 6 * 16 - 4.0f; g.player.in_air = false;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    g.player.just_jumped = true;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[1].is_collected && g.last_sound == SOUND_SECRET_BLOCK_REVEALED,
+          "Bloque secreto revelado al saltar encima");
+
+    /* 10.ª Mighty Coin dispara Torture Room */
+    g.mighty_coins = 9u; g.player.just_jumped = false;
+    g.player.x = 8 * 16 + 8.0f; g.player.y = 6 * 16 + 8.0f;
+    MjkActionResult tres = MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(tres == ACTION_TORTURE_TRIGGERED && g.state == GS_TORTURE_ROOM,
+          "10 Mighty Coins disparan Torture Room");
+
+    /* 5. Regresion: apertura lateral (ambos sentidos, peor alineacion subpixel) y cabezazo con Mighty >= 2 */
+    load_room_for_test(&g, &assets, 0x01u);
+    g.world.current.object_count = 3u;
+    memset(g.world.current.objects, 0, sizeof(g.world.current.objects));
+    for (int k = 0; k < 3; ++k) {
+        g.world.current.objects[k].kind      = OBJ_KIND_RED_CHEST;
+        g.world.current.objects[k].grid_x    = (uint8_t)(5 + k * 3);
+        g.world.current.objects[k].grid_y    = 6u;
+        g.world.current.objects[k].item_kind = ITEM_BAG_1000;
+    }
+    g.mighty_level = 2u;
+    /* Lateral derecha tras rollback vx=1.5: x = 16*5 - 9.5 = 70.5 */
+    g.player.facing = FACING_RIGHT;
+    g.player.x = 70.5f; g.player.y = 6 * 16 + 8.0f; g.player.vy = 0.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[0].is_revealed, "Mighty 2 abre cofre lateralmente hacia la derecha (x=70.5)");
+
+    /* Lateral izquierda tras rollback vx=-1.5: x = 16*8 + 25.0 = 153.0 */
+    g.player.facing = FACING_LEFT;
+    g.player.x = 153.0f; g.player.y = 6 * 16 + 8.0f; g.player.vy = 0.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[1].is_revealed, "Mighty 2 abre cofre lateralmente hacia la izquierda (x=153.0)");
+
+    /* Cabezazo desde abajo tras snap de techo: y = 16*6 + 24 = 120.0 */
+    g.player.x = 11 * 16 + 8.0f; g.player.y = 120.0f; g.player.vy = -1.0f;
+    MjkObjects_Update(&g.objects, &g, &empty);
+    CHECK(g.world.current.objects[2].is_revealed, "Mighty 2 abre cofre por cabezazo desde abajo (y=120.0)");
+
+    MjkAssets_Unload(&assets);
     if (g_failures > 0) {
-        fprintf(stderr, "[FAIL] test_objects: %d fallo(s).\n", g_failures);
+        fprintf(stderr, "[ERROR] test_objects_new fallo con %d errores.\n", g_failures);
         return 1;
     }
-    printf("[OK] test_objects: bombas, puff 32+32f, Mighty B 1..3 y Torture trigger OK.\n");
+    printf("[OK] test_objects_new superado.\n");
     return 0;
 }

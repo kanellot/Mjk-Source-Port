@@ -21,8 +21,7 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 | `src/` + `include/` | R/W | `src/core/` (C11 puro, **cero SDL y cero APIs de SO**) y `src/platform/` (HAL SDL2 + Debug Overlay). |
 | `tests/c/` | R/W | Tests unitarios C11 deterministas con `CTest` (Capa 1). |
 | `tools/` | R/W | Consulta ASM (`asm_query.py`, `asm_inventory.json`), oráculo NES (`nes_oracle.py`) y `verify_scenarios.py` (Capa 2). |
-| `research/` | R/W | `GAME_COMPLETE_FLOW.md`, `CROSS_REFERENCE_INDEX.md`, `contracts/`, `inventories/`, `control_flow/`, `RES-012..036`, `architecture/`. |
-| `project/` | R/W | Memoria persistente ligera (`PROJECT_STATUS.md`, `TASKS.md`, `DECISIONS.md`). |
+| `docs/` | R/W | Documentación técnica del port (`README.md`, `ARCHITECTURE.md`, `GAME_SYSTEMS.md`, `ASSETS_AND_AUDIO.md`, `TESTING_GUIDE.md`, `DESIGN_DECISIONS.md`, `CHANGELOG.md`, `ROADMAP.md`) y referencia 6502 (`docs/nes-reference/`). |
 | `.agents/` | R/W | Skills progresivas bajo demanda y hook de protección. |
 | `scratch/` | R/W | Capturas y fixtures temporales. **Prohibidos los scripts `.py`.** |
 | `./` (raíz) | Restringido | Solo `AGENTS.md`, `CMakeLists.txt`/wrappers de build, manual PDF y vídeo original. |
@@ -32,8 +31,8 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 ## 3. Orquestación (Neon + Hydrogen) y Micro-Tareas Resilientes a Cuota
 
 ### Flujo por Defecto — Plan / Execute Nativo (`Orchestrator (Neon)`)
-1. **Planificación (`Gemini 4 Neon`)**: Consulta `GAME_COMPLETE_FLOW.md`, `asm_query.py`, `research/` y `nes_oracle.py`, y emite un plan acotado a **1 sola micro-tarea** de `project/TASKS.md` vía `exit_plan_mode`.
-2. **Ejecución (`Gemini 4 Hydrogen`)**: Implementa en C11 limpio (~150–350 líneas + test `CTest`), compila, verifica que `ctest` pasa al 100% y actualiza `CHECKPOINT ACTIVO` en `project/TASKS.md`. Si algo falla dos veces, devuelve control con `enter_plan_mode`.
+1. **Planificación (`Gemini 4 Neon`)**: Consulta `docs/nes-reference/game-flow.md`, `tools/asm_query.py` y `docs/nes-reference/` para planificar cambios de forma acotada.
+2. **Ejecución (`Gemini 4 Hydrogen`)**: Implementa en C11 limpio (~150–350 líneas + test `CTest`), compila y verifica que `ctest` pasa al 100%. Si algo falla dos veces, devuelve control con `enter_plan_mode`.
 
 ### Regla Anti-Agotamiento de Cuota (1 Micro-Tarea = 1 Estado Verde)
 - Ejecutar **estrictamente 1 micro-tarea** por ciclo de trabajo para poder retomar en cualquier momento si se agota la cuota de tokens.
@@ -56,11 +55,11 @@ Reescribir un **source port jugablemente muy fiel** de *Mighty Bomb Jack* (NES U
 
 ## 5. Reglas Invariantes (Cero Excepciones)
 
-1. **Visión global primero**: Antes de implementar pantallas, estados o transiciones, consultar [`research/GAME_COMPLETE_FLOW.md`](research/GAME_COMPLETE_FLOW.md) (y usar manual PDF / vídeo original solo para flujo/experiencia global, confirmando constantes siempre en `asm/src/`).
-2. **Evidencia antes que suposiciones**: Toda constante, fórmula o tabla debe tener estado `[CONFIRMADA]` en `asm/src/<archivo>:<líneas>` o traza de `nes_oracle.py`.
-3. **Orden de consulta ahorrador de tokens**: 1) `python tools/asm_query.py ...` -> 2) `research/GAME_COMPLETE_FLOW.md` / `CROSS_REFERENCE_INDEX.md` -> 3) `research/contracts/` -> 4) `RES-012..036` -> 5) `read_file` acotado sobre `asm/src/`. Prohibidos greps ciegos.
-4. **Prohibido `scratch/*.py`**: Usar `tools/nes_oracle.py`, `tools/asm_query.py` y `ctest`. (Bloqueado por hook.)
-5. **Reanudación quirúrgica**: Al retomar tras pausa o fin de cuota, leer únicamente `project/TASKS.md` (`CHECKPOINT ACTIVO`) y `project/PROJECT_STATUS.md`.
+1. **Visión global primero**: Antes de implementar pantallas, estados o transiciones, consultar [`docs/nes-reference/game-flow.md`](docs/nes-reference/game-flow.md) (y usar manual PDF / vídeo original solo para flujo/experiencia global, confirmando constantes siempre en `asm/src/`).
+2. **Evidencia antes que suposiciones**: Toda constante, fórmula o tabla debe estar respaldada en `asm/src/<archivo>:<líneas>`.
+3. **Orden de consulta ahorrador de tokens**: 1) `python tools/asm_query.py ...` -> 2) `docs/nes-reference/game-flow.md` / `asm-to-c-map.md` -> 3) `docs/nes-reference/*.md` -> 4) `read_file` acotado sobre `asm/src/`. Prohibidos greps ciegos.
+4. **Prohibido `scratch/*.py`**: Usar `tools/asm_query.py` y `ctest`. (Bloqueado por hook.)
+5. **Documentación limpia**: Mantener `docs/` y `docs/nes-reference/` sincronizados con el código C11 real, sin referencias a tareas internas.
 6. **Clean-Room BYOR**: Cero `.nes`, `.dat`, `.chr` en Git ni arrays de Tecmo en C.
 
 ---

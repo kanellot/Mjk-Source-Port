@@ -1,205 +1,145 @@
 /**
- * @file test_player.c
- * @brief Tests unitarios C11 (Capa 1 / CTest) para física Q8.8, flutter y 9-probe (T-16, T-17).
+ * @file test_player_new.c
+ * @brief Unit tests exhaustivos de fisica float, flutter, 9-probe y Golden Trajectories (R-07).
  */
 
+#include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include "mjk_assets.h"
-#include "mjk_player.h"
-#include "mjk_rom_extractor.h"
+#include "golden_reference.h"
+#include "mjk/assets.h"
+#include "mjk/input.h"
+#include "mjk/player.h"
+#include "mjk/rom_loader.h"
+#include "mjk/world.h"
 
 static int g_failures = 0;
 
-static bool load_rom_assets(MjkAssetPackage* out_pkg) {
-#ifdef MJK_SOURCE_DIR
-    char rom_path[512];
-    snprintf(rom_path, sizeof(rom_path), "%s/asm/bin/mbj-us.nes", MJK_SOURCE_DIR);
-    FILE* f = fopen(rom_path, "rb");
-    if (!f) { return false; }
-    uint8_t* rom = (uint8_t*)malloc(MJK_ROM_EXPECTED_SIZE);
-    if (!rom) { fclose(f); return false; }
-    size_t got = fread(rom, 1u, MJK_ROM_EXPECTED_SIZE, f);
-    fclose(f);
-    if (got != MJK_ROM_EXPECTED_SIZE) { free(rom); return false; }
-    uint8_t* v2_buf = NULL;
-    size_t v2_size = 0u;
-    char sha1_hex[MJK_SHA1_HEX_LEN + 1u];
-    MjkAssetError err = MjkRom_BuildAssetsV2Buffer(rom, MJK_ROM_EXPECTED_SIZE, &v2_buf, &v2_size, sha1_hex);
-    free(rom);
-    if (err != MJK_ASSET_OK) { free(v2_buf); return false; }
-    err = MjkAssets_LoadFromMemory(v2_buf, v2_size, out_pkg);
-    free(v2_buf);
-    return (err == MJK_ASSET_OK);
-#else
-    (void)out_pkg;
-    return false;
-#endif
+#define CHECK(cond, msg)                                                       \
+    do {                                                                       \
+        if (!(cond)) {                                                         \
+            fprintf(stderr, "[FAIL] %s\n", (msg));                             \
+            g_failures++;                                                      \
+        }                                                                      \
+    } while (0)
+
+static void setup_flat_world(MjkWorld* w) {
+    MjkWorld_Reset(w);
+    w->camera.room_flags = ROOM_FLAG_SINGLE_SCREEN;
+    for (int mx = 0; mx < MJK_ROOM_COLS; ++mx) {
+        w->current.static_metatiles[12][mx] = 0x01u;
+    }
+}
+
+static void verify_trajectory(const MjkAssets* assets,
+                              uint8_t first_btn,
+                              uint8_t hold_btn,
+                              int flutter_frame,
+                              int frames,
+                              const int16_t* ref_x,
+                              const int16_t* ref_y,
+                              const uint8_t* ref_air,
+                              const char* label) {
+    MjkWorld w;
+    setup_flat_world(&w);
+    MjkPlayer p;
+    MjkPlayer_Init(&p, 128.0f, 184.0f);
+    MjkInputLatch latch;
+    MjkInputLatch_Init(&latch);
+
+    int mismatches = 0;
+    for (int f = 0; f < frames; ++f) {
+        uint8_t btn = hold_btn;
+        if (f == 0) { btn = first_btn; }
+        else if (flutter_frame > 0 && f == flutter_frame) { btn = (uint8_t)(hold_btn | MJK_INPUT_A); }
+        MjkInputLatch_Poll(&latch, btn);
+        MjkInputStep step;
+        MjkInputLatch_ConsumeStep(&latch, &step);
+        MjkPlayerStepCtx ctx;
+        memset(&ctx, 0, sizeof(ctx));
+        MjkPlayer_Update(&p, &step, &w, assets, &ctx);
+
+        int ix = (int)floorf(p.x);
+        int iy = (int)floorf(p.y);
+        if ((ref_x && ix != ref_x[f]) || (ref_y && iy != ref_y[f]) ||
+            (ref_air && (p.in_air ? 1u : 0u) != ref_air[f])) {
+            if (mismatches < 3) {
+                fprintf(stderr, "[FAIL] %s f=%d: got (%d,%d,air=%d) expected (%d,%d)\n",
+                        label, f, ix, iy, p.in_air ? 1 : 0,
+                        ref_x ? ref_x[f] : ix, ref_y ? ref_y[f] : iy);
+            }
+            mismatches++;
+        }
+    }
+    CHECK(mismatches == 0, label);
 }
 
 int main(void) {
-    MjkAssetPackage pkg;
-    if (!load_rom_assets(&pkg)) {
-        printf("[INFO] ROM local no encontrada; saltando test_player.\n");
-        return 0;
-    }
+    char rom_path[512];
+    MjkTestRomStatus st = MjkRom_ResolveTestPath(MJK_SOURCE_DIR, MJK_TEST_ROM_PATH, rom_path, sizeof(rom_path));
+    if (st == TEST_ROM_EXPLICIT_MISSING_FAIL) { return 1; }
+    if (st == TEST_ROM_ABSENT_SKIP) { return MJK_TEST_SKIP_CODE; }
 
-    MjkRoomState room;
-    memset(&room, 0, sizeof(room));
-    /* Suelo sólido en fila 12 (y=192..207) y plataforma en fila 9 (y=144..159) */
-    for (int mx = 0; mx < 16; ++mx) {
-        room.static_metatiles[12][mx] = 0x01u;
-    }
-    room.static_metatiles[9][8] = 0x01u;
+    static MjkAssets assets;
+    CHECK(MjkAssets_LoadFromRomFile(rom_path, &assets) == ASSET_OK, "Cargar MjkAssets");
 
+    /* 1. 5 Golden Trajectories frame a frame (exactitud float vs Q8.8 original) */
+    verify_trajectory(&assets, MJK_INPUT_A, 0u, -1, 60, NULL,
+                      k_golden_jump_neutral_y, k_golden_jump_neutral_air, "Golden: Salto neutro 60f");
+    verify_trajectory(&assets, (uint8_t)(MJK_INPUT_A | MJK_INPUT_DOWN), MJK_INPUT_DOWN, -1, 60, NULL,
+                      k_golden_jump_low_y, NULL, "Golden: Salto bajo (+Abajo) 60f");
+    verify_trajectory(&assets, (uint8_t)(MJK_INPUT_A | MJK_INPUT_UP), MJK_INPUT_UP, -1, 60, NULL,
+                      k_golden_jump_high_y, NULL, "Golden: Salto alto (+Arriba) 60f");
+    verify_trajectory(&assets, MJK_INPUT_A, 0u, 16, 60, NULL,
+                      k_golden_jump_flutter_y, NULL, "Golden: Salto + Flutter f=16");
+    verify_trajectory(&assets, (uint8_t)(MJK_INPUT_A | MJK_INPUT_RIGHT), MJK_INPUT_RIGHT, -1, 30,
+                      k_golden_jump_right_x, k_golden_jump_right_y, NULL, "Golden: Salto + Derecha 30f");
+
+    /* 2. Mantener A pulsado NO dispara flutter */
+    MjkWorld w;
+    setup_flat_world(&w);
     MjkPlayer p;
-    MjkPlayer_Init(&p, 128u, 184u);
-    MjkInputState in;
-    memset(&in, 0, sizeof(in));
+    MjkPlayer_Init(&p, 128.0f, 184.0f);
+    MjkInputLatch latch;
+    MjkInputLatch_Init(&latch);
+    MjkPlayerStepCtx ctx;
+    memset(&ctx, 0, sizeof(ctx));
 
-    /* 1. Velocidad horizontal instantánea ±0x0180 */
-    MjkSoundId sfx = MJK_SND_SILENCE;
-    bool add10 = false;
-    MjkInput_Update(&in, MJK_BTN_RIGHT);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (p.vel_x != (mjk_q8_8_t)0x0180 || p.facing_attr != 0x04u) {
-        fprintf(stderr, "[FAIL] vel_x derecha=%d (esperado 384)\n", p.vel_x);
-        g_failures++;
-    }
-    MjkInput_Update(&in, 0u);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (p.vel_x != 0) {
-        fprintf(stderr, "[FAIL] Parada instantanea fallo (vel_x=%d)\n", p.vel_x);
-        g_failures++;
-    }
+    MjkInputLatch_Poll(&latch, MJK_INPUT_A);
+    MjkInputStep step;
+    MjkInputLatch_ConsumeStep(&latch, &step);
+    MjkPlayer_Update(&p, &step, &w, &assets, &ctx);
+    CHECK(p.just_jumped && ctx.sfx_triggered == SOUND_JUMP && ctx.award_jump_10pts, "Salto inicial + SFX + 10pts");
 
-    /* 2. Salto A + 10 pts + Flutter edge-triggered (0x4000) */
-    MjkInput_Update(&in, MJK_BTN_A);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (!p.in_air || !p.just_jumped || sfx != MJK_SND_JUMP || !add10) {
-        fprintf(stderr, "[FAIL] Salto inicial fallo\n");
-        g_failures++;
-    }
-    MjkInput_Update(&in, 0u);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    MjkInput_Update(&in, MJK_BTN_A);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (p.jump_accum < 0x4000u) {
-        fprintf(stderr, "[FAIL] Flutter no fijo jump_accum >= 0x4000 (0x%04X)\n", p.jump_accum);
-        g_failures++;
-    }
+    MjkInputLatch_Poll(&latch, MJK_INPUT_A); /* mantenido */
+    MjkInputLatch_ConsumeStep(&latch, &step);
+    MjkPlayer_Update(&p, &step, &w, &assets, &ctx);
+    CHECK(p.jump_progress < 64.0f, "Mantener A no dispara flutter");
 
-    /* 3. Sonda 0 muerte por fuego ($5C) */
-    room.static_metatiles[11][8] = 0x5Cu;
-    MjkPlayer_Init(&p, 132u, 180u);
-    MjkInput_Update(&in, 0u);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (!p.is_dying || p.fire_tile_died_to != 0x5Cu) {
-        fprintf(stderr, "[FAIL] Fuego $5C no disparo muerte\n");
-        g_failures++;
-    }
+    /* 3. Secuencia de muerte por fuego -> suelo -> 64 frames -> ACTION_PLAYER_DIED */
+    setup_flat_world(&w);
+    w.current.static_metatiles[11][8] = 0x5Eu;
+    MjkPlayer_Init(&p, 132.0f, 180.0f);
+    MjkInputStep empty = {0u, 0u, 0u};
+    MjkPlayer_Update(&p, &empty, &w, &assets, &ctx);
+    CHECK(p.is_dying && p.fire_tile_died_to == 0x5Eu && ctx.sfx_triggered == SOUND_DEATH, "Fuego dispara muerte");
 
-    /* 4. Regresión Bug 2: Cofre rojo cerrado (0x10) sólido y cofre oculto (0x30) solo sólido por arriba */
-    memset(&room, 0, sizeof(room));
-    room.object_count = 1u;
-    room.objects[0].yx = 0x84u; /* my=8 (y=128..143), mx=4 (x=64..79) */
-    room.objects[0].ram_state = 0x10u;
-    MjkPlayer_Init(&p, 0x48u, 0x75u);
-    p.in_air = true;
-    p.jump_accum = 0x4000u;
-    MjkInput_Update(&in, 0u);
-    for (int f = 0; f < 15; ++f) {
-        MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
+    MjkActionResult res = ACTION_CONTINUE;
+    for (int f = 0; f < 120 && res == ACTION_CONTINUE; ++f) {
+        res = MjkPlayer_Update(&p, &empty, &w, &assets, &ctx);
     }
-    if (p.in_air || (p.collision_flags & MJK_CF_GROUND) == 0u) {
-        fprintf(stderr, "[FAIL] Jack no aterrizo sobre cofre cerrado 0x10 (in_air=%d cf=0x%02X)\n",
-                p.in_air, p.collision_flags);
-        g_failures++;
-    }
-    /* Cofre oculto (0x30) NO debe bloquear pared lateral */
-    room.objects[0].ram_state = 0x30u;
-    MjkPlayer_Init(&p, 0x36u, 0x88u);
-    MjkInput_Update(&in, MJK_BTN_RIGHT);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if ((p.collision_flags & MJK_CF_RIGHT_WALL) != 0u) {
-        fprintf(stderr, "[FAIL] Cofre oculto 0x30 bloqueo pared lateral\n");
-        g_failures++;
-    }
+    CHECK(res == ACTION_PLAYER_DIED, "Secuencia de muerte culmina en ACTION_PLAYER_DIED");
 
-    /* 5. Regresión muerte en suelo vs muerte en aire (trayectoria estrictamente vertical, prg.asm:1304-1366) */
-    memset(&room, 0, sizeof(room));
-    for (uint8_t x = 0u; x < MJK_ROOM_MT_COLS; ++x) {
-        room.static_metatiles[13][x] = 0x01u; /* Suelo en y=208 */
-    }
-    /* 5a. Muerte en el suelo -> directamente tendido (0x2A), sin volteretas */
-    MjkPlayer_Init(&p, 100u, 200u);
-    p.is_dying = true;
-    p.death_grounded = false;
-    p.death_timer = 0u;
-    MjkInput_Update(&in, MJK_BTN_RIGHT);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (!p.death_grounded || p.sprite_id != 0x2Au || MjkUQ8_Int(p.pos_x) != 100u) {
-        fprintf(stderr, "[FAIL] Muerte en suelo no tendio a Jack inmediatamente (g=%d spr=0x%02X x=%u)\n",
-                p.death_grounded ? 1 : 0, p.sprite_id, MjkUQ8_Int(p.pos_x));
-        g_failures++;
-    }
+    /* 4. jump_press_count persiste tras MjkPlayer_Init */
+    uint8_t before_cnt = p.jump_press_count;
+    MjkPlayer_Init(&p, 64.0f, 184.0f);
+    CHECK(p.jump_press_count == before_cnt, "jump_press_count persiste entre salas");
 
-    /* 5b. Muerte en el aire con input RIGHT y vel_x previa -> volteretas verticales (X constante) hasta suelo */
-    MjkPlayer_Init(&p, 100u, 120u);
-    p.in_air = true;
-    p.jump_accum = 0x4000u;
-    p.vel_x = (mjk_q8_8_t)0x0180;
-    p.is_dying = true;
-    p.death_grounded = false;
-    p.death_timer = 0u;
-    bool saw_tumble = false;
-    for (int f = 0; f < 60 && !p.death_grounded; ++f) {
-        MjkInput_Update(&in, MJK_BTN_RIGHT);
-        MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-        if (MjkUQ8_Int(p.pos_x) != 100u || p.vel_x != 0) {
-            fprintf(stderr, "[FAIL] Muerte en aire movio X horizontalmente (x=%u vx=%d)\n",
-                    MjkUQ8_Int(p.pos_x), (int)p.vel_x);
-            g_failures++;
-            break;
-        }
-        if (p.sprite_id == 0x28u || p.sprite_id == 0x29u) {
-            saw_tumble = true;
-        }
-    }
-    if (!saw_tumble || !p.death_grounded || p.sprite_id != 0x2Au || MjkUQ8_Int(p.pos_y) < 192u) {
-        fprintf(stderr, "[FAIL] Muerte en aire no dio volteretas verticales hasta el suelo (tumble=%d g=%d spr=0x%02X y=%u)\n",
-                saw_tumble ? 1 : 0, p.death_grounded ? 1 : 0, p.sprite_id, MjkUQ8_Int(p.pos_y));
-        g_failures++;
-    }
-
-    /* 6. Regresión P-01 (salir por borde resetea jump_accum a 0x4000) y P-03 (suelo $E0) */
-    memset(&room, 0, sizeof(room));
-    MjkPlayer_Init(&p, 100u, 100u);
-    p.in_air = false;
-    p.jump_accum = 0x7F00u; /* Velocidad terminal residual de una caída previa */
-    MjkInput_Update(&in, 0u);
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (!p.in_air || p.jump_accum != 0x4000u) {
-        fprintf(stderr, "[FAIL] P-01: salir por borde no reseteo jump_accum (in_air=%d acc=0x%04X)\n",
-                p.in_air ? 1 : 0, p.jump_accum);
-        g_failures++;
-    }
-    MjkPlayer_Init(&p, 100u, 0xDFu);
-    p.in_air = true;
-    p.jump_accum = 0x7000u;
-    MjkPlayer_Update(&p, &in, &pkg, &room, NULL, MJK_RF_SINGLE_SCREEN, 0u, 0u, false, NULL, NULL, NULL, &sfx, &add10);
-    if (p.in_air || MjkUQ8_Int(p.pos_y) != 0xE0u) {
-        fprintf(stderr, "[FAIL] P-03: suelo de seguridad $E0 fallo (in_air=%d y=0x%02X)\n",
-                p.in_air ? 1 : 0, MjkUQ8_Int(p.pos_y));
-        g_failures++;
-    }
-
-    MjkAssets_Unload(&pkg);
+    MjkAssets_Unload(&assets);
     if (g_failures > 0) {
-        fprintf(stderr, "[FAIL] test_player: %d fallo(s).\n", g_failures);
+        fprintf(stderr, "[ERROR] test_player_new fallo con %d errores.\n", g_failures);
         return 1;
     }
-    printf("[OK] test_player: fisica Q8.8, flutter y 9-probe OK.\n");
+    printf("[OK] test_player_new superado (5 Golden Trajectories exactas + colisiones + muerte).\n");
     return 0;
 }

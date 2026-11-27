@@ -133,7 +133,7 @@ static bool load_or_extract_assets(const CliOptions* opts, const char* exe_dir, 
     }
     if (ext_err != ASSET_OK) {
         char msg[1024];
-        snprintf(msg, sizeof(msg), "Error BYOR al procesar '%s': %s.\nSHA-1 esperado: %s",
+        snprintf(msg, sizeof(msg), "Error BYOR al procesar '%.512s': %.128s.\nSHA-1 esperado: %.64s",
                  found_rom, MjkRom_ErrorString(ext_err), MJK_ROM_EXPECTED_SHA1);
         fprintf(stderr, "[ERROR BYOR]: %s\n", msg);
         MjkPlatform_ShowMessageBox("Mighty Bomb Jack - Error BYOR", msg, true);

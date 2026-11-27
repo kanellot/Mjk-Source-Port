@@ -6,7 +6,7 @@ if(POLICY CMP0141)
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 endif()
 
-project(mighty_bomb_jack VERSION 1.0.0 LANGUAGES C)
+project(mighty_bomb_jack VERSION 0.2.0 LANGUAGES C)
 
 # Estandar estricto C11 sin extensiones propietarias
 set(CMAKE_C_STANDARD 11)

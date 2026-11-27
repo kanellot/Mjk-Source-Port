@@ -4,7 +4,7 @@ Resumen de los hitos principales del desarrollo del source port de *Mighty Bomb 
 
 ---
 
-## v1.0 — Refactor Arquitectónico C11 Moderno (Rama `refactor`)
+## v0.2.0 — Refactor Arquitectónico C11 Moderno (Rama `refactor`)
 
 ### Arquitectura y Código
 - Reestructuración del motor en **5 capas desacopladas**: `src/assets/`, `src/game/`, `src/render/`, `src/audio/` y `src/platform/`.
@@ -27,7 +27,7 @@ Resumen de los hitos principales del desarrollo del source port de *Mighty Bomb 
 
 ---
 
-## v0.9 — Implementación Completa Inicial (`main`)
+## v0.1.0 — Implementación Completa Inicial (`main`)
 
 - Implementación completa del juego `REV_US` de principio a fin: Copyright, Title Screen, 17 rondas (256 salas), Bomb Rooms, Torture Room (50 saltos US), 33 condiciones de puerta, 6 arquetipos de enemigos, Mighty Power, 4 finales y Game Over.
 - Extractor integrado Clean-Room BYOR v2 en C11 con validación SHA-1 y caché `assets.dat` con CRC-32.

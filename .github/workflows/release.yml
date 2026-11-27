@@ -4,10 +4,22 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
     inputs:
+      bump:
+        description: "Incremento automático SemVer sobre el último tag (opcional)"
+        type: choice
+        required: false
+        default: "from-cmake"
+        options:
+          - from-cmake
+          - patch
+          - minor
+          - major
       tag:
-        description: "Tag de release opcional (ej. v0.2.0). Vacío = automático desde CMakeLists.txt"
+        description: "Tag manual opcional (ej. v0.2.1). Tiene prioridad sobre 'bump'"
         required: false
         default: ""
 
@@ -25,6 +37,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      should_release: ${{ steps.version.outputs.should_release }}
     steps:
       - name: Checkout repositorio
         uses: actions/checkout@v4
@@ -36,29 +49,58 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSION=$(grep -E 'project\(mighty_bomb_jack VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt \
+          CMAKE_VERSION=$(grep -E 'project\(mighty_bomb_jack VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt \
             | sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
-          if [ -z "${VERSION}" ]; then
+          if [ -z "${CMAKE_VERSION}" ]; then
             echo "No se pudo extraer VERSION de CMakeLists.txt" >&2
             exit 1
           fi
 
-          INPUT_TAG="${{ inputs.tag }}"
-          if [ -n "${INPUT_TAG}" ]; then
-            TAG="${INPUT_TAG}"
-          else
-            BASE_TAG="v${VERSION}"
-            if git rev-parse "refs/tags/${BASE_TAG}" >/dev/null 2>&1; then
-              SHORT_SHA=$(git rev-parse --short=7 HEAD)
-              TAG="${BASE_TAG}-${SHORT_SHA}"
+          SHOULD_RELEASE="false"
+          TAG="v${CMAKE_VERSION}"
+          VERSION="${CMAKE_VERSION}"
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+            SHOULD_RELEASE="true"
+          elif [ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]; then
+            INPUT_TAG="${{ inputs.tag }}"
+            BUMP="${{ inputs.bump }}"
+            if [ -n "${INPUT_TAG}" ]; then
+              TAG="${INPUT_TAG}"
+              VERSION="${TAG#v}"
+              SHOULD_RELEASE="true"
+            elif [ "${BUMP}" != "from-cmake" ]; then
+              LATEST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+              BASE="${LATEST_TAG#v}"
+              [ -z "${BASE}" ] && BASE="${CMAKE_VERSION}"
+              IFS='.' read -r MAJ MIN PAT <<< "${BASE}"
+              case "${BUMP}" in
+                major) MAJ=$((MAJ + 1)); MIN=0; PAT=0 ;;
+                minor) MIN=$((MIN + 1)); PAT=0 ;;
+                patch) PAT=$((PAT + 1)) ;;
+              esac
+              VERSION="${MAJ}.${MIN}.${PAT}"
+              TAG="v${VERSION}"
+              SHOULD_RELEASE="true"
             else
-              TAG="${BASE_TAG}"
+              if ! git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+                SHOULD_RELEASE="true"
+              fi
+            fi
+          else
+            # Push a main: publica release limpia SOLO si v<VERSION> no existe aún como tag.
+            # Si el tag ya existe, el workflow ejecuta CI (build + CTest) sin crear releases con hash.
+            if ! git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+              SHOULD_RELEASE="true"
             fi
           fi
 
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "Versión detectada: ${VERSION} -> Tag: ${TAG}"
+          echo "should_release=${SHOULD_RELEASE}" >> "$GITHUB_OUTPUT"
+          echo "Versión: ${VERSION} | Tag: ${TAG} | Publicar release: ${SHOULD_RELEASE}"
 
   build:
     name: Build & Test (${{ matrix.platform }})
@@ -119,7 +161,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DMJK_BUILD_SHARED_CORE=OFF
+          cmake -S . -B build -A x64 -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --parallel
 
       - name: Ejecutar CTest (Windows)
@@ -134,7 +176,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DMJK_BUILD_SHARED_CORE=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel
 
       - name: Ejecutar CTest (Linux)
@@ -225,6 +267,7 @@ jobs:
   release:
     name: Publicar GitHub Release
     needs: [prepare, build]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repositorio

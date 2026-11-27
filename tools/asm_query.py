@@ -2,8 +2,8 @@
 """
 tools/asm_query.py - Consultor Determinista de Bajo Coste para ASM 6502, RAM y Tablas
 
-Consulta tools/asm_inventory.json, docs/research/inventories/data_inventory.csv y
-docs/research/CROSS_REFERENCE_INDEX.md sin necesidad de explorar directorios ni hacer
+Consulta tools/asm_inventory.json, docs/nes-reference/inventories/data_inventory.csv y
+docs/nes-reference/asm-to-c-map.md sin necesidad de explorar directorios ni hacer
 búsquedas grep recursivas en todo el proyecto.
 """
 
@@ -23,8 +23,8 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
 
 ROOT = Path(__file__).resolve().parent.parent
 INVENTORY_PATH = ROOT / "tools" / "asm_inventory.json"
-DATA_CSV_PATH = ROOT / "docs" / "research" / "inventories" / "data_inventory.csv"
-XREF_PATH = ROOT / "docs" / "research" / "CROSS_REFERENCE_INDEX.md"
+DATA_CSV_PATH = ROOT / "docs" / "nes-reference" / "inventories" / "data_inventory.csv"
+XREF_PATH = ROOT / "docs" / "nes-reference" / "asm-to-c-map.md"
 ASM_SRC_DIR = ROOT / "asm" / "src"
 
 
@@ -196,7 +196,7 @@ def main() -> None:
     group.add_argument("--ram", type=str, help="Dirección hex ($00A4/0xA4) o nombre de variable RAM")
     group.add_argument("--table", type=str, help="Nombre o dirección de tabla en data_inventory.csv")
     group.add_argument("--jt", type=str, help="Nombre de rutina padre, selector o target de JumpTable")
-    group.add_argument("--xref", type=str, help="Buscar término en docs/research/CROSS_REFERENCE_INDEX.md")
+    group.add_argument("--xref", type=str, help="Buscar término en docs/nes-reference/asm-to-c-map.md")
     parser.add_argument("--snippet", action="store_true", help="Mostrar líneas exactas de asm/src/")
     parser.add_argument("--max-lines", type=int, default=80, help="Máximo de líneas al imprimir --snippet (default: 80)")
     args = parser.parse_args()

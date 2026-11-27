@@ -96,12 +96,13 @@ make run
 
 ## Documentación Técnica
 
+- [`docs/README.md`](docs/README.md) — Índice maestro de toda la documentación.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Arquitectura por capas, flujo de 1 frame y mapa de archivos.
 - [`docs/GAME_SYSTEMS.md`](docs/GAME_SYSTEMS.md) — Explicación de cada subsistema de gameplay (`src/game/`).
 - [`docs/ASSETS_AND_AUDIO.md`](docs/ASSETS_AND_AUDIO.md) — Clean-Room BYOR, renderizador con tiles en L1 y síntesis 2A03 con LUTs.
 - [`docs/TESTING_GUIDE.md`](docs/TESTING_GUIDE.md) — Guía de compilación, `CTest`, `SKIP_RETURN_CODE 77` y sanitizers.
-- [`docs/research/INDEX.md`](docs/research/INDEX.md) — Inventarios y referencias técnicas del desensamblado 6502 original.
-- [`docs/project/PROJECT_STATUS.md`](docs/project/PROJECT_STATUS.md) — Estado del proyecto, decisiones de arquitectura (`DECISIONS.md`) e historial de tareas (`TASKS.md`).
+- [`docs/DESIGN_DECISIONS.md`](docs/DESIGN_DECISIONS.md) — Decisiones de diseño vigentes, [`CHANGELOG.md`](docs/CHANGELOG.md) y [`ROADMAP.md`](docs/ROADMAP.md).
+- [`docs/nes-reference/README.md`](docs/nes-reference/README.md) — Referencia técnica e inventarios del juego original 6502 (`REV_US`).
 
 ---
 
@@ -109,7 +110,7 @@ make run
 
 ```text
 .
-├── docs/                # Documentación técnica, referencias ASM (research/) y estado (project/)
+├── docs/                # Documentación técnica del port y referencia NES (nes-reference/)
 ├── include/mjk/         # Cabeceras C11 públicas del motor y plataforma
 ├── src/
 │   ├── assets/          # SHA-1, extractor BYOR v2 y decodificador único

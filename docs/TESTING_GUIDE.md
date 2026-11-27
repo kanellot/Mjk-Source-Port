@@ -12,13 +12,14 @@ build.bat test
 build\bin\mjk.exe --rom ruta\a\mbj-us.nes
 ```
 
-### Linux (GCC / Clang + SDL2)
+### Linux y macOS (GCC / Clang + SDL2)
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ctest --test-dir build --output-on-failure
 ./build/bin/mjk --rom ruta/a/mbj-us.nes
 ```
+En macOS puedes instalar dependencias con `brew install cmake sdl2` y usar igualmente `make build`, `make test` y `make run`.
 
 ### Con AddressSanitizer y UndefinedBehaviorSanitizer (GCC / Clang)
 ```bash
